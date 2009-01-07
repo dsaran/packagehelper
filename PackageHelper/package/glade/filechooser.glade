@@ -1,0 +1,53 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
+<glade-interface>
+    <widget class="GtkFileChooserDialog" id="filechooser">
+        <property name="default_height">479</property>
+        <property name="destroy_with_parent">True</property>
+        <property name="has_separator">True</property>
+        <property name="show_hidden">True</property>
+        <property name="skip_taskbar_hint">True</property>
+        <property name="title" context="yes" translatable="yes">Caminho</property>
+        <property name="type_hint">normal</property>
+        <property name="use_preview_label">False</property>
+        <child internal-child="vbox">
+            <widget class="GtkVBox" id="filechooser-vbox">
+                <property name="border_width">12</property>
+                <property name="spacing">24</property>
+                <property name="visible">True</property>
+                <child>
+                    <placeholder/>
+                    <packing>
+                        <property name="position">3</property>
+                    </packing>
+                </child>
+                <child internal-child="action_area">
+                    <widget class="GtkHButtonBox" id="filechooser-action_area">
+                        <property name="layout_style">end</property>
+                        <property name="spacing">6</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkButton" id="filechooser_cancel_button">
+                                <property name="label" context="yes" translatable="yes">Cancelar</property>
+                                <property name="visible">True</property>
+                            </widget>
+                        </child>
+                        <child>
+                            <widget class="GtkButton" id="filechooser_confirm_button">
+                                <property name="label" context="yes" translatable="yes">Abrir</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="pack_type">end</property>
+                    </packing>
+                </child>
+            </widget>
+        </child>
+    </widget>
+</glade-interface>

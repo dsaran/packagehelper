@@ -1,0 +1,10 @@
+Versão gráfica do empacotador.
+
+Para executar esta versão é necessário ter instalado o GTK e o bind para python pygtk.
+
+
+Execução:
+
+python run.py
+
+

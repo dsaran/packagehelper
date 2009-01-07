@@ -1,0 +1,165 @@
+Index: package/processor.py
+===================================================================
+RCS file: /home/cvs/INB21/components/PackageHelper/package/processor.py,v
+retrieving revision 1.11
+diff -u -r1.11 processor.py
+--- package/processor.py	23 Nov 2007 20:02:56 -0000	1.11
++++ package/processor.py	19 Dec 2007 15:14:14 -0000
+@@ -2,7 +2,7 @@
+ # Version: $Id: diff.diff,v 1.1.1.1 2009-01-07 22:58:29 daniel Exp $
+ 
+ import logging
+-from os import environ, popen3, chdir
++from os import environ, popen, chdir
+ from path import path as Path
+ from typecheck import takes
+ from package.domain.repository import Repository
+@@ -163,12 +163,13 @@
+         for repo in repositories:
+             if repo.is_active():
+                 environ["CVSROOT"] = repo.root
+-                dummyIn, dummyOut, errorfile = popen3(cvs + " login")
++                errorfile = popen(cvs + " login")
+                 error = errorfile.read()
++                errorfile.close()
+                 if error:
+-                    log.error("Error logging into cvs: " + error)
++                    log.error(error)
+                     errors.append(error)
+-                    continue
++                    #continue
+ 
+                 for tag in tags:
+                     command = cvs + " -q -z 9  export -d %s -r %s %s" %\
+@@ -176,15 +177,13 @@
+                             tag.name,\
+                             repo.module)
+                     log.debug("Executing command: " + command)
+-                    dummyIn, dummyOut, errorfile = popen3(command) 
+-
++                    errorfile = popen(command)
+                     error = errorfile.read()
+-                    if len(error):
+-                        log.error("Error checking out: " + error)
+-                        errors.append(error)
+-                    dummyIn.close()
+-                    dummyOut.close()
+                     errorfile.close()
++ 
++                    if error:
++                        log.error(error)
++                        errors.append(error)
+         log.info("done.")
+         return errors
+ 
+Index: package/domain/package.py
+===================================================================
+RCS file: /home/cvs/INB21/components/PackageHelper/package/domain/package.py,v
+retrieving revision 1.5
+diff -u -r1.5 package.py
+--- package/domain/package.py	28 Nov 2007 20:18:34 -0000	1.5
++++ package/domain/package.py	19 Dec 2007 15:14:14 -0000
+@@ -15,31 +15,30 @@
+     _name = ""
+     _tags = []
+     _repositories = []
+-    _path = ""
++    _path = None
+     _defects = []
+ 
+     def __init__(self, name=None):
+         self._name = name
+ 
+     def set_path(self, path):
+-        path = path.rstrip(sep)
+         if type(path) == str:
+-            path = Path(path)
+-        self._path = path
++            self._path = Path(path)
++        else:
++            self._path = path
+ 
+     def get_path(self):
+         """ Returns the package's base path excluding the package path. """
+-        path = self._path
+-        if path:
+-            path = Path(path.rstrip(sep).rstrip(self._name))
+-        return path
++        if self._path:
++            if self._path._get_namebase() == self._name:
++                return self._path.dirname()
++        return self._path
+ 
+     def get_full_path(self):
+         """ Returns the packages's path, including itself """
+-        path = Path(str(self._path).rstrip(sep))
+-        if path.splitall()[-1] != self._name:
+-            path = path.joinpath(path, self._name)
+-        return path
++        if not self._path or self._path._get_namebase() == self._name:
++            return self._path
++        return self._path.joinpath(self._name)
+ 
+     @takes("Package", list)
+     def set_files(self, files):
+Index: package/ui/gui.py
+===================================================================
+RCS file: /home/cvs/INB21/components/PackageHelper/package/ui/gui.py,v
+retrieving revision 1.9
+diff -u -r1.9 gui.py
+--- package/ui/gui.py	13 Dec 2007 19:51:28 -0000	1.9
++++ package/ui/gui.py	19 Dec 2007 15:14:15 -0000
+@@ -179,11 +179,11 @@
+             checkout = False
+ 
+         if checkout:
+-            errors = self._run_checkout()
++            self._run_checkout()
+ 
+         log.info("Gerando scripts...")
+ 
+-        scripts = self._run_process()
++        self._run_process()
+ 
+         log.info("Fim da geração dos scripts.")
+ 
+@@ -297,7 +297,7 @@
+             log.info("Iniciando Checkout...")
+ 
+             self._set_running(True)
+-            errors = self.processor.checkout_files()
++            status = self.processor.checkout_files()
+         except:
+             log.error("Erro realizando checkout dos repositorios!", exc_info=1)
+             raise
+@@ -305,10 +305,10 @@
+             self._set_running(False)
+         log.info("Checkout finalizado.")
+ 
+-        result = self._show_errors(errors)
++        result = self._show_status(status)
+         log.info(result)
+ 
+-        return errors
++        return status
+ 
+     def _run_process(self):
+         try:
+@@ -340,13 +340,10 @@
+             buffer += "\nNenhum script criado!"
+         return buffer
+ 
+-    def _show_errors(self, errors):
+-        buffer = ""
+-        if errors:
+-            buffer += "\nErros ocorridos:\n"
+-            buffer += list2str(errors)
+-        else:
+-            buffer += "\nNenhum erro registrado!"
++    def _show_status(self, status):
++        buffer = "\nStatus da execução:\n"
++        if status:
++            buffer += list2str(status)
+         return buffer
+ 
+     def _write_logger(self, value):
