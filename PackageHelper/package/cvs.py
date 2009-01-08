@@ -1,4 +1,6 @@
 import logging
+import os
+
 from commandrunner import CommandRunner
 
 log = logging.getLogger('CVS')
@@ -21,6 +23,7 @@ class CVS:
     module = None
     tag = None
     logged = False
+    runner = None
 
     def __init__(self, root, module):
         """ Initialize the CVS data. 
@@ -28,7 +31,7 @@ class CVS:
             @param module the module to be used."""
         self.root = root
         self.module = module
-        self.tag = tag
+        self.runner = CommandRunner()
 
 
     def export(self, dest, tag):
@@ -44,29 +47,28 @@ class CVS:
 
         self.login()
 
-        if not dest.exists():
+        if not os.path.exists(dest):
             try:
                 log.info("Creating directory: " + str(dest))
-                dest.mkdir()
+                os.mkdir(dest)
             except OSError, e:
                 error_msg = "Error creating directory (%s)." % e.message
                 log.error(error_msg, exc_info=1)
-                raise CvsError(e)
+                raise CvsError(error_msg, e)
 
         # This is necessary because cvs does not accept absolute directories
         # with -d option.
-        chdir(dest)
+        os.chdir(dest)
         cvs_path = self.get_config().get_cvs()
 
         log.debug("cvs path: " + cvs_path)
 
         command = cvs_path + " -q -z 9  export -d %s -r %s %s" %\
-                (tag.name,\
-                tag.name,\
+                (tag,\
+                tag,\
                 self.module)
 
-        runner = Commandrunner(command)
-        error = runner.run()
+        error = self.runner.run(command)
 
         if error:
             log.error(error)
@@ -78,21 +80,22 @@ class CVS:
     def login(self):
         if self.logged:
             return
-        environ["CVSROOT"] = self.root
-        errorfile = popen(cvs + " login")
-        error = errorfile.read()
-        errorfile.close()
-        if error:
+        #environ["CVSROOT"] = self.root
+        errorfile = self.runner.run(self.get_config().get_cvs() + " -d%s login" % self.root)
+        if errorfile:
             log.error(error)
             raise CvsError(error)
         self.logged = True
 
 
-    def tag(self):
+    def tag(self, tag, base_tag):
         self.login()
+
+        cvs_path = self.get_config().get_cvs()
+        #TODO: Validate arguments.
         command = cvs_path + " -q -z 9 rtag -F -r %s %s %s" %\
-                (tag.name,\
-                self.package.get_name(),\
+                (base_tag,\
+                tag,\
                 self.module)
         log.debug("Executing command: " + command)
         errorfile = popen(command)
