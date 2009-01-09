@@ -63,7 +63,7 @@ class CVS:
 
         log.debug("cvs path: " + cvs_path)
 
-        command = cvs_path + " -q -z 9  export -d %s -r %s %s" %\
+        command = cvs_path + " -q -z 9 export -d %s -r %s %s" %\
                 (tag,\
                 tag,\
                 self.module)
