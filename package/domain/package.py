@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: package.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: package.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
 
 from os import sep
 from typecheck import *
@@ -11,15 +11,21 @@ from defect import Defect
 from path import path as Path
 
 class Package:
-    _files = []
-    _name = ""
-    _tags = []
-    _repositories = []
+    _files = None
+    _name = None 
+    _tags = None
+    _repositories = None
     _path = None
-    _defects = []
+    _defects = None
 
-    def __init__(self, name=None):
+    def __init__(self, name=""):
+        """ Initializes the package object.
+            @param name if given, sets initializes the package name."""
         self._name = name
+        self._files = []
+        self._tags = []
+        self._repositories = []
+        self._defects = []
 
     def set_path(self, path):
         if type(path) == str:
