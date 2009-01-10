@@ -1,6 +1,8 @@
-# Version: $Id: config.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: config.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
 
+import os
 import logging
+from sys import argv
 from path import path as Path
 
 log = logging.getLogger('Config')
@@ -13,6 +15,15 @@ class Config:
     _environments = []
 
     def __init__(self, load=False):
+        log.debug("Initializing config...")
+        WORKING_DIR     = Path(os.environ['PKG_BASEDIR'])
+        DATA_DIR        = WORKING_DIR.joinpath("data").abspath()
+        if not DATA_DIR.exists():
+            log.debug("Creating data directory...")
+            DATA_DIR.mkdir()
+        CONFIG_FILE = DATA_DIR.joinpath("config.xml").abspath()
+        REPOSITORY_FILE = DATA_DIR.joinpath("repositories.xml").abspath()
+
         if load:
             self.load()
 
@@ -114,13 +125,4 @@ def save_config(config):
     file.close()
 
 
-from sys import argv
-import os
-log.debug("Initializing config...")
-WORKING_DIR     = Path(os.environ['PKG_BASEDIR'])
-DATA_DIR        = WORKING_DIR.joinpath("data").abspath()
-if not DATA_DIR.exists():
-    DATA_DIR.mkdir()
-CONFIG_FILE = DATA_DIR.joinpath("config.xml").abspath()
-REPOSITORY_FILE = DATA_DIR.joinpath("repositories.xml").abspath()
 

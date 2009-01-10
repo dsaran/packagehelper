@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: repository.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: repository.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
 
 
 class Repository:
@@ -9,6 +9,10 @@ class Repository:
     active = None
 
     def __init__(self, root, module, active=True):
+        """ Initializes the Repository instance.
+            @param root the CVSROOT.
+            @param module repository's module.
+            @param active if the repository is active (default True)"""
         self.root = root
         self.module = module
         self.active = active

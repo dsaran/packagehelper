@@ -1,11 +1,13 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: tag.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: tag.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
 
 class Tag(object):
     name = None
 
     def __init__(self, name=None):
+        """ Initializes the Tag instance.
+            @param name if given, initializes the name attribute."""
         self.name = name
 
     def setname(self, name):

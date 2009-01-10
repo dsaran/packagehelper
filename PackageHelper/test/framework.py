@@ -7,3 +7,4 @@ class TestCase(unittest.TestCase):
             raise self.failureException,\
                 (msg + "Expected %s but found %s." % (expected, actual)) 
 
+ 

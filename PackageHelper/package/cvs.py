@@ -1,7 +1,7 @@
 import logging
 import os
-
-from commandrunner import CommandRunner
+from package.config import Config
+from package.commandrunner import CommandRunner
 
 log = logging.getLogger('CVS')
 
@@ -34,10 +34,21 @@ class CVS:
         self.runner = CommandRunner()
 
 
+    def login(self):
+        if self.logged:
+            return
+        #environ["CVSROOT"] = self.root
+        errorfile = self.runner.run(self.get_config().get_cvs() + " -d%s login" % self.root)
+        if errorfile:
+            log.error(error)
+            raise CvsError(error)
+        self.logged = True
+
+
     def export(self, dest, tag):
         """ Export files from cvs using the given tags and repositories.
             @param dest destination path where the files should be exported to.
-            @param tags is a list of Tag objects
+            @param tag the TAG of files to be exported.
             @return a list with errors occurred, if any."""
         log.info("Exporting files...")
         if not tag:
@@ -77,18 +88,10 @@ class CVS:
         log.info("done.")
 
 
-    def login(self):
-        if self.logged:
-            return
-        #environ["CVSROOT"] = self.root
-        errorfile = self.runner.run(self.get_config().get_cvs() + " -d%s login" % self.root)
-        if errorfile:
-            log.error(error)
-            raise CvsError(error)
-        self.logged = True
-
-
-    def tag(self, tag, base_tag):
+    def tag(self, tag, base_tag="HEAD"):
+        """ Tag files on the repository (corresponds to rtag cvs command).
+            @param tag the tag to put on files.
+            @param base_tag if given, use base_tag as base instead of Head."""
         self.login()
 
         cvs_path = self.get_config().get_cvs()
@@ -97,10 +100,11 @@ class CVS:
                 (base_tag,\
                 tag,\
                 self.module)
-        log.debug("Executing command: " + command)
-        errorfile = popen(command)
-        error = errorfile.read()
-        errorfile.close()
+        #log.debug("Executing command: " + command)
+        #errorfile = popen(command)
+        #error = errorfile.read()
+        #errorfile.close()
+        error = self.runner.run(command)
 
         if error:
             log.error(error)

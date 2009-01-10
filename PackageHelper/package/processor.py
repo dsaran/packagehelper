@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: processor.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
 
 import logging
 from os import environ, popen, chdir
@@ -11,7 +11,8 @@ from package.domain.package import Package
 from package.domain.database import Database
 from package.domain.file import File
 from package.util.format import ENCODING
-from package.config import Config 
+#from package.config import Config 
+from package.cvs import CvsError, CVS
 
 log = logging.getLogger('PackageProcessor')
 
@@ -147,52 +148,65 @@ class PackageProcessor:
             log.info(status)
             return status
 
-        p = self.package.get_full_path()
-        if not p.exists():
-            try:
-                log.info("Creating directory: " + str(p))
-                p.mkdir()
-            except OSError:
-                log.error("Error creating directory.", exc_info=1)
-                raise 
-        # This is necessary because cvs does not accept absolute directories
-        # with -d option.
-        chdir(p)
-        config = Config(load=True)
-        cvs = config.get_cvs()
-        log.debug("cvs path: " + cvs)
+        dest = self.package.get_full_path()
+        #if not p.exists():
+        #    try:
+        #        log.info("Creating directory: " + str(p))
+        #        p.mkdir()
+        #    except OSError:
+        #        log.error("Error creating directory.", exc_info=1)
+        #        raise 
+        ## This is necessary because cvs does not accept absolute directories
+        ## with -d option.
+        #chdir(p)
+        #config = Config(load=True)
+        #cvs = config.get_cvs()
+        #log.debug("cvs path: " + cvs)
         for repo in repositories:
             if repo.is_active():
-                environ["CVSROOT"] = repo.root
-                errorfile = popen(cvs + " login")
-                error = errorfile.read()
-                errorfile.close()
-                if error:
-                    log.info(error)
-                    status.append(error)
+                #environ["CVSROOT"] = repo.root
+                #errorfile = popen(cvs + " login")
+                #error = errorfile.read()
+                #errorfile.close()
+                #if error:
+                #    log.info(error)
+                #    status.append(error)
+
+                cvs = CVS(repo.root, repo.module)
 
                 for tag in tags:
-                    command = cvs + " -q -z 9  export -d %s -r %s %s" %\
-                            (tag.name,\
-                            tag.name,\
-                            repo.module)
-                    log.debug("Executing command: " + command)
-                    errorfile = popen(command)
-                    error = errorfile.read()
-                    errorfile.close()
+                    #command = cvs + " -q -z 9  export -d %s -r %s %s" %\
+                    #        (tag.name,\
+                    #        tag.name,\
+                    #        repo.module)
+                    #log.debug("Executing command: " + command)
+                    #errorfile = popen(command)
+                    #error = errorfile.read()
+                    #errorfile.close()
 
-                    command = cvs + " -q -z 9 rtag -F -r %s %s %s" %\
-                            (tag.name,\
-                            self.package.get_name(),\
-                            repo.module)
-                    log.debug("Executing command: " + command)
-                    errorfile = popen(command)
-                    error = errorfile.read()
-                    errorfile.close()
+                    try:
+                        cvs.export(dest, tag) 
+                    except CvsError, e:
+                        status.append(e.message)
+
+                    #command = cvs + " -q -z 9 rtag -F -r %s %s %s" %\
+                    #        (tag.name,\
+                    #        self.package.get_name(),\
+                    #        repo.module)
+                    #log.debug("Executing command: " + command)
+                    #errorfile = popen(command)
+                    #error = errorfile.read()
+                    #errorfile.close()
  
-                    if error:
-                        log.info(error)
-                        status.append(error)
+                    #if error:
+                    #    log.info(error)
+                    #    status.append(error)
+                    try:
+                        cvs.tag(self.package.get_name(), tag.name)
+                    except CvsError, e:
+                        status.append(e.message)
+
+
         log.info("done.")
         return status
 
