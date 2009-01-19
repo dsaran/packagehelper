@@ -16,8 +16,11 @@ set_log_file("Tests.log")
 
 import test.package.tc_cvs
 import test.package.tc_processor
+import test.package.types.tc_matcher
+
 cvs_suite = unittest.TestLoader().loadTestsFromTestCase(test.package.tc_cvs.CvsTest)
 processor_suite = unittest.TestLoader().loadTestsFromTestCase(test.package.tc_processor.PackageProcessorTests)
-suite = unittest.TestSuite([cvs_suite, processor_suite])
+types_suite = unittest.TestLoader().loadTestsFromTestCase(test.package.types.tc_matcher.MatcherTests)
+suite = unittest.TestSuite([cvs_suite, processor_suite, types_suite])
 unittest.TextTestRunner(verbosity=2).run(suite)
 

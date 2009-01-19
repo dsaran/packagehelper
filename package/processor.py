@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.3 2009-01-10 04:06:18 daniel Exp $
+# Version: $Id: processor.py,v 1.4 2009-01-19 05:24:47 daniel Exp $
 
 import logging
 from os import environ, popen, chdir
@@ -11,7 +11,6 @@ from package.domain.package import Package
 from package.domain.database import Database
 from package.domain.file import File
 from package.util.format import ENCODING
-#from package.config import Config 
 from package.cvs import CvsError, CVS
 
 log = logging.getLogger('PackageProcessor')
@@ -136,8 +135,6 @@ class PackageProcessor:
 
     def checkout_files(self):
         """ Check out files from cvs using the given tags and repositories.
-            @param tags is a list of Tag objects
-            @param repositories is a list of Repository objects
             @return a list with errors occurred, if any."""
         log.info("Checking out files...")
         status = []

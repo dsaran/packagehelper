@@ -1,3 +1,5 @@
+#from test import pmock
+from test import mock
 from test.framework import TestCase
 from package.processor import PackageProcessor
 from package.domain.tag import Tag
@@ -6,22 +8,6 @@ from package.domain.repository import Repository
 from package.commandrunner import CommandRunner
 from package.cvs import CVS
 from os import path
-
-def run(self, command):
-    if not self.commands.has_key(command):
-        self.commands[command] = 0
-    self.commands[command] += 1
-
-def run_export(self, *args):
-    run(self, 'export')
-
-def run_tag(self, *args):
-    run(self, 'tag')
-
-class ConfigMock:
-    def get_cvs(self):
-        return "cvsmock"
-
 
 class PackageProcessorTests(TestCase):
     def setUp(self):
@@ -34,18 +20,26 @@ class PackageProcessorTests(TestCase):
             repository = Repository("root" + str(i), "module" + str(i), (i != 3))
             self.package.add_repository(repository)
 
-        CVS.get_config = lambda(self): ConfigMock()
-        CVS.commands = {}
-        CVS.export = run_export
-        CVS.tag = run_tag
+        # Preparing mocks
+        #self.configMock = pmock.Mock()
+        #self.configMock.expects(pmock.once()).method("get_cvs").will(pmock.return_value("cvsmock"))
 
     def testCheckout(self):
+        #cvsMock = pmock.Mock()
+        cvsExportMock = mock.Mock()
+        cvsTagMock = mock.Mock()
+        #cvsMock.expects(pmock.exactly(6)).method("export")
+        #cvsMock.expects(pmock.exactly(6)).method("tag")
+
+        # Workaround to use mock with objects created inside the method execution.
+        CVS.export = cvsExportMock.export
+        CVS.tag = cvsTagMock.tag
+
         processor = PackageProcessor(self.package)
         processor.checkout_files()
 
-        commands = CVS.commands
-        self.assertEquals(6, commands['export'], "Wrong number of export commands called.")
-        self.assertEquals(6, commands['tag'], "Wrong number of tag commands called.")
+        self.assertEquals(6, len(cvsExportMock.method_calls), "Wrong number of export calls.")
+        self.assertEquals(6, len(cvsTagMock.method_calls), "Wrong number of tag calls.")
 
-
+        #cvsMock.verify()
 
