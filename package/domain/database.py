@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: database.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: database.py,v 1.2 2009-01-22 04:10:42 daniel Exp $
 
 import logging
 
@@ -29,7 +29,7 @@ class Database(object):
         self._user = user
 
     def getKey(self):
-        return self._user + '_' + self._name
+        return str(self._user) + '_' + str(self._name)
 
     def __eq__(self, obj):
         if (type(obj) != Database):

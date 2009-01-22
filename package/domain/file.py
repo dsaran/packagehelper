@@ -1,15 +1,15 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: file.py,v 1.2 2009-01-22 04:10:42 daniel Exp $
 
 from os import sep
 from path import path as Path
-from database import Database
+#from package.domain.database import Database
 import logging
 
 log = logging.getLogger('File')
 
-class File(object):
+class File:
     TYPE_ORDER = {'TAB':1, 'VIEW':5, 'DDL':10, 'TRG':15, 'IDX':20, 'DML':25, 'ACT_BD':30, 'PKH':35, 'PKB':40, 'GRANT':45}
     CATEGORIES = {'COMPILABLE':['PKH', 'PKB', 'FNC', 'PRC', 'GRANT', 'TRG', 'IDX', 'DDL', 'VIEW', 'TAB'], 'COMMITABLE':['DML', 'ACT_BD']}
 
@@ -19,20 +19,27 @@ class File(object):
     _basepath = None
     _path = None
 
-    def __init__(self, path, basepath, parse=True):
+    def __init__(self, path=None, basepath=None, parse=False):
         """ Constructor.
         @param path 'path' instance or a string representing the file"
-        @param basepath 'path' instance or a string representing the base path of file"
+        @param basepath 'path' instance or a string representing package path.
         @param parse (optional) if the filename must be parsed."""
+        self._database = None
+        self._type = None
+        self._name = None
+        self._basepath = None
+        self._path = None
 
-        self._basepath = basepath
-        if not self._basepath.endswith(sep):
-            self._basepath += sep
+        if basepath:
+            self._basepath = basepath
+            if not self._basepath.endswith(sep):
+                self._basepath += sep
 
-        self._path = path
+        if path:
+            self._path = path
 
-        fileDetails = path.splitall()
-        self._name = fileDetails[-1]
+            fileDetails = path.splitall()
+            self._name = fileDetails[-1]
 
         if parse:
             try:
@@ -76,7 +83,9 @@ class File(object):
     def __repr__(self):
         return str(self._path)
 
-    __str__ = __repr__
+    def __str__(self):
+        return "<File name: %s, database: %s, type: %s>" \
+                % (self._name, self._database, self._type)
 
     def get_order(self):
         if (not self.TYPE_ORDER.has_key(self._type)):
@@ -100,6 +109,12 @@ class File(object):
             return self.get_order().__cmp__(other.get_order())
         else:
             return self.get_database().__cmp__(other.get_database())
+
+    def __eq__(self, other):
+        equals = self._name == other.get_name() \
+                 and self._database == other.get_database() \
+                 and self._type == other.get_type()
+        return equals
 
     def getInitScript(self):
         value = ''
