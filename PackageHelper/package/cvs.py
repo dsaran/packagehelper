@@ -8,10 +8,7 @@ log = logging.getLogger('CVS')
 class CvsError(Exception):
     message = None
 
-    def __init__(self, msg):
-        self.message = msg
-    
-    def __init__(self, msg, cause):
+    def __init__(self, msg, cause=None):
         self.cause = cause
         self.message = msg
 
@@ -40,8 +37,8 @@ class CVS:
         #environ["CVSROOT"] = self.root
         errorfile = self.runner.run(self.get_config().get_cvs() + " -d%s login" % self.root)
         if errorfile:
-            log.error(error)
-            raise CvsError(error)
+            log.error(errorfile)
+            raise CvsError(errorfile)
         self.logged = True
 
 

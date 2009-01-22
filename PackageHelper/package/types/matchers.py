@@ -1,3 +1,4 @@
+# Version: $id$
 
 class Matcher:
     def match(self, expected, file):

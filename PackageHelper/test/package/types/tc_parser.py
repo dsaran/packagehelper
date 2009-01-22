@@ -1,5 +1,6 @@
+# Version: $id$
+
 from test.framework import TestCase
-#from test.mock import Mock
 from package.types.parsers import DefaultParser
 from package.domain.file import File
 from package.domain.database import Database

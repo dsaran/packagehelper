@@ -1,3 +1,5 @@
+# Version: $id$
+
 class SqlType:
     _types = [
         SqlType("DML", 3500, DataManipulation),
