@@ -95,9 +95,17 @@ class Mock(object):
         return self._children[name]
     
     
-    def assert_called_with(self, *args, **kwargs):
-        assert self.call_args == (args, kwargs), 'Expected: %s\nCalled with: %s' % ((args, kwargs), self.call_args)
+    def assert_called_with_all(self, *args, **kwargs):
+        assert self.call_args == (args, kwargs), 'Expected: %s\nCalled with: %s' % ((args, kwargs), self.call_args_list)
         
+
+    def assert_called_with(self, *args, **kwargs):
+        assertion = False
+        for arglist in self.call_args_list:
+            if arglist == (args, kwargs):
+                assertion = True
+                break
+        assert assertion, 'Expected: %s\nCalled with: %s' % ((args, kwargs), self.call_args_list)
 
         
 def _dot_lookup(thing, comp, import_path):

@@ -1,3 +1,5 @@
+# Version: $id$
+
 import re
 from package.domain.file import File
 from package.domain.database import Database

@@ -1,3 +1,5 @@
+# Version: $id$
+
 from test.framework import TestCase
 from test.mock import Mock
 from package.types.matchers import ParentDirectoryMatcher
