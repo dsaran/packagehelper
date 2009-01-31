@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.4 2009-01-19 05:24:47 daniel Exp $
+# Version: $Id: processor.py,v 1.5 2009-01-31 04:55:28 daniel Exp $
 
 import logging
 from os import environ, popen, chdir
@@ -31,8 +31,8 @@ class PackageProcessor:
 
     def getFiles(self, filter):
         """ Search for "*.sql" files below the directory tree.
-        @param directory the base directory path to search for files.
-        @return a list of File instances. """
+            @param directory the base directory path to search for files.
+            @return a list of File instances. """
         log.debug("Searching files in directory %s..."\
                   % str(self.package.get_full_path()))
         try:
@@ -91,7 +91,7 @@ class PackageProcessor:
 
     def run(self):
         """ Start the process of package generation.
-        Checkout files and create scripts.
+            Checkout files and create scripts.
             @return a list of scripts and a list of errors."""
         log.debug("Calling checkout process...")
         errors = self.checkout_files()
