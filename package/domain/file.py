@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.2 2009-01-22 04:10:42 daniel Exp $
+# Version: $Id: file.py,v 1.3 2009-01-31 04:55:28 daniel Exp $
 
 from os import sep
 from path import path as Path
@@ -111,6 +111,9 @@ class File:
             return self.get_database().__cmp__(other.get_database())
 
     def __eq__(self, other):
+        if other == None or other.__class__ != File:
+            return False
+
         equals = self._name == other.get_name() \
                  and self._database == other.get_database() \
                  and self._type == other.get_type()

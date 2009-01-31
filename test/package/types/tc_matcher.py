@@ -10,28 +10,28 @@ class MatcherTests(TestCase):
         filename = "/path/to/module/base/trash/Database/Username/Type/001_prefix_filename.sql"
         self.file = Mock()
         self.file.get_path.return_value = filename
-        self.matcher = ParentDirectoryMatcher()
 
     def testParentDirectoryMatcher_equals(self):
         """ParentDirectoryMatcher should match exactly the same name."""
         expected = "Type"
-        result = self.matcher.match(expected, self.file)
+        matcher = ParentDirectoryMatcher(expected)
+        result = matcher.match(self.file)
 
         self.assertTrue(result)
 
     def testParentDirectoryMatcher_case_insensitive(self):
-        """ParentDirectoryMatcher should successfully match
-        paths in different cases."""
+        """ParentDirectoryMatcher should match paths in different cases."""
         expected = "TYPE"
-        result = self.matcher.match(expected, self.file)
+        matcher = ParentDirectoryMatcher(expected)
+        result = matcher.match(self.file)
 
         self.assertTrue(result)
 
     def testParentDirectoryMatcher_contains(self):
-        """ParentDirectoryMatcher should not match a parent directory
-        that is partly equals to expected type."""
+        """ParentDirectoryMatcher should not match partly to a parent directory."""
         expected="Types"
-        result = self.matcher.match(expected, self.file)
+        matcher = ParentDirectoryMatcher(expected)
+        result = matcher.match(self.file)
 
         self.assertFalse(result)
 
