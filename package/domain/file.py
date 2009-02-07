@@ -1,10 +1,10 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.3 2009-01-31 04:55:28 daniel Exp $
+# Version: $Id: file.py,v 1.4 2009-02-07 17:40:27 daniel Exp $
 
 from os import sep
 from path import path as Path
-#from package.domain.database import Database
+from package.domain.database import Database
 import logging
 
 log = logging.getLogger('File')

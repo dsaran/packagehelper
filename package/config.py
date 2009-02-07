@@ -1,4 +1,4 @@
-# Version: $Id: config.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
+# Version: $Id: config.py,v 1.3 2009-02-07 17:40:27 daniel Exp $
 
 import os
 import logging
@@ -16,13 +16,13 @@ class Config:
 
     def __init__(self, load=False):
         log.debug("Initializing config...")
-        WORKING_DIR     = Path(os.environ['PKG_BASEDIR'])
-        DATA_DIR        = WORKING_DIR.joinpath("data").abspath()
-        if not DATA_DIR.exists():
+        self.WORKING_DIR     = Path(os.environ['PKG_BASEDIR'])
+        self.DATA_DIR        = self.WORKING_DIR.joinpath("data").abspath()
+        if not self.DATA_DIR.exists():
             log.debug("Creating data directory...")
-            DATA_DIR.mkdir()
-        CONFIG_FILE = DATA_DIR.joinpath("config.xml").abspath()
-        REPOSITORY_FILE = DATA_DIR.joinpath("repositories.xml").abspath()
+            self.DATA_DIR.mkdir()
+        self.CONFIG_FILE = self.DATA_DIR.joinpath("config.xml").abspath()
+        self.REPOSITORY_FILE = self.DATA_DIR.joinpath("repositories.xml").abspath()
 
         if load:
             self.load()
@@ -89,7 +89,7 @@ class Config:
         save_config(self)
 
     def load(self):
-        self.set_config(load_config())
+        self.set_config(self._load_config())
 
     def __str__(self):
         value = "(cvs: " + self._cvs_path
@@ -101,28 +101,30 @@ class Config:
     __repr__ = __str__
 
 
-def load_config():
-    config_data = None
-    if Path(CONFIG_FILE).exists():
+    def _load_config(self):
+        config_data = None
+        if Path(self.CONFIG_FILE).exists():
+            try:
+                log.info("Loading file " + self.CONFIG_FILE)
+                file = open(self.CONFIG_FILE, 'r')
+                from xml.marshal import generic
+                config_data = generic.load(file)
+            except Exception:
+                log.error("Error loading configuration.", exc_info=1)
+            finally:
+                file.close()
+        else:
+            config_data = Config()
+        return config_data
+
+    def _save_config(self, config):
+        log.info("Saving configuration...")
+        from xml.marshal import generic
+        file = None
         try:
-            log.info("Loading file " + CONFIG_FILE)
-            file = open(CONFIG_FILE, 'r')
-            from xml.marshal import generic
-            config_data = generic.load(file)
-        except Exception:
-            log.error("Error loading configuration.", exc_info=1)
+            file = open(self.CONFIG_FILE, "w")
+            generic.dump(config, file)
         finally:
             file.close()
-    else:
-        config_data = Config()
-    return config_data
-
-def save_config(config):
-    log.info("Saving configuration...")
-    from xml.marshal import generic
-    file = open(CONFIG_FILE, "w")
-    generic.dump(config, file)
-    file.close()
-
 
 

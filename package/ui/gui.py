@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: gui.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: gui.py,v 1.2 2009-02-07 17:40:27 daniel Exp $
 
 import logging
 from gtk import main, main_quit
@@ -12,12 +12,12 @@ from kiwi.ui.objectlist import Column
 
 from package.domain.tag import Tag
 from package.domain.repository import Repository
-from package.domain.package import Package
+from package.domain.pack import Package
 from package.domain.defect import Defect
 from package.ui.editor import Editor
 from package.ui.filechooser import FileChooser
 from package.ui.config import ConfigEditor
-from package.config import REPOSITORY_FILE
+from package.config import Config 
 from package.releasenotes import RNGenerator
 from package.sqlrunner import run_scripts
 from package.processor import PackageProcessor
@@ -200,7 +200,7 @@ class PackageProcessorGUI(Delegate):
             self.tags.remove(selected)
 
     def on_add_repository_button__clicked(self, *args):
-        repository = Repository(":pserver:<user>:<password>@host:path", "Module")
+        repository = Repository(":pserver:<user>:<password>@<host>:<path>", "<Module>")
         self.package.add_repository(repository)
         self.repositories.append(repository)
         self.repositories._select_and_focus_row(len(self.repositories)-1)
@@ -358,7 +358,8 @@ class PackageProcessorGUI(Delegate):
 
     def _load_repos(self):
         repos = []
-        file = Path(REPOSITORY_FILE)
+        config = Config()
+        file = Path(config.REPOSITORY_FILE)
 
         if file.exists():
             try:
@@ -372,9 +373,11 @@ class PackageProcessorGUI(Delegate):
         return repos
 
     def _save_repos(self, repos):
+        file = None
         try:
             log.info("Saving repository information")
-            file = open(REPOSITORY_FILE, "w")
+            config = Config()
+            file = open(config.REPOSITORY_FILE, "w")
             from xml.marshal import generic
             generic.dump(repos, file)
         finally:

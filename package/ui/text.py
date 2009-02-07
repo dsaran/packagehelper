@@ -1,11 +1,11 @@
 #! /usr/bin/env python2.5
-# Version $Id: text.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version $Id: text.py,v 1.2 2009-02-07 17:40:27 daniel Exp $
 
 import logging
 from sys import exit
 from package.domain.repository import Repository
 from package.domain.tag import Tag
-from package.domain.package import Package
+from package.domain.pack import Package
 from package.processor import PackageProcessor
 from package.util.format import list2str
 from package.util.commandline import clearscreen, read, read_int, pause
@@ -47,7 +47,12 @@ class PackageProcessorUI:
         self.package = read("Package name")
         self.directory = read("Base directory to create the package")
         while True:
-            self.main_menu()
+            try:
+                self.main_menu()
+            except Exception, e:
+                clearscreen()
+                print "Error: ", e
+                read("Press Enter to return.")
 
     def top(self):
         top = "Package: " + self.package
@@ -115,7 +120,10 @@ class PackageProcessorUI:
 
     def checkout(self):
         processor = self._get_processor()
-        errors = processor.checkout_files(self.tags, self.repositories)
+        try:
+            errors = processor.checkout_files()
+        except:
+            print "Error checking out files."
         self._show_errors(errors)
 
     def process(self):

@@ -1,5 +1,5 @@
 #!/usr/bin/python2.5
-# Version: $Id: run.py,v 1.1.1.1 2009-01-07 22:58:29 daniel Exp $
+# Version: $Id: run.py,v 1.2 2009-02-07 17:40:27 daniel Exp $
 
 from os import path
 from sys import argv, path as pythonpath
@@ -19,7 +19,7 @@ pythonpath.insert(2, resdir)
 # Initializing logger
 import logging
 from path import path as Path
-from kiwi.log import set_log_file
+from package.log import set_log_file
 from os import environ
 log = logging.getLogger('Runner')
 homedir = Path(__file__).dirname()
@@ -32,6 +32,14 @@ environ['PKG_HELPER_PATH'] = homedir
 environ['PKG_BASEDIR'] = basedir
 set_log_file(LOG_FILE, '*')
 log.info("Logger started")
+
+def run_no_gui():
+    from package.ui.text import PackageProcessorUI
+    PackageProcessorUI()
+
+def run_gui():
+    from package.ui.gui import PackageProcessorGUI
+    PackageProcessorGUI()
 
 
 if __name__ == "__main__":
@@ -47,17 +55,16 @@ if __name__ == "__main__":
     elif "--no-gui" in argv[:]:
         log.info("Running with no GUI")
         try:
-            from package.ui.text import PackageProcessorUI
-            PackageProcessorUI()
+            run_no_gui()
         except Exception:
             log.error("Error loading processorUI!", exc_info=1)
             raise
     else:
         try:
-            from package.ui.gui import PackageProcessorGUI
-            PackageProcessorGUI()
+            run_gui()
+        except ImportError:
+            log.error("Error loading GUI, trying to load command line interface", exc_info=1)
+            run_no_gui()
         except Exception:
             log.error("Error loading GUI!", exc_info=1)
             raise
-
-

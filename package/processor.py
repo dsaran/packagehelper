@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.5 2009-01-31 04:55:28 daniel Exp $
+# Version: $Id: processor.py,v 1.6 2009-02-07 17:40:27 daniel Exp $
 
 import logging
 from os import environ, popen, chdir
@@ -7,7 +7,7 @@ from path import path as Path
 from typecheck import takes
 from package.domain.repository import Repository
 from package.domain.tag import Tag
-from package.domain.package import Package
+from package.domain.pack import Package
 from package.domain.database import Database
 from package.domain.file import File
 from package.util.format import ENCODING
@@ -41,7 +41,7 @@ class PackageProcessor:
             files = []
             for item in generator:
                 try:
-                    file = File(item, path)
+                    file = File(item, path, parse=True)
                     files.append(file)
                 except ValueError:
                     # Ignoring unknown file paths

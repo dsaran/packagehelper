@@ -14,7 +14,7 @@ from kiwi.ui.objectlist import Column, ObjectList
 
 from package.domain.tag import Tag
 from package.domain.repository import Repository
-from package.domain.package import Package
+from package.domain.pack import Package
 from package.gui.Editor import Editor
 from package.processor import PackageProcessor
 from package.util.format import list2str
