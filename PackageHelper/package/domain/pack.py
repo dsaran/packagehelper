@@ -1,13 +1,13 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: package.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
+# Version: $Id: pack.py,v 1.1 2009-02-07 17:40:27 daniel Exp $
 
 from os import sep
 from typecheck import *
-from tag import Tag
-from file import File
-from repository import Repository
-from defect import Defect
+from package.domain.tag import Tag
+from package.domain.file import File
+from package.domain.repository import Repository
+from package.domain.defect import Defect
 from path import path as Path
 
 class Package:
@@ -66,7 +66,7 @@ class Package:
     @takes("Package", list)
     def set_tags(self, tags):
         for tag in tags:
-            self.addTag(tag)
+            self.add_tag(tag)
 
     def get_tags(self):
         return self._tags

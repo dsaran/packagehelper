@@ -26,6 +26,7 @@ class CVS:
         """ Initialize the CVS data. 
             @param root the CVSROOT to use. 
             @param module the module to be used."""
+        os.environ["CVSROOT"] = root
         self.root = root
         self.module = module
         self.runner = CommandRunner()
@@ -34,8 +35,9 @@ class CVS:
     def login(self):
         if self.logged:
             return
-        #environ["CVSROOT"] = self.root
-        errorfile = self.runner.run(self.get_config().get_cvs() + " -d%s login" % self.root)
+        output, errorfile = self.runner.run(self.get_config().get_cvs() + " -d%s login" % self.root)
+        if output:
+            log.info(output)
         if errorfile:
             log.error(errorfile)
             raise CvsError(errorfile)
@@ -44,7 +46,7 @@ class CVS:
 
     def export(self, dest, tag):
         """ Export files from cvs using the given tags and repositories.
-            @param dest destination path where the files should be exported to.
+            @param dest destination path where the files should be exported into.
             @param tag the TAG of files to be exported.
             @return a list with errors occurred, if any."""
         log.info("Exporting files...")
@@ -55,10 +57,10 @@ class CVS:
 
         self.login()
 
-        if not os.path.exists(dest):
+        if not dest.exists():
             try:
                 log.info("Creating directory: " + str(dest))
-                os.mkdir(dest)
+                dest.mkdir()
             except OSError, e:
                 error_msg = "Error creating directory (%s)." % e.message
                 log.error(error_msg, exc_info=1)
@@ -66,18 +68,21 @@ class CVS:
 
         # This is necessary because cvs does not accept absolute directories
         # with -d option.
-        os.chdir(dest)
+        os.chdir(dest.abspath())
         cvs_path = self.get_config().get_cvs()
 
         log.debug("cvs path: " + cvs_path)
 
-        command = cvs_path + " -q -z 9 export -d %s -r %s %s" %\
-                (tag,\
+        command = cvs_path + " -q -z 9 -d%s export -d %s -r %s %s" %\
+                (self.root,\
+                tag,\
                 tag,\
                 self.module)
 
-        error = self.runner.run(command)
+        output, error = self.runner.run(command)
 
+        if output:
+            log.info(output)
         if error:
             log.error(error)
             raise CvsError(error)
@@ -98,11 +103,10 @@ class CVS:
                 tag,\
                 self.module)
         #log.debug("Executing command: " + command)
-        #errorfile = popen(command)
-        #error = errorfile.read()
-        #errorfile.close()
-        error = self.runner.run(command)
+        output, error = self.runner.run(command)
 
+        if output:
+            log.info(output)
         if error:
             log.error(error)
             raise CvsError(error)

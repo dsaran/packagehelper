@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import unittest
 from os import path
 from sys import path as pythonpath

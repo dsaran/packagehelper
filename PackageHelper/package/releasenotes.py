@@ -1,9 +1,9 @@
 #! /usr/bin/env python2.5
-# Version: $Id: releasenotes.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: releasenotes.py,v 1.2 2009-02-07 17:40:27 daniel Exp $
 # TODO: Improve the rtf generation.
 
 import logging
-from package.config import WORKING_DIR
+from package.config import Config 
 
 
 DEFECT_ROW= """\\pard\\intbl\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\sb60\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #IDPTIN#}
@@ -28,22 +28,26 @@ class RNGenerator:
             raise
 
     def writeRN(self):
+        file = None
         try:
             log.debug("writting RN...")
-            file = open(WORKING_DIR.joinpath("resources/RN_TEMPLATE.rtf"), "r")
+            working_dir = Config().WORKING_DIR
+            file = open(working_dir.joinpath("resources/RN_TEMPLATE.rtf"), "r")
             content = file.read()
-            file.close()
-
-            content = self._fillPackage(content)
-            content = self._fillTag(content)
-            content = self._writeDefects(content)
-            content = self._fillErdr(content)
-
-            self._save_file(content)
-            log.debug("Done.")
         except:
             log.error("Error writing Release Notes.", exc_info=1)
             raise
+        finally:
+            if file:
+                file.close()
+
+        content = self._fillPackage(content)
+        content = self._fillTag(content)
+        content = self._writeDefects(content)
+        content = self._fillErdr(content)
+
+        self._save_file(content)
+        log.debug("Done.")
 
     def _writeDefects(self, content):
         log.debug("Writing defects: %s" % str(self.package.get_defects()))

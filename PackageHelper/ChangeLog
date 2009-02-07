@@ -1,3 +1,25 @@
+=== 1.0.0 ===
+
+2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* run.py: Initialization changed to open no-gui mode when something GUI is not
+		available.
+	Removed kiwi.log dependency to avoid problems using no-gui.
+	* lib/kiwi/__init__.py: Removed code from __init__ to avoid initialization
+	problems.
+	* package/commandrunner.py: Using 'popen3' instead of 'popen' so we can
+	capture error and output separately.
+	* package/config.py: Some improvement in code.
+	* package/cvs.py: New module responsible for cvs manipulation.
+	* package/processor.py: CVS Manipulation moved to a new module.
+	* package/domain/package.py: Fixed typo in set_tags method.
+	Renamed to pack.py to avoid ambiguity.
+	* package/rollback/parsers.py: Parser for sql files to help on rollback
+	creation.
+	* package/ui/gui.py:
+	* package/releasenotes.py: Adapted to changes on config.py
+	* package/ui/text.py: Error handling improvement.
+
 === 0.4.0 ===
 
 2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
