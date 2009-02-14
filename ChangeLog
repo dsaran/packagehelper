@@ -1,3 +1,21 @@
+2009-02-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test/parser/tc_plsql.py: Test cases for plsql parser.
+	* parser/plsql.g: First functional version of parser for insert
+	statements.
+
+2009-02-09  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* parser/__init__.py: New module for plsql parsing.
+	* parser/plsql.g: Added initial grammar for plsql.
+	* parser/plsql.py: Generated parser from plsql.g.
+	* parser/yappsrt.py: Yapps runtime to allow plsql generated parser to run.
+	* yapps: Added Yapps library to project for parser generation
+	* parser/yapps/grammar.py
+	* parser/yapps/parsetree.py
+	* parser/yapps/yapps2.py
+	* parser/yapps/yappsrt.py: Yapps engine to generate plsql parser.
+
 === 1.0.0 ===
 
 2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>

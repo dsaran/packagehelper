@@ -19,6 +19,7 @@ import test.package.types.tc_matcher
 import test.package.types.tc_parser
 import test.package.types.tc_loader
 import test.package.rollback.tc_parser
+import test.parser.tc_plsql
 
 tests = []
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_cvs.CvsTest))
@@ -26,7 +27,9 @@ tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_process
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.types.tc_matcher.MatcherTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.types.tc_parser.ParserTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.types.tc_loader.LoaderTests))
-tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.rollback.tc_parser.SqlParserTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.parser.tc_plsql.PlSqlParserTests))
+# Broken until plsql parser (yapps) is finished.
+#tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.rollback.tc_parser.SqlParserTests))
 
 suite = unittest.TestSuite(tests)
 unittest.TextTestRunner(verbosity=2).run(suite)
