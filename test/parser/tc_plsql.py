@@ -1,6 +1,7 @@
 from test.framework import TestCase
 from parser.yappsrt import SyntaxError
-from parser import plsql 
+from parser.plsql import InsertStatement, CallStatement 
+from parser import plsql
 
 quoted_string = "' a quoted string'"
 insert_columns = "(a, b, c,d,e ,f)"
@@ -72,35 +73,48 @@ class PlSqlParserTests(TestCase):
     def testSimpleInsertStatementWithColumns(self):
         """ PlSqlParser should parse a simple pl/sql insert statement with columns""" 
         insert = "INSERT INTO table(a, b) VALUES (1, 'b');"
-        expected_table = 'table'
-        expected_columns = ['a', 'b']
-        expected_values = [1, "'b'"]
+        expected = InsertStatement(table='table', columns=['a', 'b'], values=[1, "'b'"])
 
         result = plsql.parse("expr", insert)
         self.assertTrue(result, "Insert statement not parsed")
-        self.assertEquals(3, len(result))
 
-        table = result[0]
-        columns = result[1]
-        values = result[2]
-        self.assertEquals(expected_table, table)
-        self.assertEquals(expected_columns, columns)
-        self.assertEquals(expected_values, values)
+        self.assertEquals(expected, result)
 
     def testInsertStatementWithoutColumns(self):
         """ PlSqlParser should parse a simple pl/sql insert statement without columns""" 
         insert = "INSERT INTO table VALUES (1, 'b');"
-        expected_table = 'table'
-        expected_values = [1, "'b'"]
+        expected = InsertStatement(table='table', values=[1, "'b'"])
 
         result = plsql.parse("expr", insert)
         self.assertTrue(result, "Insert statement not parsed")
-        self.assertEquals(3, len(result))
 
-        table = result[0]
-        columns = result[1]
-        values = result[2]
-        self.assertEquals(expected_table, table)
-        self.assertFalse(columns)
-        self.assertEquals(expected_values, values)
+        self.assertEquals(expected, result)
+
+    def testInsertStatementWithFunctions(self):
+        """ PlSqlParser should parse an insert with functions on values"""
+        insert = "INSERT INTO table VALUES (variable1, UPPER(variable2), 'value');"
+        expected = InsertStatement(table='table', values=["variable1", CallStatement(id="UPPER", arguments=["variable2"]), "'value'"])
+
+        result = plsql.parse("expr", insert)
+        self.assertTrue(result, "Insert statement not parsed")
+
+        self.assertEquals(expected, result)
+
+    def testFunctionCall(self):
+        """ PlSqlParser should parse a function/procedure call"""
+        call = "myFunction('var1', 2)"
+        expected = CallStatement(id="myFunction", arguments=["'var1'", 2])
+
+        result = plsql.parse("function_call", call)
+        self.assertTrue(result, "Insert statement not parsed")
+        self.assertEquals(expected, result)
+
+    def testFunctionCallOnObject(self):
+        """ PlSqlParser should parse a function/procedure call with object"""
+        call = "object.myFunction('var1', 2)"
+        expected = CallStatement(object='object', id="myFunction", arguments=["'var1'", 2])
+
+        result = plsql.parse("function_call", call)
+        self.assertTrue(result, "Insert statement not parsed")
+        self.assertEquals(expected, result)
 
