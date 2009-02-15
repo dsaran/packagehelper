@@ -1,6 +1,6 @@
 from test.framework import TestCase
 from parser.yappsrt import SyntaxError
-from parser.plsql import InsertStatement, CallStatement 
+from parser.plsql import InsertStatement, CallStatement, Identifier
 from parser import plsql
 
 quoted_string = "' a quoted string'"
@@ -17,7 +17,13 @@ class PlSqlParserTests(TestCase):
     def testList(self):
         """ PlSqlParser should parse correctly a list between parenthesis"""
         result = plsql.parse("list", insert_columns)
-        expected = ['a', 'b', 'c', 'd', 'e', 'f']
+        a = Identifier('a')
+        b = Identifier('b')
+        c = Identifier('c')
+        d = Identifier('d')
+        e = Identifier('e')
+        f = Identifier('f')
+        expected = [a, b, c, d, e, f]
         self.assertEquals(expected, result)
 
     def testLiteralMatch(self):
@@ -46,9 +52,13 @@ class PlSqlParserTests(TestCase):
     def testMixedList(self):
         """ PlSqlParser should accept lists with both literal and identifiers"""
         mixed_list = "(1, 'a', b)"
+        b = Identifier(id='b')
+        expected = [1, "'a'", b]
+
         result = plsql.parse("list", mixed_list)
+
         self.assertTrue(result)
-        self.assertEquals([1, "'a'", 'b'], result)
+        self.assertEquals(expected, result)
 
     def testLiteralList(self):
         """ PlSqlParser should parse a list of literals correctly"""
@@ -73,7 +83,9 @@ class PlSqlParserTests(TestCase):
     def testSimpleInsertStatementWithColumns(self):
         """ PlSqlParser should parse a simple pl/sql insert statement with columns""" 
         insert = "INSERT INTO table(a, b) VALUES (1, 'b');"
-        expected = InsertStatement(table='table', columns=['a', 'b'], values=[1, "'b'"])
+        columns = [Identifier(id='a'), Identifier(id='b')]
+        table = Identifier(id='table')
+        expected = InsertStatement(table=table, columns=columns, values=[1, "'b'"])
 
         result = plsql.parse("expr", insert)
         self.assertTrue(result, "Insert statement not parsed")
@@ -83,7 +95,8 @@ class PlSqlParserTests(TestCase):
     def testInsertStatementWithoutColumns(self):
         """ PlSqlParser should parse a simple pl/sql insert statement without columns""" 
         insert = "INSERT INTO table VALUES (1, 'b');"
-        expected = InsertStatement(table='table', values=[1, "'b'"])
+        table = Identifier(id='table')
+        expected = InsertStatement(table=table, values=[1, "'b'"])
 
         result = plsql.parse("expr", insert)
         self.assertTrue(result, "Insert statement not parsed")
@@ -93,7 +106,11 @@ class PlSqlParserTests(TestCase):
     def testInsertStatementWithFunctions(self):
         """ PlSqlParser should parse an insert with functions on values"""
         insert = "INSERT INTO table VALUES (variable1, UPPER(variable2), 'value');"
-        expected = InsertStatement(table='table', values=["variable1", CallStatement(id="UPPER", arguments=["variable2"]), "'value'"])
+        table = Identifier(id='table')
+        variable1 = Identifier(id='variable1')
+        variable2 = Identifier(id='variable2')
+        upper = Identifier(id='UPPER')
+        expected = InsertStatement(table=table, values=[variable1, CallStatement(id=upper, arguments=[variable2]), "'value'"])
 
         result = plsql.parse("expr", insert)
         self.assertTrue(result, "Insert statement not parsed")
@@ -103,10 +120,11 @@ class PlSqlParserTests(TestCase):
     def testFunctionCall(self):
         """ PlSqlParser should parse a function/procedure call"""
         call = "myFunction('var1', 2)"
-        expected = CallStatement(id="myFunction", arguments=["'var1'", 2])
+        func_id = Identifier('myFunction')
+        expected = CallStatement(id=func_id, arguments=["'var1'", 2])
 
         result = plsql.parse("function_call", call)
-        self.assertTrue(result, "Insert statement not parsed")
+        self.assertTrue(result, "Function call not parsed")
         self.assertEquals(expected, result)
 
     def testFunctionCallOnObject(self):
