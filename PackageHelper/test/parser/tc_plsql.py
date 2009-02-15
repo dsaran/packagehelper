@@ -1,6 +1,6 @@
 from test.framework import TestCase
 from parser.yappsrt import SyntaxError
-from parser.plsql import InsertStatement, CallStatement, Identifier
+from parser.plsql import InsertStatement, CallableStatement, Identifier, Source
 from parser import plsql
 
 quoted_string = "' a quoted string'"
@@ -110,7 +110,7 @@ class PlSqlParserTests(TestCase):
         variable1 = Identifier(id='variable1')
         variable2 = Identifier(id='variable2')
         upper = 'UPPER'
-        expected = InsertStatement(table=table, values=[variable1, CallStatement(method=upper, arguments=[variable2]), "'value'"])
+        expected = InsertStatement(table=table, values=[variable1, CallableStatement(name=upper, arguments=[variable2]), "'value'"])
 
         result = plsql.parse("expr", insert)
         self.assertTrue(result, "Insert statement not parsed")
@@ -121,9 +121,9 @@ class PlSqlParserTests(TestCase):
         """ PlSqlParser should parse a function/procedure call"""
         call = "myFunction('var1', 2)"
         func_id = 'myFunction'
-        expected = CallStatement(method=func_id, arguments=["'var1'", 2])
+        expected = CallableStatement(name=func_id, arguments=["'var1'", 2])
 
-        result = plsql.parse("function_call", call)
+        result = plsql.parse("callable", call)
         self.assertTrue(result, "Function call not parsed")
         self.assertEquals(expected, result)
 
@@ -131,9 +131,9 @@ class PlSqlParserTests(TestCase):
         """ PlSqlParser should parse a function/procedure call with no arguments"""
         call = "myFunction()"
         func_id = 'myFunction'
-        expected = CallStatement(method=func_id)
+        expected = CallableStatement(name=func_id)
 
-        result = plsql.parse("function_call", call)
+        result = plsql.parse("callable", call)
         self.assertTrue(result, "Function call not parsed")
         self.assertEquals(expected, result)
 
@@ -141,10 +141,75 @@ class PlSqlParserTests(TestCase):
         """ PlSqlParser should parse a function/procedure call with object"""
         call = "object.myFunction('var1', 2)"
         object = Identifier(id='object')
-        method = 'myFunction'
-        expected = CallStatement(object=object, method=method, arguments=["'var1'", 2])
+        name = 'myFunction'
+        expected = CallableStatement(object=object, name=name, arguments=["'var1'", 2])
 
-        result = plsql.parse("function_call", call)
+        result = plsql.parse("callable", call)
         self.assertTrue(result, "Function call not parsed")
+        self.assertEquals(expected, result)
+
+    def testCreateOrReplaceProcedureDeclarationAs(self):
+        """ PlSqlParser should parse a Create Or Replace Procedure declaration AS"""
+        declaration = "CREATE OR REPLACE PROCEDURE my_procedure (arg1 IN NUMBER) AS "
+        arguments = [Identifier(id="arg1", type="NUMBER")]
+        name = CallableStatement(name="my_procedure", arguments=arguments)
+        expected = Source(id=name, type="PROCEDURE")
+
+        result = plsql.parse("expr", declaration)
+        self.assertTrue(result, "Declaration not parsed")
+        self.assertEquals(expected, result)
+
+    def testCreateOrReplaceProcedureDeclarationIs(self):
+        """ PlSqlParser should parse a Create Or Replace Procedure declaration AS"""
+        declaration = "CREATE OR REPLACE PROCEDURE my_procedure (arg1 IN NUMBER) IS"
+        arguments = [Identifier(id="arg1", type="NUMBER")]
+        name = CallableStatement(name="my_procedure", arguments=arguments)
+        expected = Source(id=name, type="PROCEDURE")
+
+        result = plsql.parse("expr", declaration)
+        self.assertTrue(result, "Declaration not parsed")
+        self.assertEquals(expected, result)
+
+    def testCreateProcedureDeclaration(self):
+        """ PlSqlParser should parse a Create Procedure declaration"""
+        declaration = "CREATE PROCEDURE my_procedure (arg1 IN NUMBER) IS"
+        arguments = [Identifier(id="arg1", type="NUMBER")]
+        name = CallableStatement(name="my_procedure", arguments=arguments)
+        expected = Source(id=name, type="PROCEDURE")
+
+        result = plsql.parse("expr", declaration)
+        self.assertTrue(result, "Declaration not parsed")
+        self.assertEquals(expected, result)
+
+    def testPackageBodyDeclaration(self):
+        """ PlSqlParser should parse a Create Or Replace Package Body declaration"""
+        declaration = "CREATE OR REPLACE PACKAGE BODY my_package(arg1 IN NUMBER) IS"
+        arguments = [Identifier(id="arg1", type="NUMBER")]
+        name = CallableStatement(name="my_package", arguments=arguments)
+        expected = Source(id=name, type="PACKAGE BODY")
+
+        result = plsql.parse("expr", declaration)
+        self.assertTrue(result, "Declaration not parsed")
+        self.assertEquals(expected, result)
+
+    def _testPackageDeclaration(self):
+        """ PlSqlParser should parse a Create Or Replace Package declaration"""
+        #declaration = """CREATE OR REPLACE PACKAGE /* some comments */    schema.package IS"""
+        parent = Identifier(id="schema")
+        name = Identifier(id="package", parent=parent)
+
+        expected = Source(id=name, type="PACKAGE")
+
+        result = plsql.parse("expr", declaration)
+        self.assertTrue(result, "Declaration not parsed")
+        self.assertEquals(expected, result)
+
+    def testBlockCommentProblem(self):
+        """ PlSqlParser comment parsing should not be greedy"""
+        text = "an_identifier /* some comments */ other_identifier /* other comments */;"        
+        expected = Identifier(id="an_identifier", alias="other_identifier")
+
+        result = plsql.parse("identifier", text)
+        self.assertTrue(result, "Identifier not parsed")
         self.assertEquals(expected, result)
 

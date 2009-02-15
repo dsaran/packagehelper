@@ -7,6 +7,9 @@
 	Changes:
 	* Added support for function calls with no arguments
 	* Added support for function calls in objects/packages
+	* Added grammar for source declaration (package, procedure, function)
+	* Fixed bug on block comments regex. Text between two commented blocks 
+	were ignored because the two comments were considered as one.
 
 2009-02-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
