@@ -2,8 +2,8 @@
 # Version: $id$ 
 
 class SqlStatement(object):
-    def __init__(self, id=None, type=None):
-        self.type = type
+    def __init__(self, id=None, stmt_type=None):
+        self.stmt_type = stmt_type
         self.id = id
 
     def __setattr__(self, name, val):
@@ -22,33 +22,33 @@ class SqlStatement(object):
             return self.__dict__ == obj.__dict__
         return False
 
-class CallStatement(SqlStatement):
-    """ Represents the call of a function or procedure.
-    A call has three properties:
+class CallableStatement(SqlStatement):
+    """ Represents the call or declaration of a function or procedure.
+    A callable has three properties:
     - object: the object receiving the 'message', it is an Identifier
-    - method: the method called on the object, it is a string
-    - arguments: arguments sent to method, it is a list even if there is no argument
-    ex: call the_object.a_method(arg1, arg2)
+    - name: the name of the method called/declared on the object, it is a string
+    - arguments: arguments sent to name, it is a list even if there is no argument
+    ex: call the_object.method(arg1, arg2)
     In this example we have:
         object: the_object
-        method: a_method
+        name: method
         arguments: [arg1, arg2]
     """
-    def __init__(self, object=None, method=None, arguments=[]):
+    def __init__(self, object=None, name=None, arguments=[]):
         """ Constructor
             @param object the object receiving the call.
             @param arguments arguments passed to function/procedure."""
-        SqlStatement.__init__(self, type="CALL", id=method)
+        SqlStatement.__init__(self, stmt_type="CALL", id=name)
         self.object = object
         self.arguments = arguments
 
     def __getattr__(self, name):
-        if name == 'method':
+        if name == 'name':
             return self.id
         return SqlStatement.__getattr__(self, name)
 
     def __setattr__(self, name, val):
-        if name == 'method':
+        if name == 'name':
             self.id = val
         else:
             SqlStatement.__setattr__(self, name, val)
@@ -56,7 +56,7 @@ class CallStatement(SqlStatement):
 
 class InsertStatement(SqlStatement):
     def __init__(self, table=None, columns=[], values=[]):
-        SqlStatement.__init__(self, type="INSERT", id=table)
+        SqlStatement.__init__(self, stmt_type="INSERT", id=table)
         self.columns = columns
         self.values = values
 
@@ -73,9 +73,17 @@ class InsertStatement(SqlStatement):
             return SqlStatement.__getattr__(self, name)
 
 class Identifier(SqlStatement):
-    def __init__(self, id=None, parent=None):
-        SqlStatement.__init__(self, id=id, type="IDENTIFIER")
+    def __init__(self, id=None, alias=None, parent=None, type=None):
+        SqlStatement.__init__(self, id=id, stmt_type="IDENTIFIER")
         self.parent = parent
+        self.alias = alias
+        self.type = type 
+
+class Source(SqlStatement):
+    def __init__(self, id=None, type=None):
+        SqlStatement.__init__(self, id=id, stmt_type="SOURCE")
+        self.type = type
+
 %%
 parser plsql:
 
@@ -86,22 +94,34 @@ parser plsql:
     token SINGLE_QUOTED_STRING: "[^']*"
     token DOT: '\\.'
 
+    # White spaces
+    ignore: "\\s+"
+    # Empty lines
+    ignore: "^(\\s+)*$"
+    ignore: "[ \t\r\n]+"
     # Block comments
-    ignore: "/\\*(.|\r?\n)+\\*/"
+    ignore: "/\\*(.|\r?\n)+?\\*/"
     # Single-line comment
     ignore: "--.*?\r?\n"
-    ignore: "\\s+"
-    ignore: "[ \t\r\n]+"
     
     rule goal: 
         expr END
 
     rule expr: (
          insert_statement (";" | "/")  {{ return insert_statement }}
+         | source_declaration {{ return source_declaration }} 
         )
 
     rule identifier: (
             ID       {{ result = Identifier(id=ID) }}
+            (
+                ( ( 'IN' ('OUT')?
+                   | 'OUT' )
+                  ID     {{ result.type = ID }} 
+                )?
+             |  (  ID     {{ result.alias = ID }} 
+                )?
+            )
             (
              | DOT ID {{ result = Identifier(id=ID, parent=result) }}
             )
@@ -116,7 +136,7 @@ parser plsql:
 
     rule list_value:
         LITERAL         {{ return LITERAL }}
-        | function_call {{ return function_call }}
+        | callable {{ return callable }}
 
     rule list:                           {{ result = [] }}
                '\\(' 
@@ -137,9 +157,26 @@ parser plsql:
         'VALUES' list        {{ sqlobject.values = list }}
         )                    {{ return sqlobject }} 
 
-    rule function_call: (
-        identifier       {{ result = identifier }}
-        (list            {{ result = CallStatement(object=identifier.parent, method=identifier.id, arguments=list) }} )?
+    rule callable: (
+            identifier   {{ result = identifier }}
+            ( list       {{ result = CallableStatement(object=identifier.parent, name=identifier.id, arguments=list) }} )?
         )                {{ return result }}
 
+    rule object_type: (
+        'FUNCTION' {{ result = 'FUNCTION' }}
+        | 'PROCEDURE' {{ result = 'PROCEDURE' }}
+        | 'PACKAGE' {{ result = 'PACKAGE' }}
+          ('BODY' {{ result = 'PACKAGE BODY' }} )?
+        ) {{ return result }}
+
+    rule source_declaration: (
+            'CREATE'
+            ('OR' 'REPLACE')?
+            object_type {{ result = Source(type=object_type) }}
+            callable {{ result.id = callable }} 
+            ( END
+            | "IS"
+            | "AS"
+            )
+        )           {{ return result }}
 %%
