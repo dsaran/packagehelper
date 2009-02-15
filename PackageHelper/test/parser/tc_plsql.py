@@ -109,8 +109,8 @@ class PlSqlParserTests(TestCase):
         table = Identifier(id='table')
         variable1 = Identifier(id='variable1')
         variable2 = Identifier(id='variable2')
-        upper = Identifier(id='UPPER')
-        expected = InsertStatement(table=table, values=[variable1, CallStatement(id=upper, arguments=[variable2]), "'value'"])
+        upper = 'UPPER'
+        expected = InsertStatement(table=table, values=[variable1, CallStatement(method=upper, arguments=[variable2]), "'value'"])
 
         result = plsql.parse("expr", insert)
         self.assertTrue(result, "Insert statement not parsed")
@@ -120,8 +120,18 @@ class PlSqlParserTests(TestCase):
     def testFunctionCall(self):
         """ PlSqlParser should parse a function/procedure call"""
         call = "myFunction('var1', 2)"
-        func_id = Identifier('myFunction')
-        expected = CallStatement(id=func_id, arguments=["'var1'", 2])
+        func_id = 'myFunction'
+        expected = CallStatement(method=func_id, arguments=["'var1'", 2])
+
+        result = plsql.parse("function_call", call)
+        self.assertTrue(result, "Function call not parsed")
+        self.assertEquals(expected, result)
+
+    def testFunctionCallWithNoArgument(self):
+        """ PlSqlParser should parse a function/procedure call with no arguments"""
+        call = "myFunction()"
+        func_id = 'myFunction'
+        expected = CallStatement(method=func_id)
 
         result = plsql.parse("function_call", call)
         self.assertTrue(result, "Function call not parsed")
@@ -130,9 +140,11 @@ class PlSqlParserTests(TestCase):
     def testFunctionCallOnObject(self):
         """ PlSqlParser should parse a function/procedure call with object"""
         call = "object.myFunction('var1', 2)"
-        expected = CallStatement(object='object', id="myFunction", arguments=["'var1'", 2])
+        object = Identifier(id='object')
+        method = 'myFunction'
+        expected = CallStatement(object=object, method=method, arguments=["'var1'", 2])
 
         result = plsql.parse("function_call", call)
-        self.assertTrue(result, "Insert statement not parsed")
+        self.assertTrue(result, "Function call not parsed")
         self.assertEquals(expected, result)
 
