@@ -1,4 +1,3 @@
 * Help messages
-** trabalhando no parser para inserts
- - Problema ao realizar o parse do statement de insert. Verificar porque nao encontra o VALUES
+- Add support to  "insert as select"
 
