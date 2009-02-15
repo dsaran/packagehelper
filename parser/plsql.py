@@ -16,6 +16,8 @@ class SqlStatement(object):
         return str(self.__dict__)
 
     def __eq__(self, obj):
+        #print 'self.__dict__', self.__dict__
+        #print 'obj.__dict__', obj.__dict__
         return self.__dict__ == obj.__dict__
 
 class CallStatement(SqlStatement):
@@ -95,7 +97,8 @@ class plsql(yappsrt.Parser):
     def identifier(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'identifier', [])
         ID = self._scan('ID')
-        return ID
+        result = Identifier(id=ID)
+        return result
 
     def QUOTED_STRING(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'QUOTED_STRING', [])

@@ -16,6 +16,8 @@ class SqlStatement(object):
         return str(self.__dict__)
 
     def __eq__(self, obj):
+        #print 'self.__dict__', self.__dict__
+        #print 'obj.__dict__', obj.__dict__
         return self.__dict__ == obj.__dict__
 
 class CallStatement(SqlStatement):
@@ -70,12 +72,8 @@ parser plsql:
         )
 
     rule identifier: (
-            ID      {{ return ID }}
-        )
-
-   # rule identifier: (
-   #         ID      {{ result = Identifier(id=ID) }}
-   #     )           {{ return result }}
+            ID      {{ result = Identifier(id=ID) }}
+        )           {{ return result }}
 
     rule QUOTED_STRING:
          "'" SINGLE_QUOTED_STRING "'" {{ return "'%s'" % SINGLE_QUOTED_STRING }}
