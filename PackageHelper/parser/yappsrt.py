@@ -300,9 +300,9 @@ def print_error(input, err, scanner):
 def wrap_error_reporter(parser, rule):
     try:
         return getattr(parser, rule)()
-    #except SyntaxError, e:
-    #    input = parser._scanner.input
-    #    print_error(input, e, parser._scanner)
+    except SyntaxError, e:
+        input = parser._scanner.input
+        print_error(input, e, parser._scanner)
     except NoMoreTokens:
         print >>sys.stderr, 'Could not complete parsing; stopped around here:'
         print >>sys.stderr, parser._scanner
