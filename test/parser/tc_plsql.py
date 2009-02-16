@@ -1,6 +1,6 @@
 from test.framework import TestCase
 from parser.yappsrt import SyntaxError
-from parser.plsql import InsertStatement, CallableStatement, Identifier, Source
+from parser.plsql import InsertStatement, CallableStatement, Identifier, Source, RelationalOperation, SelectStatement
 from parser import plsql
 
 quoted_string = "' a quoted string'"
@@ -192,9 +192,9 @@ class PlSqlParserTests(TestCase):
         self.assertTrue(result, "Declaration not parsed")
         self.assertEquals(expected, result)
 
-    def _testPackageDeclaration(self):
+    def testPackageDeclaration(self):
         """ PlSqlParser should parse a Create Or Replace Package declaration"""
-        #declaration = """CREATE OR REPLACE PACKAGE /* some comments */    schema.package IS"""
+        declaration = """CREATE OR REPLACE PACKAGE /* some comments */    schema.package IS"""
         parent = Identifier(id="schema")
         name = Identifier(id="package", parent=parent)
 
@@ -212,4 +212,65 @@ class PlSqlParserTests(TestCase):
         result = plsql.parse("identifier", text)
         self.assertTrue(result, "Identifier not parsed")
         self.assertEquals(expected, result)
+
+    def testWhereClause(self):
+        """ PlSqlParser should recognize a Where clause with one condition"""
+        operators = {'!=': 'NOT_EQ', '^=': 'NOT_EQ', '<>': 'NOT_EQ', '=': 'EQ', '<': 'LT', '<=': 'LE', \
+        '>': 'GT', '>=': 'GE'}
+        for operator in operators:
+            value1 = Identifier(id='value1')
+            expected = RelationalOperation(op1=value1, operator=operators[operator], op2=10)
+            where = "WHERE value1 %s 10;" % operator
+
+            result = plsql.parse('where_clause', where)
+            self.assertTrue(result, "Where clause not parsed")
+            self.assertEquals(1, len(result))
+            self.assertEquals(expected, result[0])
+
+    def testCompositeWhereClause(self):
+        """ PlSqlParser should parse a Where clause with more than one condition"""
+        where = "WHERE value1 = 10 AND value2 < 20 OR 1 <> 2;"
+        value1 = Identifier(id='value1')
+        value2 = Identifier(id='value2')
+        condition1 = RelationalOperation(op1=value1, operator='EQ', op2=10)
+        condition2 = RelationalOperation(op1=value2, operator='LT', op2=20)
+        condition3 = RelationalOperation(op1=1, operator='NOT_EQ', op2=2)
+        expected = [condition1, condition2, condition3]
+
+        result = plsql.parse('where_clause', where)
+        self.assertTrue(result, "Where clause not parsed")
+        self.assertEquals(3, len(result))
+        self.assertEquals(expected, result)
+
+    def testSelectStatement(self):
+        """ PlSqlParser should parse a simple Select statement"""
+        select = "SELECT * FROM table WHERE value1 = 2;"
+        value1 = Identifier(id='value1')
+        where = [ RelationalOperation(op1=value1, operator='EQ', op2=2) ]
+        tables = [ Identifier(id="table") ]
+        expected = SelectStatement(columns="*", tables=tables, where_clause=where)
+
+        result = plsql.parse('select_statement', select)
+
+        self.assertTrue(result, "Select statement not parsed")
+        self.assertEquals(expected, result)
+
+    def testSelectStatementMultipleTablesAndColumns(self):
+        """ PlSqlParser should parse a Select statement with multiple tables"""
+        select = "SELECT t1.column, t2.* FROM table1 t1, table2 t2 WHERE value1 = 2;"
+        column1 = Identifier(id='column', parent=Identifier(id="t1"))
+        column2 = Identifier(id='*', parent=Identifier(id="t2"))
+        table1 = Identifier(id="table1", alias='t1')
+        table2 = Identifier(id="table2", alias='t2')
+        value1 = Identifier(id='value1')
+        where = [ RelationalOperation(op1=value1, operator='EQ', op2=2) ]
+        expected = SelectStatement(columns=[column1, column2], tables=[table1, table2], where_clause=where)
+
+        result = plsql.parse('select_statement', select)
+
+        self.assertTrue(result, "Select statement not parsed")
+        self.assertEquals(expected, result)
+
+
+
 
