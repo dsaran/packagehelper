@@ -1,4 +1,9 @@
+Interface:
 * Help messages
+* Show feedback while processing package (now the screen freezes until it is finished)
+* Display result from CVS while it is running
+
+Parser:
 * Add support to  "insert as select"
 * Complete the grammar for select statements (using, having, order, group, etc)
-
+* Allow parenthesis on where clause
