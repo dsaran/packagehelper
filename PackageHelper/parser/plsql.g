@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $id$ 
+# Version: $Id: plsql.g,v 1.7 2009-02-19 22:17:28 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):
@@ -80,9 +80,10 @@ class Identifier(SqlStatement):
         self.type = type 
 
 class Source(SqlStatement):
-    def __init__(self, id=None, type=None):
+    def __init__(self, id=None, type=None, members=[]):
         SqlStatement.__init__(self, id=id, stmt_type="SOURCE")
         self.type = type
+        self.members = members
 
 
 class RelationalOperation(SqlStatement):
@@ -128,11 +129,13 @@ parser plsql:
     ignore: "\\s+"
     # Empty lines
     ignore: "^(\\s+)*$"
-    ignore: "[ \t\r\n]+"
+    # Set environment variables
+    ignore: "^(\\s+)*SET.*?\r?\n"
     # Block comments
     ignore: "/\\*(.|\r?\n)+?\\*/"
     # Single-line comment
     ignore: "--.*?\r?\n"
+    ignore: "[ \t\r\n]+"
     
     rule goal: 
         expr END
@@ -142,6 +145,17 @@ parser plsql:
          | select_statement (";" | "/")  {{ return select_statement }}
          | source_declaration            {{ return source_declaration }} 
         )
+
+    ########################
+    # Identifiers & Values #
+    ########################
+
+    rule QUOTED_STRING:
+         "'" SINGLE_QUOTED_STRING "'" {{ return "'%s'" % SINGLE_QUOTED_STRING }}
+
+    rule LITERAL:
+        QUOTED_STRING    {{ return QUOTED_STRING }}
+        | NUM            {{ return int(NUM) }}
 
     rule identifier: (
             ID       {{ result = Identifier(id=ID) }}
@@ -161,17 +175,20 @@ parser plsql:
             )
         )           {{ return result }}
 
-    rule QUOTED_STRING:
-         "'" SINGLE_QUOTED_STRING "'" {{ return "'%s'" % SINGLE_QUOTED_STRING }}
+    rule callable: (
+            identifier   {{ result = identifier }}
+            ( list       {{ result = CallableStatement(object=identifier.parent, name=identifier.id, arguments=list) }} )?
+        )                {{ return result }}
 
-    rule LITERAL:
-        QUOTED_STRING    {{ return QUOTED_STRING }}
-        | NUM            {{ return int(NUM) }}
+    #########
+    # Lists #
+    #########
 
     rule list_value:
         LITERAL         {{ return LITERAL }}
         | callable {{ return callable }}
 
+    # List between parenthesis
     rule list:                           {{ result = [] }}
                '\\(' 
                        ( list_value      {{ result.append(list_value) }}
@@ -179,70 +196,16 @@ parser plsql:
                        )* 
                '\\)'                     {{ return result }}
 
-    rule insert_base:
-        'INSERT' 'INTO' identifier  {{ return identifier }}
-
-    rule insert_statement: ( {{ sqlobject = InsertStatement() }}
-        insert_base          {{ sqlobject.table = insert_base }} 
-        ( {{ columns = [] }}
-         | list {{ columns = list }}
-         ) {{ sqlobject.columns = columns }}
-        'VALUES' list        {{ sqlobject.values = list }}
-        )                    {{ return sqlobject }} 
-
-    rule callable: (
-            identifier   {{ result = identifier }}
-            ( list       {{ result = CallableStatement(object=identifier.parent, name=identifier.id, arguments=list) }} )?
-        )                {{ return result }}
-
-    rule object_type: (
-        'FUNCTION' {{ result = 'FUNCTION' }}
-        | 'PROCEDURE' {{ result = 'PROCEDURE' }}
-        | 'PACKAGE' {{ result = 'PACKAGE' }}
-          ('BODY' {{ result = 'PACKAGE BODY' }} )?
-        ) {{ return result }}
-
-    rule source_declaration: (
-            'CREATE'
-            ('OR' 'REPLACE')?
-            object_type {{ result = Source(type=object_type) }}
-            callable {{ result.id = callable }} 
-            ( END
-            | "IS"
-            | "AS"
-            )
-        )           {{ return result }}
-
-    rule select_statement: (
-            'SELECT'            {{ select = SelectStatement() }}
-                ( 'DISTINCT'
-                  | 'UNIQUE'
-                  | 'ALL'
-                )?
-                query_columns   {{ select.columns = query_columns }}
-                'FROM'
-                simplified_list {{ select.tables = simplified_list }}
-                where_clause    {{ select.where_clause = where_clause }}
-            )                   {{ return select }}
-
-    rule query_columns:
-        ( STAR              {{ result = STAR }} 
-         | simplified_list  {{ result = simplified_list }}
-        )                   {{ return result }}
-
+    # Simple comma separated list outside parenthesis
     rule simplified_list: (      {{ result = [] }}
                ( list_value      {{ result.append(list_value) }}
                  |',' list_value {{ result.append(list_value) }}
                )* 
            )                     {{ return result }}
-
-    rule where_clause: (
-            'WHERE'                      {{ conditions = [] }}
-            (
-                comparison                   {{ conditions.append(comparison) }}
-                | (('AND' | 'OR') comparison  {{ conditions.append(comparison) }})
-            )+
-        )                                {{ return conditions }}
+ 
+    #####################
+    # PL/SQL Operators #
+    #####################
 
     rule comparison: (
                 list_value relational_op {{ result = RelationalOperation(op1=list_value, operator=relational_op) }}
@@ -261,6 +224,89 @@ parser plsql:
                     | '='     {{ result = 'GE' }}
                    )
         )                     {{ return result }}
+
+    #####################
+    # PL/SQL Statements #
+    #####################
+
+    rule insert_base:
+        'INSERT' 'INTO' identifier  {{ return identifier }}
+
+    rule insert_statement: ( {{ sqlobject = InsertStatement() }}
+        insert_base          {{ sqlobject.table = insert_base }} 
+        ( {{ columns = [] }}
+         | list {{ columns = list }}
+         ) {{ sqlobject.columns = columns }}
+        'VALUES' list        {{ sqlobject.values = list }}
+        )                    {{ return sqlobject }} 
+
+    rule object_type: (
+        'FUNCTION' {{ result = 'FUNCTION' }}
+        | 'PROCEDURE' {{ result = 'PROCEDURE' }}
+        | 'PACKAGE' {{ result = 'PACKAGE' }}
+          ('BODY' {{ result = 'PACKAGE BODY' }} )?
+        ) {{ return result }}
+
+    rule source_declaration: (
+            'CREATE'
+            ('OR' 'REPLACE')?
+            object_type {{ result = Source(type=object_type) }}
+            callable    {{ result.id = callable }} 
+            ( END
+              | "IS"
+              | "AS"
+            )           {{ result.members = [] }}
+            #('BEGIN')?
+            #(
+            #    object_type {{ member= Source(type=object_type) }}
+            #    callable    {{ member.id = callable }} 
+            #    ( END
+            #      | "IS"
+            #    )      {{ result.members.append(member) }}
+            #    code
+            #    'END'
+            #)*
+            #'END' identifier ";"
+        )              {{ return result }}
+
+    rule code: (
+        ('BEGIN' code 'END' )
+        | ('IF' comparison 'THEN' code
+          ('ELSE' code)?
+            'END' 'IF')
+        | exception_handling
+        | (identifier ':=')? callable ';'
+    )
+
+    rule exception_handling: (
+        'EXCEPTION' ID 'THEN'
+        | ('WHEN' ID code)+
+    )
+
+    rule select_statement: (
+            'SELECT'            {{ select = SelectStatement() }}
+                ( 'DISTINCT'
+                  | 'UNIQUE'
+                  | 'ALL'
+                )?
+                query_columns   {{ select.columns = query_columns }}
+                'FROM'
+                simplified_list {{ select.tables = simplified_list }}
+                where_clause    {{ select.where_clause = where_clause }}
+            )                   {{ return select }}
+
+    rule query_columns:
+        ( STAR              {{ result = STAR }} 
+         | simplified_list  {{ result = simplified_list }}
+        )                   {{ return result }}
+
+    rule where_clause: (
+            'WHERE'                      {{ conditions = [] }}
+            (
+                comparison                   {{ conditions.append(comparison) }}
+                | (('AND' | 'OR') comparison  {{ conditions.append(comparison) }})
+            )+
+        )                                {{ return conditions }}
 
     
 %%

@@ -1,3 +1,14 @@
+2009-02-18  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	Modified files:
+	* parser/plsql.g
+	* parser/plsql.py
+	* test/parser/tc_plsql.py
+
+	Changes:
+	* Added rule to ignore SET commands
+	* Reorganization of code
+
 2009-02-15  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 	Modified files:
 	* parser/plsql.g
