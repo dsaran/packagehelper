@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $id$ 
+# Version: $Id: plsql.py,v 1.7 2009-02-19 22:17:28 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):
@@ -80,9 +80,10 @@ class Identifier(SqlStatement):
         self.type = type 
 
 class Source(SqlStatement):
-    def __init__(self, id=None, type=None):
+    def __init__(self, id=None, type=None, members=[]):
         SqlStatement.__init__(self, id=id, stmt_type="SOURCE")
         self.type = type
+        self.members = members
 
 
 class RelationalOperation(SqlStatement):
@@ -117,11 +118,6 @@ import yappsrt
 
 class plsqlScanner(yappsrt.Scanner):
     patterns = [
-        ("'>'", re.compile('>')),
-        ("'<'", re.compile('<')),
-        ("'='", re.compile('=')),
-        ("'!'", re.compile('!')),
-        ("'\\\\^'", re.compile('\\^')),
         ("'AND'", re.compile('AND')),
         ("'WHERE'", re.compile('WHERE')),
         ("'FROM'", re.compile('FROM')),
@@ -129,6 +125,15 @@ class plsqlScanner(yappsrt.Scanner):
         ("'UNIQUE'", re.compile('UNIQUE')),
         ("'DISTINCT'", re.compile('DISTINCT')),
         ("'SELECT'", re.compile('SELECT')),
+        ("'WHEN'", re.compile('WHEN')),
+        ("'EXCEPTION'", re.compile('EXCEPTION')),
+        ("';'", re.compile(';')),
+        ("':='", re.compile(':=')),
+        ("'ELSE'", re.compile('ELSE')),
+        ("'THEN'", re.compile('THEN')),
+        ("'IF'", re.compile('IF')),
+        ("'END'", re.compile('END')),
+        ("'BEGIN'", re.compile('BEGIN')),
         ('"AS"', re.compile('AS')),
         ('"IS"', re.compile('IS')),
         ("'REPLACE'", re.compile('REPLACE')),
@@ -141,12 +146,17 @@ class plsqlScanner(yappsrt.Scanner):
         ("'VALUES'", re.compile('VALUES')),
         ("'INTO'", re.compile('INTO')),
         ("'INSERT'", re.compile('INSERT')),
+        ("'>'", re.compile('>')),
+        ("'<'", re.compile('<')),
+        ("'='", re.compile('=')),
+        ("'!'", re.compile('!')),
+        ("'\\\\^'", re.compile('\\^')),
         ("'\\\\)'", re.compile('\\)')),
         ("','", re.compile(',')),
         ("'\\\\('", re.compile('\\(')),
-        ('"\'"', re.compile("'")),
         ("'OUT'", re.compile('OUT')),
         ("'IN'", re.compile('IN')),
+        ('"\'"', re.compile("'")),
         ('"/"', re.compile('/')),
         ('";"', re.compile(';')),
         ('END', re.compile('[$;]')),
@@ -158,12 +168,13 @@ class plsqlScanner(yappsrt.Scanner):
         ('STAR', re.compile('\\*')),
         ('\\s+', re.compile('\\s+')),
         ('^(\\s+)*$', re.compile('^(\\s+)*$')),
-        ('[ \t\r\n]+', re.compile('[ \t\r\n]+')),
+        ('^(\\s+)*SET.*?\r?\n', re.compile('^(\\s+)*SET.*?\r?\n')),
         ('/\\*(.|\r?\n)+?\\*/', re.compile('/\\*(.|\r?\n)+?\\*/')),
         ('--.*?\r?\n', re.compile('--.*?\r?\n')),
+        ('[ \t\r\n]+', re.compile('[ \t\r\n]+')),
     ]
     def __init__(self, str):
-        yappsrt.Scanner.__init__(self,None,['\\s+', '^(\\s+)*$', '[ \t\r\n]+', '/\\*(.|\r?\n)+?\\*/', '--.*?\r?\n'],str)
+        yappsrt.Scanner.__init__(self,None,['\\s+', '^(\\s+)*$', '^(\\s+)*SET.*?\r?\n', '/\\*(.|\r?\n)+?\\*/', '--.*?\r?\n', '[ \t\r\n]+'],str)
 
 class plsql(yappsrt.Parser):
     Context = yappsrt.Context
@@ -195,39 +206,6 @@ class plsql(yappsrt.Parser):
             source_declaration = self.source_declaration(_context)
             return source_declaration
 
-    def identifier(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'identifier', [])
-        ID = self._scan('ID')
-        result = Identifier(id=ID)
-        _token = self._peek("'IN'", "'OUT'", 'ID', 'DOT', "'\\\\('", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
-        if self._peek("'IN'", "'OUT'", 'DOT', "'\\\\('", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", 'ID', "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') in ["'IN'", "'OUT'"]:
-            _token = self._peek("'IN'", "'OUT'")
-            if _token == "'IN'":
-                self._scan("'IN'")
-                if self._peek("'OUT'", 'ID') == "'OUT'":
-                    self._scan("'OUT'")
-            else: # == "'OUT'"
-                self._scan("'OUT'")
-            ID = self._scan('ID')
-            result.type = ID
-        else:
-            if self._peek('ID', 'DOT', "'\\\\('", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') == 'ID':
-                ID = self._scan('ID')
-                result.alias = ID
-        _token = self._peek('DOT', "'\\\\('", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", 'ID', "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
-        if _token != 'DOT':
-            pass
-        else: # == 'DOT'
-            DOT = self._scan('DOT')
-            _token = self._peek('ID', 'STAR')
-            if _token == 'ID':
-                ID = self._scan('ID')
-                result = Identifier(id=ID, parent=result)
-            else: # == 'STAR'
-                STAR = self._scan('STAR')
-                result = Identifier(id='*', parent=result)
-        return result
-
     def QUOTED_STRING(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'QUOTED_STRING', [])
         self._scan('"\'"')
@@ -245,6 +223,48 @@ class plsql(yappsrt.Parser):
             NUM = self._scan('NUM')
             return int(NUM)
 
+    def identifier(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'identifier', [])
+        ID = self._scan('ID')
+        result = Identifier(id=ID)
+        _token = self._peek("'IN'", "'OUT'", 'ID', 'DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
+        if self._peek("'IN'", "'OUT'", 'DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', 'ID', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') in ["'IN'", "'OUT'"]:
+            _token = self._peek("'IN'", "'OUT'")
+            if _token == "'IN'":
+                self._scan("'IN'")
+                if self._peek("'OUT'", 'ID') == "'OUT'":
+                    self._scan("'OUT'")
+            else: # == "'OUT'"
+                self._scan("'OUT'")
+            ID = self._scan('ID')
+            result.type = ID
+        else:
+            if self._peek('ID', 'DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') == 'ID':
+                ID = self._scan('ID')
+                result.alias = ID
+        _token = self._peek('DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', 'ID', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
+        if _token != 'DOT':
+            pass
+        else: # == 'DOT'
+            DOT = self._scan('DOT')
+            _token = self._peek('ID', 'STAR')
+            if _token == 'ID':
+                ID = self._scan('ID')
+                result = Identifier(id=ID, parent=result)
+            else: # == 'STAR'
+                STAR = self._scan('STAR')
+                result = Identifier(id='*', parent=result)
+        return result
+
+    def callable(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'callable', [])
+        identifier = self.identifier(_context)
+        result = identifier
+        if self._peek("'\\\\('", "';'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', 'ID', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') == "'\\\\('":
+            list = self.list(_context)
+            result = CallableStatement(object=identifier.parent, name=identifier.id, arguments=list)
+        return result
+
     def list_value(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'list_value', [])
         _token = self._peek('"\'"', 'NUM', 'ID')
@@ -259,8 +279,8 @@ class plsql(yappsrt.Parser):
         _context = self.Context(_parent, self._scanner, self._pos, 'list', [])
         result = []
         self._scan("'\\\\('")
-        while self._peek("'\\\\)'", '"\'"', 'NUM', "','", 'ID') != "'\\\\)'":
-            _token = self._peek('"\'"', 'NUM', "','", 'ID')
+        while self._peek("'\\\\)'", '"\'"', 'NUM', 'ID', "','") != "'\\\\)'":
+            _token = self._peek('"\'"', 'NUM', 'ID', "','")
             if _token != "','":
                 list_value = self.list_value(_context)
                 result.append(list_value)
@@ -268,117 +288,16 @@ class plsql(yappsrt.Parser):
                 self._scan("','")
                 list_value = self.list_value(_context)
                 result.append(list_value)
-        if self._peek() not in ["'\\\\)'", '"\'"', 'NUM', "','", 'ID']:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"\'"', 'NUM', "','", "'\\\\)'", 'ID']))
+        if self._peek() not in ["'\\\\)'", '"\'"', 'NUM', 'ID', "','"]:
+            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"\'"', 'NUM', 'ID', "','", "'\\\\)'"]))
         self._scan("'\\\\)'")
-        return result
-
-    def insert_base(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'insert_base', [])
-        self._scan("'INSERT'")
-        self._scan("'INTO'")
-        identifier = self.identifier(_context)
-        return identifier
-
-    def insert_statement(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'insert_statement', [])
-        sqlobject = InsertStatement()
-        insert_base = self.insert_base(_context)
-        sqlobject.table = insert_base
-        _token = self._peek("'\\\\('", "'VALUES'")
-        if _token == "'VALUES'":
-            columns = []
-        else: # == "'\\\\('"
-            list = self.list(_context)
-            columns = list
-        sqlobject.columns = columns
-        self._scan("'VALUES'")
-        list = self.list(_context)
-        sqlobject.values = list
-        return sqlobject
-
-    def callable(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'callable', [])
-        identifier = self.identifier(_context)
-        result = identifier
-        if self._peek("'\\\\('", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", 'ID', "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') == "'\\\\('":
-            list = self.list(_context)
-            result = CallableStatement(object=identifier.parent, name=identifier.id, arguments=list)
-        return result
-
-    def object_type(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'object_type', [])
-        _token = self._peek("'FUNCTION'", "'PROCEDURE'", "'PACKAGE'")
-        if _token == "'FUNCTION'":
-            self._scan("'FUNCTION'")
-            result = 'FUNCTION'
-        elif _token == "'PROCEDURE'":
-            self._scan("'PROCEDURE'")
-            result = 'PROCEDURE'
-        else: # == "'PACKAGE'"
-            self._scan("'PACKAGE'")
-            result = 'PACKAGE'
-            if self._peek("'BODY'", 'ID') == "'BODY'":
-                self._scan("'BODY'")
-                result = 'PACKAGE BODY'
-        return result
-
-    def source_declaration(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'source_declaration', [])
-        self._scan("'CREATE'")
-        if self._peek("'OR'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") == "'OR'":
-            self._scan("'OR'")
-            self._scan("'REPLACE'")
-        object_type = self.object_type(_context)
-        result = Source(type=object_type)
-        callable = self.callable(_context)
-        result.id = callable
-        _token = self._peek('END', '"IS"', '"AS"')
-        if _token == 'END':
-            END = self._scan('END')
-        elif _token == '"IS"':
-            self._scan('"IS"')
-        else: # == '"AS"'
-            self._scan('"AS"')
-        return result
-
-    def select_statement(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'select_statement', [])
-        self._scan("'SELECT'")
-        select = SelectStatement()
-        if self._peek("'DISTINCT'", "'UNIQUE'", "'ALL'", 'STAR', "'FROM'", '"\'"', 'NUM', "','", 'ID', "'WHERE'") in ["'DISTINCT'", "'UNIQUE'", "'ALL'"]:
-            _token = self._peek("'DISTINCT'", "'UNIQUE'", "'ALL'")
-            if _token == "'DISTINCT'":
-                self._scan("'DISTINCT'")
-            elif _token == "'UNIQUE'":
-                self._scan("'UNIQUE'")
-            else: # == "'ALL'"
-                self._scan("'ALL'")
-        query_columns = self.query_columns(_context)
-        select.columns = query_columns
-        self._scan("'FROM'")
-        simplified_list = self.simplified_list(_context)
-        select.tables = simplified_list
-        where_clause = self.where_clause(_context)
-        select.where_clause = where_clause
-        return select
-
-    def query_columns(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'query_columns', [])
-        _token = self._peek('STAR', '"\'"', 'NUM', "','", 'ID', "'WHERE'", "'FROM'")
-        if _token == 'STAR':
-            STAR = self._scan('STAR')
-            result = STAR
-        else: # in ['"\'"', 'NUM', "','", 'ID', "'WHERE'", "'FROM'"]
-            simplified_list = self.simplified_list(_context)
-            result = simplified_list
         return result
 
     def simplified_list(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'simplified_list', [])
         result = []
-        while self._peek('"\'"', 'NUM', "','", 'ID', "'WHERE'", "'FROM'") not in ["'WHERE'", "'FROM'"]:
-            _token = self._peek('"\'"', 'NUM', "','", 'ID')
+        while self._peek('"\'"', 'NUM', 'ID', "','", "'WHERE'", "'FROM'") not in ["'WHERE'", "'FROM'"]:
+            _token = self._peek('"\'"', 'NUM', 'ID', "','")
             if _token != "','":
                 list_value = self.list_value(_context)
                 result.append(list_value)
@@ -386,29 +305,9 @@ class plsql(yappsrt.Parser):
                 self._scan("','")
                 list_value = self.list_value(_context)
                 result.append(list_value)
-        if self._peek() not in ['"\'"', 'NUM', "','", 'ID', "'WHERE'", "'FROM'"]:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"\'"', 'NUM', "','", 'ID', "'WHERE'", "'FROM'"]))
+        if self._peek() not in ['"\'"', 'NUM', 'ID', "','", "'WHERE'", "'FROM'"]:
+            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(['"\'"', 'NUM', 'ID', "','", "'WHERE'", "'FROM'"]))
         return result
-
-    def where_clause(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'where_clause', [])
-        self._scan("'WHERE'")
-        conditions = []
-        while 1:
-            _token = self._peek("'AND'", "'OR'", '"\'"', 'NUM', 'ID')
-            if _token not in ["'AND'", "'OR'"]:
-                comparison = self.comparison(_context)
-                conditions.append(comparison)
-            else: # in ["'AND'", "'OR'"]
-                _token = self._peek("'AND'", "'OR'")
-                if _token == "'AND'":
-                    self._scan("'AND'")
-                else: # == "'OR'"
-                    self._scan("'OR'")
-                comparison = self.comparison(_context)
-                conditions.append(comparison)
-            if self._peek("'AND'", "'OR'", '"\'"', 'NUM', 'ID', '";"', '"/"') not in ["'AND'", "'OR'", '"\'"', 'NUM', 'ID']: break
-        return conditions
 
     def comparison(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'comparison', [])
@@ -456,11 +355,165 @@ class plsql(yappsrt.Parser):
                 result = 'GE'
         return result
 
+    def insert_base(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'insert_base', [])
+        self._scan("'INSERT'")
+        self._scan("'INTO'")
+        identifier = self.identifier(_context)
+        return identifier
+
+    def insert_statement(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'insert_statement', [])
+        sqlobject = InsertStatement()
+        insert_base = self.insert_base(_context)
+        sqlobject.table = insert_base
+        _token = self._peek("'\\\\('", "'VALUES'")
+        if _token == "'VALUES'":
+            columns = []
+        else: # == "'\\\\('"
+            list = self.list(_context)
+            columns = list
+        sqlobject.columns = columns
+        self._scan("'VALUES'")
+        list = self.list(_context)
+        sqlobject.values = list
+        return sqlobject
+
+    def object_type(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'object_type', [])
+        _token = self._peek("'FUNCTION'", "'PROCEDURE'", "'PACKAGE'")
+        if _token == "'FUNCTION'":
+            self._scan("'FUNCTION'")
+            result = 'FUNCTION'
+        elif _token == "'PROCEDURE'":
+            self._scan("'PROCEDURE'")
+            result = 'PROCEDURE'
+        else: # == "'PACKAGE'"
+            self._scan("'PACKAGE'")
+            result = 'PACKAGE'
+            if self._peek("'BODY'", 'ID') == "'BODY'":
+                self._scan("'BODY'")
+                result = 'PACKAGE BODY'
+        return result
+
+    def source_declaration(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'source_declaration', [])
+        self._scan("'CREATE'")
+        if self._peek("'OR'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") == "'OR'":
+            self._scan("'OR'")
+            self._scan("'REPLACE'")
+        object_type = self.object_type(_context)
+        result = Source(type=object_type)
+        callable = self.callable(_context)
+        result.id = callable
+        _token = self._peek('END', '"IS"', '"AS"')
+        if _token == 'END':
+            END = self._scan('END')
+        elif _token == '"IS"':
+            self._scan('"IS"')
+        else: # == '"AS"'
+            self._scan('"AS"')
+        result.members = []
+        return result
+
+    def code(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'code', [])
+        _token = self._peek("'BEGIN'", "'IF'", 'ID', "'EXCEPTION'", "'WHEN'")
+        if _token == "'BEGIN'":
+            self._scan("'BEGIN'")
+            code = self.code(_context)
+            self._scan("'END'")
+        elif _token == "'IF'":
+            self._scan("'IF'")
+            comparison = self.comparison(_context)
+            self._scan("'THEN'")
+            code = self.code(_context)
+            if self._peek("'ELSE'", "'END'", "'WHEN'") == "'ELSE'":
+                self._scan("'ELSE'")
+                code = self.code(_context)
+            self._scan("'END'")
+            self._scan("'IF'")
+        elif _token != 'ID':
+            exception_handling = self.exception_handling(_context)
+        else: # == 'ID'
+            if 1:
+                identifier = self.identifier(_context)
+                self._scan("':='")
+            callable = self.callable(_context)
+            self._scan("';'")
+
+    def exception_handling(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'exception_handling', [])
+        _token = self._peek("'EXCEPTION'", "'WHEN'")
+        if _token == "'EXCEPTION'":
+            self._scan("'EXCEPTION'")
+            ID = self._scan('ID')
+            self._scan("'THEN'")
+        else: # == "'WHEN'"
+            while 1:
+                self._scan("'WHEN'")
+                ID = self._scan('ID')
+                code = self.code(_context)
+                if self._peek("'WHEN'", "'END'", "'ELSE'") != "'WHEN'": break
+
+    def select_statement(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'select_statement', [])
+        self._scan("'SELECT'")
+        select = SelectStatement()
+        if self._peek("'DISTINCT'", "'UNIQUE'", "'ALL'", 'STAR', '"\'"', 'NUM', 'ID', "','", "'FROM'", "'WHERE'") in ["'DISTINCT'", "'UNIQUE'", "'ALL'"]:
+            _token = self._peek("'DISTINCT'", "'UNIQUE'", "'ALL'")
+            if _token == "'DISTINCT'":
+                self._scan("'DISTINCT'")
+            elif _token == "'UNIQUE'":
+                self._scan("'UNIQUE'")
+            else: # == "'ALL'"
+                self._scan("'ALL'")
+        query_columns = self.query_columns(_context)
+        select.columns = query_columns
+        self._scan("'FROM'")
+        simplified_list = self.simplified_list(_context)
+        select.tables = simplified_list
+        where_clause = self.where_clause(_context)
+        select.where_clause = where_clause
+        return select
+
+    def query_columns(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'query_columns', [])
+        _token = self._peek('STAR', '"\'"', 'NUM', 'ID', "','", "'WHERE'", "'FROM'")
+        if _token == 'STAR':
+            STAR = self._scan('STAR')
+            result = STAR
+        else: # in ['"\'"', 'NUM', 'ID', "','", "'WHERE'", "'FROM'"]
+            simplified_list = self.simplified_list(_context)
+            result = simplified_list
+        return result
+
+    def where_clause(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'where_clause', [])
+        self._scan("'WHERE'")
+        conditions = []
+        while 1:
+            _token = self._peek('"\'"', 'NUM', 'ID', "'AND'", "'OR'")
+            if _token not in ["'AND'", "'OR'"]:
+                comparison = self.comparison(_context)
+                conditions.append(comparison)
+            else: # in ["'AND'", "'OR'"]
+                _token = self._peek("'AND'", "'OR'")
+                if _token == "'AND'":
+                    self._scan("'AND'")
+                else: # == "'OR'"
+                    self._scan("'OR'")
+                comparison = self.comparison(_context)
+                conditions.append(comparison)
+            if self._peek('"\'"', 'NUM', 'ID', "'AND'", "'OR'", '";"', '"/"') not in ['"\'"', 'NUM', 'ID', "'AND'", "'OR'"]: break
+        return conditions
+
 
 def parse(rule, text):
     P = plsql(plsqlScanner(text))
     return yappsrt.wrap_error_reporter(P, rule)
 
 # End -- grammar generated by Yapps
+
 
 

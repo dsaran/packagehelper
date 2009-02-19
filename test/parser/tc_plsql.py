@@ -6,6 +6,18 @@ from parser import plsql
 quoted_string = "' a quoted string'"
 insert_columns = "(a, b, c,d,e ,f)"
 insert_values = "(1, 'b', 3,'d')"
+full_package_declaration = """
+CREATE OR REPLACE PACKAGE BODY my_package(arg1 IN NUMBER) IS
+    PROCEDURE test(blah NUMBER)
+    IS
+    BEGIN
+        IF 1 < 2 THEN
+            a();
+        ELSE
+            n();
+        END IF
+    END test;
+END my_package;"""
 
 class PlSqlParserTests(TestCase):
 
@@ -150,7 +162,7 @@ class PlSqlParserTests(TestCase):
 
     def testCreateOrReplaceProcedureDeclarationAs(self):
         """ PlSqlParser should parse a Create Or Replace Procedure declaration AS"""
-        declaration = "CREATE OR REPLACE PROCEDURE my_procedure (arg1 IN NUMBER) AS "
+        declaration = "CREATE OR REPLACE PROCEDURE my_procedure (arg1 IN NUMBER) AS\n END my_procedure;"
         arguments = [Identifier(id="arg1", type="NUMBER")]
         name = CallableStatement(name="my_procedure", arguments=arguments)
         expected = Source(id=name, type="PROCEDURE")
@@ -161,7 +173,7 @@ class PlSqlParserTests(TestCase):
 
     def testCreateOrReplaceProcedureDeclarationIs(self):
         """ PlSqlParser should parse a Create Or Replace Procedure declaration AS"""
-        declaration = "CREATE OR REPLACE PROCEDURE my_procedure (arg1 IN NUMBER) IS"
+        declaration = "CREATE OR REPLACE PROCEDURE my_procedure (arg1 IN NUMBER) IS \nEND my_procedure;"
         arguments = [Identifier(id="arg1", type="NUMBER")]
         name = CallableStatement(name="my_procedure", arguments=arguments)
         expected = Source(id=name, type="PROCEDURE")
@@ -172,7 +184,7 @@ class PlSqlParserTests(TestCase):
 
     def testCreateProcedureDeclaration(self):
         """ PlSqlParser should parse a Create Procedure declaration"""
-        declaration = "CREATE PROCEDURE my_procedure (arg1 IN NUMBER) IS"
+        declaration = "CREATE PROCEDURE my_procedure (arg1 IN NUMBER) IS END my_procedure;"
         arguments = [Identifier(id="arg1", type="NUMBER")]
         name = CallableStatement(name="my_procedure", arguments=arguments)
         expected = Source(id=name, type="PROCEDURE")
@@ -183,7 +195,7 @@ class PlSqlParserTests(TestCase):
 
     def testPackageBodyDeclaration(self):
         """ PlSqlParser should parse a Create Or Replace Package Body declaration"""
-        declaration = "CREATE OR REPLACE PACKAGE BODY my_package(arg1 IN NUMBER) IS"
+        declaration = "CREATE OR REPLACE PACKAGE BODY my_package(arg1 IN NUMBER) IS\nEND my_package;"
         arguments = [Identifier(id="arg1", type="NUMBER")]
         name = CallableStatement(name="my_package", arguments=arguments)
         expected = Source(id=name, type="PACKAGE BODY")
@@ -194,7 +206,7 @@ class PlSqlParserTests(TestCase):
 
     def testPackageDeclaration(self):
         """ PlSqlParser should parse a Create Or Replace Package declaration"""
-        declaration = """CREATE OR REPLACE PACKAGE /* some comments */    schema.package IS"""
+        declaration = """CREATE OR REPLACE PACKAGE /* some comments */    schema.package IS\nEND package;"""
         parent = Identifier(id="schema")
         name = Identifier(id="package", parent=parent)
 
@@ -271,6 +283,18 @@ class PlSqlParserTests(TestCase):
         self.assertTrue(result, "Select statement not parsed")
         self.assertEquals(expected, result)
 
+    def testIgnoreSetCommand(self):
+        """ PlSqlParser should ignore SET command"""
+        comment = "SET serveroutput on \n 'some literal'"
+        result = plsql.parse("LITERAL", comment)
+        self.assertEquals("'some literal'", result)
+
+    def testPackageWithCode(self):
+        """ PlSqlParser should parse a Package Body code"""
+
+        result = plsql.parse("goal", full_package_declaration)
+
+        
 
 
 
