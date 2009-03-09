@@ -14,21 +14,9 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-from gettext import dgettext
-from xml.sax.saxutils import escape
-
 import gtk
 import gobject
 from kiwi.utils import gsignal, type_register
-
-from gazpacho.loader import tags
-
-def xml_create_string_prop_node(xml_doc, prop_name, prop_value):
-    node = xml_doc.createElement(tags.XML_TAG_PROPERTY)
-    node.setAttribute(tags.XML_TAG_NAME, prop_name)
-    text_node = xml_doc.createTextNode(escape(prop_value))
-    node.appendChild(text_node)
-    return node
 
 class GAction(object):
     """A GAction has the same information that a GtkAction but it
@@ -53,6 +41,7 @@ class GAction(object):
         self.callback = callback
         self.accelerator = accel
 
+    #@classmethod
     def new(cls, gtk_action, parent):
         """Create a new GAction from a GtkAction and a GtkActionGroup"""
         # This code is similar to code in the loader, investigate
@@ -75,7 +64,7 @@ class GAction(object):
                 gaction.accelerator = gtk.accelerator_name(key, modifier)
 
         # check if it has signal handler
-        callback = gtk_action.get_data(tags.SIGNAL_HANDLER)
+        callback = gtk_action.get_data('handler')
         if callback:
             gaction.callback = callback
 
@@ -89,66 +78,6 @@ class GAction(object):
 
     def get_name(self):
         return self.name
-
-    def write(self, xml_doc):
-        # XXX: Use XMLWriter
-        node = xml_doc.createElement(tags.XML_TAG_WIDGET)
-        node.setAttribute(tags.XML_TAG_CLASS, "GtkAction")
-        node.setAttribute(tags.XML_TAG_ID, self.name)
-
-        default_label = None
-        default_key = 0
-        default_mask = None
-        domain = None
-        if self.stock_id:
-            stock_info = gtk.stock_lookup(self.stock_id)
-            if stock_info:
-                (_, default_label, default_mask,
-                 default_key, domain) = stock_info
-
-        node.appendChild(xml_create_string_prop_node(xml_doc, 'name',
-                                                     self.name))
-
-        # default_label is translated, so compare against the
-        # untranslated version sent through dgettext()
-        if default_label != dgettext(domain, self.label):
-            label_node = xml_create_string_prop_node(xml_doc, 'label',
-                                                     self.label)
-            label_node.setAttribute(tags.XML_TAG_TRANSLATABLE, tags.YES)
-            node.appendChild(label_node)
-
-        if self.label != self.short_label:
-            child = xml_create_string_prop_node(xml_doc, 'short_label',
-                                                self.short_label)
-            child.setAttribute(tags.XML_TAG_TRANSLATABLE, tags.YES)
-            node.appendChild(child)
-
-        if self.is_important:
-            node.appendChild(xml_create_string_prop_node(xml_doc,
-                                                         'is_important',
-                                                         tags.TRUE))
-        if self.tooltip:
-            child = xml_create_string_prop_node(xml_doc, 'tooltip',
-                                                self.tooltip)
-            child.setAttribute(tags.XML_TAG_TRANSLATABLE, tags.YES)
-            node.appendChild(child)
-
-        if self.stock_id:
-            node.appendChild(xml_create_string_prop_node(xml_doc, 'stock_id',
-                                                         self.stock_id))
-        if self.callback:
-            signalnode = xml_doc.createElement(tags.XML_TAG_SIGNAL)
-            signalnode.setAttribute(tags.XML_TAG_HANDLER, self.callback)
-            signalnode.setAttribute(tags.XML_TAG_NAME, 'activate')
-            node.appendChild(signalnode)
-
-        if self.accelerator:
-            key, mask = gtk.accelerator_parse(self.accelerator)
-            if key != default_key or mask != default_mask:
-                node.appendChild(xml_create_string_prop_node(xml_doc,
-                                                             'accelerator',
-                                                             self.accelerator))
-        return node
 
 class GActionGroup(gobject.GObject):
     """A GActionGroup is just a list of GActions with a name.
@@ -175,6 +104,7 @@ class GActionGroup(gobject.GObject):
         self._actions = {}
         self._uimanager = None
 
+    #@classmethod
     def new(cls, action_group):
         return cls(action_group.get_name())
     new = classmethod(new)
@@ -272,23 +202,8 @@ class GActionGroup(gobject.GObject):
     def get_actions(self):
         return self._actions.values()
 
-    def write(self, xml_doc):
-        node = xml_doc.createElement(tags.XML_TAG_WIDGET)
-        node.setAttribute(tags.XML_TAG_CLASS, "GtkActionGroup")
-        node.setAttribute(tags.XML_TAG_ID, self.name)
-
-        # Sort all children, to keep the file format stabler
-        keys = self._actions.keys()
-        keys.sort()
-
-        for key in keys:
-            child_node = xml_doc.createElement(tags.XML_TAG_CHILD)
-            node.appendChild(child_node)
-            action = self._actions[key]
-            action_node = action.write(xml_doc)
-            child_node.appendChild(action_node)
-
-        return node
+    def get_action_names(self):
+        return self._actions.keys()
 
 type_register(GActionGroup)
 

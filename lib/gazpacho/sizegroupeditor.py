@@ -1,22 +1,20 @@
-import gettext
-
 import gtk
 import gobject
 from kiwi.component import get_utility
 from kiwi.environ import environ
-from kiwi.ui.dialogs import BaseDialog
+from kiwi.ui.dialogs import BaseDialog, warning
 from kiwi.utils import gsignal
 
 from gazpacho.app.bars import bar_manager
+from gazpacho.command import FlipFlopCommandMixin, Command
 from gazpacho.commandmanager import command_manager
+from gazpacho.i18n import _
 from gazpacho.interfaces import IGazpachoApp
 from gazpacho.sizegroup import GSizeGroup
 from gazpacho.util import select_iter
-from gazpacho.widget import Gadget
+from gazpacho.gadget import Gadget
 from gazpacho.signalhandlers import SignalHandlerStorage
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
-
+from gazpacho.sizegroup import safe_to_add_gadgets
 
 EDITOR_OBJECT_COLUMN, EDITOR_CALLBACK_IDS_COLUMN = range(2)
 
@@ -186,9 +184,12 @@ class SizeGroupView(gtk.ScrolledWindow):
 
         gadget_iter = None
         for gadget in gadgets:
-            callback_id = gadget.connect('notify::name',
-                                         self._on_gadget_notify_name, sizegroup)
-            row = (gadget, (callback_id,))
+            # FIXME: Disconnect callback
+            gadget.widget.connect('notify::name',
+                                  self._on_widget_notify_name,
+                                  gadget,
+                                  sizegroup)
+            row = (gadget, ())
             gadget_iter = self._model.append(sizegroup_iter, row)
 
         return gadget_iter
@@ -379,7 +380,7 @@ class SizeGroupView(gtk.ScrolledWindow):
         @param sizegroup: the sizegroup that the gadgets belong to
         @type sizegroup: gazpacho.sizegroup.GSizeGroup
         @param gadgets: the gadgets that have been added
-        @type gadgets: list (of gazpacho.widget.Gadget)
+        @type gadgets: list (of gazpacho.gadget.Gadget)
         """
         sizegroup_iter = self._find_sizegroup(sizegroup)
         if not sizegroup_iter:
@@ -397,7 +398,7 @@ class SizeGroupView(gtk.ScrolledWindow):
         @param sizegroup: the sizegroup that the gadgets belong to
         @type sizegroup: gazpacho.sizegroup.GSizeGroup
         @param gadgets: the gadgets that have been removed
-        @type gadgets: list (of gazpacho.widget.Gadget)
+        @type gadgets: list (of gazpacho.gadget.Gadget)
         """
         for gadget in gadgets:
             gadget_iter = self._find_gadget(sizegroup, gadget)
@@ -405,13 +406,13 @@ class SizeGroupView(gtk.ScrolledWindow):
                 self._disconnect_item_callbacks(gadget_iter)
                 del self._model[gadget_iter]
 
-    def _on_gadget_notify_name(self, gadget, pspec, sizegroup):
+    def _on_widget_notify_name(self, widget, pspec, gadget, sizegroup):
         """
         Callback that is executed when the name property of a gadget
         has changed. This will make sure that the editor is updated.
 
-        @param gadget: the gadget who's name has changed
-        @type gadget: gazpacho.widget.Gadget
+        @param widget: the widget who's name has changed
+        @type widget: gtk.Widget
         @param pspec: the gobject.GParamSpec of the property that was changed
         @type pspec: gobject.GParamSpec
         @param sizegroup: the sizegroup that the gadgets belong to
@@ -471,19 +472,24 @@ class SizeGroupView(gtk.ScrolledWindow):
         if row.parent:
             sizegroup = row.parent[EDITOR_OBJECT_COLUMN]
             gadgets = [row[EDITOR_OBJECT_COLUMN]]
-            command_manager.remove_sizegroup_gadgets(sizegroup, gadgets,
-                                                     self.project)
         else:
             sizegroup = row[EDITOR_OBJECT_COLUMN]
-            command_manager.remove_sizegroup(sizegroup, self.project)
+            gadgets = sizegroup.get_gadgets()
 
+        cmd = CommandAddRemoveSizeGroupGadgets(sizegroup, gadgets, self.project,
+                                               False)
+        command_manager.execute(cmd, self.project)
 
 gobject.type_register(SizeGroupView)
 
-def add_sizegroup_gadgets(project):
+def add_sizegroup_gadgets(project, sizegroup=None, gadgets=[]):
     """
-    Convenient method for adding gadgets to a sizegroup. It will add
-    the selected gadgets to a user specifed sizegroup.
+    Convenient method for adding gadgets to a sizegroup.
+
+    If no sizegroup is specified, a dialog will prompt the user to choose one.
+
+    If no gadgets are specified, the current project selected widgets will be
+    added.
 
     @param project: the current project
     @type project: gazpacho.project.Project
@@ -491,20 +497,34 @@ def add_sizegroup_gadgets(project):
     if not project.selection:
         return
 
-    window = get_utility(IGazpachoApp).get_window()
-    dialog = SizeGroupDialog(window, project.sizegroups)
-    if dialog.run() != gtk.RESPONSE_OK:
+    if sizegroup is None:
+        window = get_utility(IGazpachoApp).get_window()
+        dialog = SizeGroupDialog(window, project.sizegroups)
+        if dialog.run() != gtk.RESPONSE_OK:
+            dialog.destroy()
+            return
+
+        sizegroup = dialog.get_selected_sizegroup()
         dialog.destroy()
+
+    if not gadgets:
+        gadgets = [Gadget.from_widget(w) for w in project.selection]
+
+    add_gadgets = []
+    for gadget in gadgets:
+        # We don't add a gadget that's already in the sizegroup
+        if not sizegroup.has_gadget(gadget):
+            add_gadgets.append(gadget)
+
+    if gadgets and not safe_to_add_gadgets(sizegroup, add_gadgets):
+        warning(_("Cannot add the widget"),
+                _("It's not possible to add a gadget who has an ancestor"
+                  " or child in the sizegroup."))
         return
 
-    sizegroup = dialog.get_selected_sizegroup()
-    dialog.destroy()
-
-    gadgets = []
-    for widget in project.selection:
-        gadgets.append(Gadget.from_widget(widget))
-
-    command_manager.add_sizegroup_gadgets(sizegroup, gadgets, project)
+    cmd = CommandAddRemoveSizeGroupGadgets(sizegroup, add_gadgets, project,
+                                           True)
+    command_manager.execute(cmd, project)
 
 DIALOG_MODE_NAME_COLUMN, DIALOG_MODE_VALUE_COLUMN = range(2)
 
@@ -778,3 +798,59 @@ class SizeGroupDialog(BaseDialog):
             self._add_button.set_sensitive(False)
         else:
             self._add_button.set_sensitive(True)
+
+class CommandAddRemoveSizeGroupGadgets(FlipFlopCommandMixin, Command):
+    """
+    Command for adding and removing sizegroup gadgets. When adding
+    gadgets to an empty sizegroup the sizegroup will be added to the
+    project. When the last gadgets is removed from a sizegroup the
+    sizegroup will be removed as well.
+    """
+
+    def __init__(self, sizegroup, gadgets, project, add):
+        """
+        Initialize the command.
+
+        @param sizegroup: the sizegroup that the gadgets belong to
+        @type sizegroup: gazpacho.sizegroup.GSizeGroup
+        @param gadgets: the gadgets that should be added or removed
+        @type gadgets: list (of gazpacho.gadget.Gadget)
+        @param project: the project that the sizegroup belongs to
+        @type project: gazpacho.project.Project
+        @param add: True if the gadgets should be added
+        @type add: bool
+        """
+        FlipFlopCommandMixin.__init__(self, add)
+        if add:
+            dsc = _("Add widgets to size group '%s'") % sizegroup.name
+        else:
+            dsc = _("Remove widgets from size group '%s'") % sizegroup.name
+
+
+        Command.__init__(self, dsc)
+
+        self._sizegroup = sizegroup
+        self._gadgets = gadgets
+        self._project = project
+
+    def _execute_add(self):
+        """
+        Add the gadgets to the sizegroup. This might mean that the
+        sizegroup will be added as well.
+        """
+        if self._sizegroup.is_empty():
+            self._project.add_sizegroup(self._sizegroup)
+
+        self._sizegroup.add_gadgets(self._gadgets)
+    _execute_state1 = _execute_add
+
+    def _execute_remove(self):
+        """
+        Remove the gadgets from the sizegroup. This might cause the
+        sizegroup to be removed as well.
+        """
+        self._sizegroup.remove_gadgets(self._gadgets)
+
+        if self._sizegroup.is_empty():
+            self._project.remove_sizegroup(self._sizegroup)
+    _execute_state2 = _execute_remove

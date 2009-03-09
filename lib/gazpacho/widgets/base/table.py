@@ -1,4 +1,5 @@
 # Copyright (C) 2004,2005 by SICEm S.L. and Imendio AB
+#               2006 Johan Dahlin
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -14,17 +15,15 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
-
-import gtk
-
+from gazpacho.command import ContainerCommand
+from gazpacho.commandmanager import command_manager
+from gazpacho.i18n import _
 from gazpacho.placeholder import Placeholder
 from gazpacho.properties import prop_registry, \
-     TransparentProperty, CustomChildProperty, UIntType
-from gazpacho.widget import Gadget
+     TransparentProperty, CustomChildProperty, UIntType, \
+     CommandSetProperty, PropertySetError
+from gazpacho.gadget import Gadget
 from gazpacho.widgets.base.base import ContainerAdaptor
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
 
 class TableAdaptor(ContainerAdaptor):
 
@@ -37,57 +36,9 @@ class TableAdaptor(ContainerAdaptor):
         return table
 
     def post_create(self, context, table, interactive=True):
-        if not interactive:
-            return
         gadget = Gadget.from_widget(table)
-        property_rows = gadget.get_prop('n-rows')
-        property_cols = gadget.get_prop('n-columns')
-        dialog = gtk.Dialog(_('Create a table'), None,
-                            gtk.DIALOG_NO_SEPARATOR,
-                            (gtk.STOCK_OK, gtk.RESPONSE_ACCEPT))
-        dialog.set_position(gtk.WIN_POS_MOUSE)
-        dialog.set_default_response(gtk.RESPONSE_ACCEPT)
-
-        label_rows = gtk.Label(_('Number of rows')+':')
-        label_rows.set_alignment(0.0, 0.5)
-        label_cols = gtk.Label(_('Number of columns')+':')
-        label_cols.set_alignment(0.0, 0.5)
-
-        spin_button_rows = gtk.SpinButton()
-        spin_button_rows.set_increments(1, 5)
-        spin_button_rows.set_range(1.0, 10000.0)
-        spin_button_rows.set_numeric(False)
-        spin_button_rows.set_value(3)
-        spin_button_rows.set_property('activates-default', True)
-
-        spin_button_cols = gtk.SpinButton()
-        spin_button_cols.set_increments(1, 5)
-        spin_button_cols.set_range(1.0, 10000.0)
-        spin_button_cols.set_numeric(False)
-        spin_button_cols.set_value(3)
-        spin_button_cols.set_property('activates-default', True)
-
-        table = gtk.Table(2, 2, True)
-        table.set_col_spacings(4)
-        table.set_border_width(12)
-
-        table.attach(label_rows, 0, 1, 0, 1)
-        table.attach(spin_button_rows, 1, 2, 0, 1)
-
-        table.attach(label_cols, 0, 1, 1, 2)
-        table.attach(spin_button_cols, 1, 2, 1, 2)
-
-        dialog.vbox.pack_start(table)
-        table.show_all()
-
-        # even if the user destroys the dialog box, we retrieve the number and
-        # we accept it.  I.e., this function never fails
-        dialog.run()
-
-        property_rows.set(spin_button_rows.get_value_as_int())
-        property_cols.set(spin_button_cols.get_value_as_int())
-
-        dialog.destroy()
+        gadget.get_prop('n-rows').set(3)
+        gadget.get_prop('n-columns').set(3)
 
     def fill_empty(self, context, widget):
         pass
@@ -129,6 +80,8 @@ class TableSize(TransparentProperty, UIntType):
             # fit on the new table
             end = table.child_get_property(child, end_prop)
             if end > value:
+                if end_prop == 'right-attach' and value == 0:
+                    continue
                 table.child_set_property(child, end_prop, value)
 
         if self.name == 'n-rows':
@@ -166,96 +119,8 @@ prop_registry.override_simple('GtkTable::column-spacing',
 class BaseAttach(CustomChildProperty):
     """Base class for LeftAttach, RightAttach, TopAttach and BottomAttach
     adaptors"""
-    def _get_attach(self, child):
-        """Returns the four attach packing properties in a tuple"""
-        right = self.table.child_get_property(child, 'right-attach')
-        left = self.table.child_get_property(child, 'left-attach')
-        top = self.table.child_get_property(child, 'top-attach')
-        bottom = self.table.child_get_property(child, 'bottom-attach')
-        return (left, right, top, bottom)
 
-    def _cell_empty(self, x, y):
-        """Returns true if the cell at x, y is empty. Exclude child from the
-        list of widgets to check"""
-        empty = True
-        for w in self.table.get_children():
-            left, right, top, bottom = self._get_attach(w)
-            if (left <= x and (x + 1) <= right
-                and top <= y and (y + 1) <= bottom):
-                empty = False
-                break
-
-        return empty
-
-    def _create_placeholder(self, x, y):
-        """Puts a placeholder at cell (x, y)"""
-        self.table.attach(Placeholder(), x, x+1, y, y+1)
-
-    def _fill_with_placeholders(self, y_range, x_range):
-        """Walk through the table creating placeholders in empty cells.
-        Only iterate between x_range and y_range.
-        Child is excluded in the computation to see if a cell is empty
-        """
-        for y in range(self.n_rows):
-            for x in range(self.n_columns):
-                if self._cell_empty(x, y):
-                    self._create_placeholder(x, y)
-
-    def _initialize(self, child, prop_name):
-        """Common things all these adaptors need to do at the beginning"""
-        self.table = child.get_parent()
-        (self.left_attach,
-         self.right_attach,
-         self.top_attach,
-         self.bottom_attach) = self._get_attach(child)
-
-        self.n_columns = self.table.get_property('n-columns')
-        self.n_rows = self.table.get_property('n-rows')
-
-        self.prop_name = prop_name
-        self.child = child
-        self.gchild = Gadget.from_widget(self.child)
-        self.gprop = self.gchild.get_child_prop(self.prop_name)
-
-    def _value_is_between(self, value, minimum, maximum):
-        if value < minimum:
-            self.gprop._value = minimum
-            return False
-
-        if value > maximum:
-            self.gprop._value = maximum
-            return False
-
-        return True
-
-    def _internal_set(self, value, minimum, maximum,
-                      y_range, x_range):
-        """Check if value is between minium and maximum and then remove or
-        add placeholders depending if we are growing or shrinking.
-        If we are shrinking check the cells in y_range, x_range to add
-        placeholders
-        """
-        if not self._value_is_between(value, minimum, maximum):
-            return
-
-        placeholder = Placeholder()
-
-        # are we growing?
-        if self._is_growing(value):
-            # check if we need to remove some placeholder
-            for ph in filter(lambda w: isinstance(w, type(placeholder)),
-                             self.table.get_children()):
-                lph, rph, tph, bph = self._get_attach(ph)
-                if self._cover_placeholder(value, lph, rph, tph, bph):
-                    self.table.remove(ph)
-
-            self.table.child_set_property(self.child, self.prop_name, value)
-
-        # are we shrinking? maybe we need to create placeholders
-        elif self._is_shrinking(value):
-            self.table.child_set_property(self.child, self.prop_name, value)
-            self._fill_with_placeholders(y_range, x_range)
-
+    editable = False
 
     # virtual methods that should be implemented by subclasses:
     def _is_growing(self, value):
@@ -267,28 +132,75 @@ class BaseAttach(CustomChildProperty):
     def _cover_placeholder(self, value, left, right, top, bottom):
         """Return True if there is a placeholder in these coordinates"""
 
+    # Private
+
+    def _get_attach(self, table, child):
+        """Returns the four attach packing properties in a tuple"""
+        right = table.child_get_property(child, 'right-attach')
+        left = table.child_get_property(child, 'left-attach')
+        top = table.child_get_property(child, 'top-attach')
+        bottom = table.child_get_property(child, 'bottom-attach')
+        return (left, right, top, bottom)
+
+    def _cell_empty(self, table, x, y):
+        """Returns true if the cell at x, y is empty. Exclude child from the
+        list of widgets to check"""
+        empty = True
+        for w in table.get_children():
+            left, right, top, bottom = self._get_attach(table, w)
+            if (left <= x and (x + 1) <= right and
+                top <= y and (y + 1) <= bottom):
+                empty = False
+                break
+
+        return empty
+
+    # Public
+
+    def set(self, value):
+        table = self.object.get_parent()
+
+        # are we growing?
+        if self._is_growing(value):
+            # check if we need to remove some placeholder
+            for ph in filter(lambda w: isinstance(w, Placeholder),
+                             table.get_children()):
+                lph, rph, tph, bph = self._get_attach(table, ph)
+                if self._cover_placeholder(table, self.object, value,
+                                           lph, rph, tph, bph):
+                    table.remove(ph)
+
+            table.child_set_property(self.object, self.name, value)
+
+        # are we shrinking? maybe we need to create placeholders
+        elif self._is_shrinking(value):
+            table.child_set_property(self.object, self.name, value)
+            n_columns = table.get_property('n-columns')
+            n_rows = table.get_property('n-rows')
+            for y in range(n_rows):
+                for x in range(n_columns):
+                    if self._cell_empty(table, x, y):
+                        table.attach(Placeholder(), x, x+1, y, y+1)
+
+        super(BaseAttach, self).set(value)
+
 class LeftAttach(BaseAttach, UIntType):
     label = 'Left attachment'
 
     def _is_growing(self, value):
-        return value < self.left_attach
+        return value < self.get()
 
     def _is_shrinking(self, value):
-        return value > self.left_attach
+        return value > self.get()
 
-    def _cover_placeholder(self, value, left, right, top, bottom):
-        if value < right and self.left_attach > left:
-            if top >= self.top_attach and bottom <= self.bottom_attach:
+    def _cover_placeholder(self, table, child, value,
+                           left, right, top, bottom):
+        top_attach = table.child_get_property(child, 'top-attach')
+        bottom_attach = table.child_get_property(child, 'bottom-attach')
+        if value < right and self.get() > left:
+            if top >= top_attach and bottom <= bottom_attach:
                 return True
-        return False
-
-    def set(self, value):
-        child = self.object
-        self._initialize(child, 'left-attach')
-        self._internal_set(value, 0, self.right_attach - 1,
-                           range(self.n_rows),
-                           range(self.left_attach, value))
-        super(LeftAttach, self).set(value)
+            return False
 
 prop_registry.override_simple_child('GtkTable::left-attach', LeftAttach)
 
@@ -296,24 +208,19 @@ class RightAttach(BaseAttach, UIntType):
     label = 'Right attachment'
 
     def _is_growing(self, value):
-        return value > self.right_attach
+        return value > self.get()
 
     def _is_shrinking(self, value):
-        return value < self.right_attach
+        return value < self.get()
 
-    def _cover_placeholder(self, value, left, right, top, bottom):
-        if value > left and self.right_attach < right:
-            if top >= self.top_attach and bottom <= self.bottom_attach:
+    def _cover_placeholder(self, table, child, value,
+                           left, right, top, bottom):
+        top_attach = table.child_get_property(child, 'top-attach')
+        bottom_attach = table.child_get_property(child, 'bottom-attach')
+        if value > left and self.get() < right:
+            if top >= top_attach and bottom <= bottom_attach:
                 return True
         return False
-
-    def set(self, value):
-        child = self.object
-        self._initialize(child, 'right-attach')
-        self._internal_set(value, self.left_attach + 1, self.n_columns,
-                           range(self.n_rows),
-                           range(self.left_attach, value))
-        super(RightAttach, self).set(value)
 
 prop_registry.override_simple_child('GtkTable::right-attach', RightAttach)
 
@@ -321,24 +228,19 @@ class BottomAttach(BaseAttach, UIntType):
     label = 'Bottom attachment'
 
     def _is_growing(self, value):
-        return value > self.bottom_attach
+        return value > self.get()
 
     def _is_shrinking(self, value):
-        return value < self.bottom_attach
+        return value < self.get()
 
-    def _cover_placeholder(self, value, left, right, top, bottom):
-        if value > top and self.bottom_attach < bottom:
-            if left >= self.left_attach and right <= self.right_attach:
+    def _cover_placeholder(self, table, child,
+                           value, left, right, top, bottom):
+        right_attach = table.child_get_property(child, 'right-attach')
+        left_attach = table.child_get_property(child, 'left-attach')
+        if value > top and self.get() < bottom:
+            if left >= left_attach and right <= right_attach:
                 return True
         return False
-
-    def set(self, value):
-        child = self.object
-        self._initialize(child, 'bottom-attach')
-        self._internal_set(value, self.top_attach + 1, self.n_rows,
-                           range(value, self.bottom_attach),
-                           range(self.n_columns))
-        super(BottomAttach, self).set(value)
 
 prop_registry.override_simple_child('GtkTable::bottom-attach', BottomAttach)
 
@@ -346,23 +248,191 @@ class TopAttach(BaseAttach, UIntType):
     label = 'Top attachment'
 
     def _is_growing(self, value):
-        return value < self.top_attach
+        return value < self.get()
 
     def _is_shrinking(self, value):
-        return value > self.top_attach
+        return value > self.get()
 
-    def _cover_placeholder(self, value, left, right, top, bottom):
-        if value < bottom and self.top_attach > top:
-            if left >= self.left_attach and right <= self.right_attach:
+    def _cover_placeholder(self, table, child,
+                           value, left, right, top, bottom):
+        right_attach = table.child_get_property(child, 'right-attach')
+        left_attach = table.child_get_property(child, 'left-attach')
+        if value < bottom and self.get() > top:
+            if left >= left_attach and right <= right_attach:
                 return True
         return False
 
-    def set(self, value):
-        child = self.object
-        self._initialize(child, 'top-attach')
-        self._internal_set(value, 0, self.bottom_attach - 1,
-                           range(self.n_columns),
-                           range(self.top_attach, value))
-        super(TopAttach, self).set(value)
-
 prop_registry.override_simple_child('GtkTable::top-attach', TopAttach)
+
+class CommonCustom(CustomChildProperty, UIntType):
+    def __init__(self, gadget):
+        super(CustomChildProperty, self).__init__(gadget)
+        self._update_lock = False
+
+    def get(self):
+        return self._value
+
+    def save(self):
+        return
+
+    def _notify_update(self, gobj, pspec):
+        parent = gobj.get_parent()
+        self._update_lock = True
+        self.set(parent.child_get_property(gobj, pspec.name))
+        self._update_lock = False
+
+    def set(self, value):
+        if not self._update_lock:
+            self._update_value(value)
+
+        self._value = value
+        self.notify()
+
+class XPos(CommonCustom):
+    label = 'X position'
+    priority = 1
+
+    def load(self):
+        object = self.object
+        parent = self.object.get_parent()
+        self._value = parent.child_get_property(object, 'left-attach')
+        self.object.connect('child-notify::left-attach', self._notify_update)
+
+    def _update_value(self, value):
+        gadget = self.gadget
+        n_columns = gadget.get_parent().get_prop('n-columns').value
+        left = gadget.get_child_prop('left-attach')
+        right = gadget.get_child_prop('right-attach')
+        span = right.value - left.value
+
+        if value > n_columns - span:
+            raise PropertySetError
+
+        diff = value - self._value
+
+        # Order is important, GtkTable does not allow us to have
+        # a child which does not take up any space at all, eg
+        # left-attach = right-attach
+        cmd_left = CommandSetProperty(left, left.value + diff)
+        cmd_right = CommandSetProperty(right, right.value + diff)
+        if diff > 0:
+            cmds = [cmd_right, cmd_left]
+        else:
+            cmds = [cmd_left, cmd_right]
+        command_manager.execute(ContainerCommand(
+            _('Moving widget to x position %d') % value, *cmds),
+                                self.gadget.project, nested=False)
+
+prop_registry.override_child_property('GtkTable::x-pos', XPos)
+
+class YPos(CommonCustom):
+    label = 'Y position'
+    priority = 2
+
+    def load(self):
+        object = self.object
+        parent = self.object.get_parent()
+        self._value = parent.child_get_property(object, 'top-attach')
+        self.object.connect('child-notify::top-attach', self._notify_update)
+
+    def _update_value(self, value):
+        gadget = self.gadget
+        n_rows = gadget.get_parent().get_prop('n-rows').value
+        top = gadget.get_child_prop('top-attach')
+        bottom = gadget.get_child_prop('bottom-attach')
+        span = bottom.value - top.value
+
+        if value > n_rows - span:
+            raise PropertySetError
+
+        diff = value - self._value
+
+        # Order is important, GtkTable does not allow us to have
+        # a child which does not take up any space at all, eg
+        # top-attach = bottom-attach
+        cmd_bottom = CommandSetProperty(bottom, bottom.value + diff)
+        cmd_top = CommandSetProperty(top, top.value + diff)
+        if diff > 0:
+            cmds = [cmd_bottom, cmd_top]
+        else:
+            cmds = [cmd_top, cmd_bottom]
+        command_manager.execute(ContainerCommand(
+            _('Moving widget to y position %d') % value, *cmds),
+                                self.gadget.project, nested=False)
+
+prop_registry.override_child_property('GtkTable::y-pos', YPos)
+
+class ColSpan(CommonCustom):
+    label = 'Colspan'
+    minimum = 1
+    priority = 3
+
+    def _notify_update(self, gobj, pspec):
+        parent = gobj.get_parent()
+        self._update_lock = True
+        self.set((parent.child_get_property(gobj, 'right-attach') -
+                  parent.child_get_property(gobj, 'left-attach')))
+        self._update_lock = False
+
+    def load(self):
+        object = self.object
+        parent = self.object.get_parent()
+
+        self._value = (parent.child_get_property(object, 'right-attach') -
+                       parent.child_get_property(object, 'left-attach'))
+        self.object.connect('child-notify::left-attach', self._notify_update)
+        self.object.connect('child-notify::right-attach', self._notify_update)
+
+    def _update_value(self, value):
+        gadget = self.gadget
+        n_columns = gadget.get_parent().get_prop('n-columns').value
+        x_pos = gadget.get_child_prop('left-attach').value
+
+        if value > n_columns - x_pos:
+            raise PropertySetError
+
+        right = gadget.get_child_prop('right-attach')
+        command_manager.execute(
+            CommandSetProperty(right, right.value + (value - self._value)),
+            self.gadget.project,
+            nested=False)
+
+prop_registry.override_child_property('GtkTable::colspan', ColSpan)
+
+class RowSpan(CommonCustom):
+    label = 'Rowspan'
+    minimum = 1
+    priority = 4
+
+    def _notify_update(self, gobj, pspec):
+        parent = gobj.get_parent()
+        self._update_lock = True
+        self.set((parent.child_get_property(gobj, 'bottom-attach') -
+                  parent.child_get_property(gobj, 'top-attach')))
+        self._update_lock = False
+
+    def load(self):
+        object = self.object
+        parent = self.object.get_parent()
+        self._value = (parent.child_get_property(object, 'bottom-attach') -
+                       parent.child_get_property(object, 'top-attach'))
+        self.object.connect('child-notify::bottom-attach',
+                            self._notify_update)
+        self.object.connect('child-notify::top-attach',
+                            self._notify_update)
+
+    def _update_value(self, value):
+        gadget = self.gadget
+        n_rows = gadget.get_parent().get_prop('n-rows').value
+        y_pos = gadget.get_child_prop('top-attach').value
+
+        if value > n_rows - y_pos:
+            raise PropertySetError
+
+        bottom = gadget.get_child_prop('bottom-attach')
+        command_manager.execute(
+            CommandSetProperty(bottom, bottom.value + (value - self._value)),
+            self.gadget.project,
+            nested=False)
+
+prop_registry.override_child_property('GtkTable::rowspan', RowSpan)

@@ -14,16 +14,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
 import xml.dom.minidom
 
 import gtk
 import gobject
 
 from gazpacho import util
+from gazpacho.i18n import _
 from gazpacho.loader import tags
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
 
 class Converter:
     def __init__(self, xml_node, uimanager, ui_definitions, signals):

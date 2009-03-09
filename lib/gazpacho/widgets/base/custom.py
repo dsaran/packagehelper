@@ -49,8 +49,8 @@ class Custom(PropertyObject, gtk.DrawingArea):
     gproperty('last-modification-time', str)
 
     def __init__(self, name=None, **kwargs):
-        PropertyObject.__init__(self, **kwargs)
         gtk.DrawingArea.__init__(self)
+        PropertyObject.__init__(self, **kwargs)
         self.connect('notify::string1', lambda self, *a: self.queue_draw())
 
         if name:
@@ -62,6 +62,12 @@ class Custom(PropertyObject, gtk.DrawingArea):
         self._pixmap = None
 
         self.set_flags(self.flags() | gtk.CAN_FOCUS)
+
+    def prop_set_visible(self, v):
+        # Evil evil bug in PropertyObject, needs to
+        # be investigated closer.
+        self.set_property('visible', v)
+        return v
 
     def do_realize(self):
         self.set_flags(self.flags() | gtk.REALIZED)
@@ -108,7 +114,7 @@ class Custom(PropertyObject, gtk.DrawingArea):
         dark_gc = self.style.dark_gc[gtk.STATE_NORMAL]
         w, h = event.window.get_size()
 
-        # These lines make the Placeholder looks like a button
+        # These lines make the Placeholder look like a button
         event.window.draw_line(light_gc, 0, 0, w - 1, 0)
         event.window.draw_line(light_gc, 0, 0, 0, h - 1)
         event.window.draw_line(dark_gc, 0, h -1, w - 1, h - 1)

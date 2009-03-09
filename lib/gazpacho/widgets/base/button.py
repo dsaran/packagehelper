@@ -14,19 +14,199 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
-
 import gtk
 
-from gazpacho import util
 from gazpacho.commandmanager import command_manager
+from gazpacho.command import Command
+from gazpacho.i18n import _
 from gazpacho.properties import prop_registry, CustomProperty, \
      PropertyCustomEditor, TransparentProperty, StringType, ObjectType
 from gazpacho.stockicons import StockIconList
-from gazpacho.widget import Gadget, load_gadget_from_widget
+from gazpacho.gadget import Gadget, load_gadget_from_widget
 from gazpacho.widgets.base.base import ContainerAdaptor
 
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+def get_button_state(button):
+    """Get the state of the button in the form of a tuple with the following
+    fields:
+      - stock_id: string with the stock_id or None if the button is not
+        using a stock_id
+      - notext: boolean that says if the button has only a stock icon or
+        if it also has the stock label
+      - label: string with the contents of the button text or None
+      - image_path: string with the path of a custom file for the
+        image or None
+      - position: one of gtk.POS_* that specifies the position of the
+        image with respect to the label
+    """
+    stock_id = label = image_path = position = None
+    notext = False
+    icon_size = gtk.ICON_SIZE_BUTTON
+
+    use_stock = button.get_use_stock()
+    child_name = None
+    child = button.get_child()
+    image_file_name = None
+    if child:
+        image_file_name = child.get_data('image-file-name')
+        child_name = child.get_name()
+
+    # it is a stock button
+    if use_stock and not image_file_name:
+        stock_id = button.get_label()
+
+    # it only has a text label
+    elif isinstance(child, gtk.Label):
+        label = child.get_text()
+
+    # it has an image without text. it can be stock icon or custom image
+    elif isinstance(child, gtk.Image):
+        if image_file_name:
+
+            image_path = image_file_name
+        else:
+            stock_id = child.get_property('stock')
+            if not stock_id:
+                print 'Unknown button image state, no stock, no filename'
+        notext = True
+        icon_size = child.get_property('icon-size')
+    # it has custom image and text
+    elif isinstance(child, gtk.Alignment):
+        box = child.get_child()
+
+        children = box.get_children()
+        image_child = None
+        text_child = None
+        text_last = True
+        for c in children:
+            if isinstance(c, gtk.Image):
+                image_child = c
+                text_last = False
+            elif isinstance(c, gtk.Label):
+                text_child = c
+                text_last = True
+
+        if isinstance(box, gtk.HBox):
+            if text_last:
+                position = gtk.POS_LEFT
+            else:
+                position = gtk.POS_RIGHT
+        else:
+            if text_last:
+                position = gtk.POS_TOP
+            else:
+                position = gtk.POS_BOTTOM
+
+        if image_child:
+            image_path = image_child.get_data('image-file-name')
+
+        if text_child:
+            label = text_child.get_text()
+        else:
+            notext = True
+
+    return (stock_id, notext, label, image_path, position, icon_size,
+            child_name)
+
+# Command for the contents property:
+class CommandSetButtonContents(Command):
+    def __init__(self, gadget, stock_id=None, notext=False, label=None,
+                 image_path=None, position=-1, icon_size=gtk.ICON_SIZE_BUTTON,
+                 child_name=None):
+        description = _('Setting button %s contents') % gadget.name
+        Command.__init__(self, description)
+
+        self.gadget = gadget
+        self.stock_id = stock_id
+        self.notext = notext
+        self.label = label
+        self.image_path = image_path
+        self.position = position
+        self.icon_size = icon_size
+        self.child_name = child_name
+
+    def execute(self):
+        widget = self.gadget
+        button = self.gadget.widget
+        state = get_button_state(button)
+        use_stock = widget.get_prop('use-stock')
+        label = widget.get_prop('label')
+        self._clear_button(button)
+
+        if self.stock_id:
+            # stock button
+
+            if self.notext:
+                image = gtk.Image()
+                image.set_from_stock(self.stock_id, self.icon_size)
+                image.show()
+                button.add(image)
+            else:
+                use_stock.set(True)
+                label.set(self.stock_id)
+
+        else:
+            # custom button. 3 cases:
+            # 1) only text, 2) only image or 3) image and text
+            if self.label and not self.image_path:
+                # only text
+                label.set(self.label)
+            elif not self.label and self.image_path:
+                # only image
+                image = gtk.Image()
+                image.set_from_file(self.image_path)
+                image.set_data('image-file-name', self.image_path)
+                image.show()
+                button.add(image)
+            elif self.label and self.image_path:
+                # image and text
+                align = gtk.Alignment(0.5, 0.5, 1.0, 1.0)
+                if self.position in (gtk.POS_LEFT, gtk.POS_RIGHT):
+                    box = gtk.HBox()
+                else:
+                    box = gtk.VBox()
+                align.add(box)
+                image = gtk.Image()
+                image.set_from_file(self.image_path)
+                image.set_data('image-file-name', self.image_path)
+                label = gtk.Label(self.label)
+                if '_' in self.label:
+                    label.set_use_underline(True)
+
+                if self.position in (gtk.POS_LEFT, gtk.POS_TOP):
+                    box.pack_start(image)
+                    box.pack_start(label)
+                else:
+                    box.pack_start(label)
+                    box.pack_start(image)
+
+                align.show_all()
+                button.add(align)
+
+        if button.child:
+            project = self.gadget.project
+            button.child.set_name('')
+            load_gadget_from_widget(button, project)
+            if not button.child.get_name():
+                project.set_new_widget_name(button.child)
+            project.add_hidden_widget(button.child)
+            self.gadget.setup_widget(button)
+
+        # save the state for undoing purposes
+        (self.stock_id, self.notext, self.label,
+         self.image_path, self.position, self.icon_size,
+         self.child_name) = state
+
+    def _clear_button(self, button):
+        "Clear the button and set default values for its properties"
+        button.set_use_stock(False)
+        button.set_use_underline(False)
+        button.set_label('')
+
+        child = button.get_child()
+        if child:
+            button.remove(child)
+            project = self.gadget.project
+            project.remove_hidden_widget(child)
 
 # Adaptors for Button
 class ButtonContentsEditor(PropertyCustomEditor):
@@ -296,11 +476,10 @@ class ButtonContentsEditor(PropertyCustomEditor):
         child_name = None
         if self.gadget.widget.child:
             child_name = self.gadget.widget.child.get_name()
-        command_manager.set_button_contents(self.gadget,
-                                            stock_id=stock_id,
-                                            notext=notext,
-                                            icon_size=icon_size,
-                                            child_name=child_name)
+        cmd = CommandSetButtonContents(self.gadget, stock_id=stock_id,
+                                       notext=notext, icon_size=icon_size,
+                                       child_name=child_name)
+        command_manager.execute(cmd, self.gadget.project)
 
     def set_custom(self):
         if not self.gadget:
@@ -324,11 +503,10 @@ class ButtonContentsEditor(PropertyCustomEditor):
         if self.gadget.widget.child:
             child_name = self.gadget.widget.child.get_name()
 
-        command_manager.set_button_contents(self.gadget,
-                                            label=label,
-                                            image_path=image,
-                                            position=position,
-                                            child_name=child_name)
+        cmd = CommandSetButtonContents(self.gadget, label=label,
+                                       image_path=image, position=position,
+                                       child_name=child_name)
+        command_manager.execute(cmd, self.gadget.project)
 
 
     def _set_combo_active_position(self, pos):
@@ -354,7 +532,7 @@ class ButtonContentsEditor(PropertyCustomEditor):
 
         (stock_id, notext, label,
          image_path, position,
-         icon_size, child_name) = util.get_button_state(widget)
+         icon_size, child_name) = get_button_state(widget)
 
         if stock_id:
             self.stock_widgets.set_sensitive(True)
@@ -405,10 +583,10 @@ class ButtonContentsAdaptor(TransparentProperty, StringType):
     A custom button allow the user to add a label, an image and the position
     of the image with respect to the label.
     """
-    editor = ButtonContentsEditor
+    custom_editor = ButtonContentsEditor
 
     def get(self):
-        return util.get_button_state(self.object)
+        return get_button_state(self.object)
 
     def save(self):
         return None
@@ -422,7 +600,7 @@ class LabelAdaptor(CustomProperty, StringType):
     def is_translatable(self):
         # If a stock id is set, do not make it translatable,
         # because we don't want to translate stock-id labels!
-        stock_id = util.get_button_state(self.object)[0]
+        stock_id = get_button_state(self.object)[0]
         if stock_id:
             return False
 
@@ -430,7 +608,7 @@ class LabelAdaptor(CustomProperty, StringType):
 
     def save(self):
         (stock_id, notext,
-         label, image_path) = util.get_button_state(self.object)[:4]
+         label, image_path) = get_button_state(self.object)[:4]
         if ((stock_id and notext)
             or (not label and image_path)
             or (label and image_path)):
@@ -461,7 +639,7 @@ class ButtonAdaptor(ContainerAdaptor):
         gtk_button = gadget.widget
 
         (stock_id, notext, label,
-         image_path) = util.get_button_state(gtk_button)[:4]
+         image_path) = get_button_state(gtk_button)[:4]
 
         child = gtk_button.get_child()
         project = context.get_project()
@@ -482,6 +660,7 @@ class ButtonAdaptor(ContainerAdaptor):
                 project.add_hidden_widget(child)
 
             # case 4: stock item with text (nothing to do)
+
             # case 5: only text (nothing to do)
 
         # FIXME: Under some circumstances we end up with a GtkAlignment
@@ -505,8 +684,6 @@ class ButtonAdaptor(ContainerAdaptor):
 
 # GtkButton
 prop_registry.override_simple('GtkButton::use-stock', editable=False)
-#prop_registry.override_property('GtkButton::response-id', default="0",
-#                                name="Response ID")
 
 # GtkCheckButton
 prop_registry.override_simple('GtkCheckButton::draw-indicator', default=True)
@@ -522,20 +699,22 @@ class RadioGroupProp(CustomProperty, ObjectType):
         return
 
     def get(self):
-        group_name = ''
-        for group in self.object.get_group():
+        groups = self.object.get_group()
+        if len(groups) <= 1:
+            return None
+
+        for group in groups:
             if group.get_active():
-                group_name = group.get_name()
-        return group_name
+                return group
 
     def set(self, group):
         if not group in self.object.get_group():
-            self.object.set_property('group', group)
+            self.object.set_group(group)
 
     def save(self):
         value = self.get()
-        if value == self.object.get_name():
+        if not value or value == self.object:
             return
-        return value
+        return value.get_name()
 
 prop_registry.override_simple('GtkRadioButton::group', RadioGroupProp)

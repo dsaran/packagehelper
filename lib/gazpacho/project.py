@@ -14,143 +14,90 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
 import os.path
 
 import gtk
 import gobject
 from kiwi.utils import gsignal, type_register
 
-from gazpacho import util
+from gazpacho import gapi, util
+from gazpacho.commandmanager import command_manager
 from gazpacho.context import Context
-from gazpacho.loader.loader import ObjectBuilder
-from gazpacho.loader.custom import ButtonAdapter, DialogAdapter, \
-     WindowAdapter, str2bool, adapter_registry
+from gazpacho.filewriter import XMLWriter
+from gazpacho.gadget import Gadget, load_gadget_from_widget
+from gazpacho.loader.gazpacholoader import GazpachoObjectBuilder
+from gazpacho.model import GazpachoModelManager
 from gazpacho.placeholder import Placeholder
 from gazpacho.signaleditor import SignalInfo
 from gazpacho.sizegroup import GSizeGroup
-from gazpacho.uim import GazpachoUIM
-from gazpacho.widget import Gadget, load_gadget_from_widget
+from gazpacho.uimanager import GazpachoUIM
+from gazpacho.widgets.base.box import CommandBoxDeletePlaceholder
 from gazpacho.widgetregistry import widget_registry
-from gazpacho.widgets.base.custom import Custom
-from gazpacho.filewriter import XMLWriter
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
-
-class GazpachoObjectBuilder(ObjectBuilder):
-    def __init__(self, **kwargs):
-        self._app = kwargs.pop('app', None)
-        kwargs['placeholder'] = self.create_placeholder
-        kwargs['custom'] = Custom
-        ObjectBuilder.__init__(self, **kwargs)
-
-    def create_placeholder(self, name):
-        return Placeholder()
-
-    def show_windows(self):
-        pass
-
-class GazpachoButtonAdapter(ButtonAdapter):
-    def add(self, parent, child, properties):
-        # This is a hack, remove when the button saving/loading code
-        # is improved
-        for cur_child in parent.get_children():
-            parent.remove(cur_child)
-        ButtonAdapter.add(self, parent, child, properties)
-
-
-class GazpachoWindowAdapter(WindowAdapter):
-    object_type = gtk.Window
-    def prop_set_visible(self, window, value):
-        window.set_data('gazpacho::visible', str2bool(value))
-
-    def prop_set_modal(self, window, value):
-        window.set_data('gazpacho::modal', str2bool(value))
-
-adapter_registry.register_adapter(GazpachoWindowAdapter)
-
-# FIXME: This is quite strange, but apparently we need this too.
-class GazpachoDialogAdapter(DialogAdapter):
-    object_type = gtk.Dialog
-    def prop_set_modal(self, window, value):
-        window.set_data('gazpacho::modal', str2bool(value))
-
-adapter_registry.register_adapter(GazpachoDialogAdapter)
 
 class Project(gobject.GObject):
-    gsignal('add-widget', object),
-    gsignal('remove-widget', object),
-    gsignal('project-changed'),
+    """
+    Project is an object representing a specific user interface which
+    can be saved on disk.
+
+    Signals:
+      changed: something in the project changes, used to set the save button
+        insensitive for example
+      add-gadget: a gadget was added
+      remove-gadget: a gadget was removed
+      gadget-name-changed: the name of a gadget changed, different from
+        when the name in a widget changes, because in some cases the widget
+        itself changes in a gadget
+      add-action: an action or actiongroup was added
+      remove-action: an action or actiongroup was removed
+      action-name-changed: the name of an action changed
+      add-sizegroup: a sizegroup was added
+      remove-sizegroup: a sizegroup was removed
+
+    @ivar name: The name of the project like network-conf
+    @ivar path: The full path of the xml file for this project
+    @ivar sizegroups: # A list of GSizeGroups that are part of this project
+    @ivar selection: We need to keep the selection in the project because
+      we have multiple projects and when the user switchs between them, he
+      will probably not want to loose the selection. This is a list of
+      widget items.
+    @ivar uim: There is a UIManager in each project which holds the information
+      about menus and toolbars
+    @ivar model_manager: The model manager takes care of all the data models
+      for TreeViews and ComboBoxes, ...
+    @ivar undo_stack: Contains the undo (and redo) commands
+    @ivar context: out context
+    """
+    gsignal('changed'),
+    gsignal('add-gadget', object),
+    gsignal('remove-gadget', object),
+    gsignal('gadget-name-changed', object),
     gsignal('add-action', object),
     gsignal('remove-action', object),
+    gsignal('action-name-changed', object),
     gsignal('add-sizegroup', object),
     gsignal('remove-sizegroup', object),
 
-    # XXX: notify::name
-    gsignal('widget-name-changed', object),
-    gsignal('action_name_changed', object),
-
-    project_counter = 1
-
-    def __init__(self, untitled, app, loader=None):
+    def __init__(self, app):
         gobject.GObject.__init__(self)
 
         self._app = app
-
-        self.name = None
-
-        if untitled:
-            # The name of the project like network-conf
-            self.name = _('Untitled %d') % Project.project_counter
-            Project.project_counter += 1
-
-        # The full path of the xml file for this project
-        self.path = None
-
-        # The menu entry in the /Project menu
-        self.entry = None
-
+        self._changed = False
         self._domain = ''
-
+        self._unsupported_widgets = {}
+        self._version = 'libglade'
+        self._widget_old_names = {} # widget -> old name of the
         self._widgets = {}
 
-        self._unsupported_widgets = {}
-
-        # A list of GSizeGroups that are part of this project
+        self.name = None
+        self.path = None
         self.sizegroups = []
-
-        # We need to keep the selection in the project because we have multiple
-        # projects and when the user switchs between them, he will probably
-        # not want to loose the selection. This is a list of widget items.
         self.selection = WidgetSelection()
-
-        # widget -> old name of the widget (it's a bit of a hack)
-        self._widget_old_names = {}
-
         self.tooltips = gtk.Tooltips()
-
-        # A flag that is set when a project has changes if this flag is not set
-        # we don't have to query for confirmation after a close or exit is
-        # requested
-        self._changed = False
-
-        # There is a UIManager in each project which holds the information
-        # about menus and toolbars
         self.uim = GazpachoUIM(self)
-
-        # This is the id for the menuitem entry on Gazpacho main menu for this
-        # project
-        self.uim_id = -1
-
-        # Contains the undo (and redo) commands
+        self.model_manager = GazpachoModelManager()
         self.undo_stack = UndoRedoStack()
         self.undo_stack.connect('changed', self._undo_stack_changed_cb)
-
-        # create our context
         self.context = Context(self)
-
-        if loader:
-            self._read_from_loader(loader)
 
     # Private
 
@@ -163,11 +110,17 @@ class Project(gobject.GObject):
         @type loader: L{gazpacho.loader.loader.ObjectBuilder} instance
         """
         self._domain = loader.get_domain() or ''
+        self._version = loader.get_version()
 
         # Load UIM manager
         # Do this first since the custom menubar and toolbars adapters
         # depends on all ui definitions being loaded
         self.uim.load(loader)
+
+        # Load models before widgets
+        models = [w for w in loader.toplevels if isinstance(w, gtk.ListStore)]
+        for model in models:
+            self.model_manager.load_model(model)
 
         # Load the widgets
         for widget in loader.toplevels:
@@ -178,7 +131,7 @@ class Project(gobject.GObject):
         # since the sizegroups has references to the widgets
         for sizegroup in loader.sizegroups:
             name = sizegroup.get_data('gazpacho::object-id')
-            widgets =  sizegroup.get_data('gazpacho::sizegroup-widgets')
+            widgets =  sizegroup.get_data('gazpacho::sizegroup-widgets') or []
             gadgets = [Gadget.from_widget(widget)
                        for widget in widgets]
             self.add_sizegroup(GSizeGroup(name, sizegroup, gadgets))
@@ -192,6 +145,8 @@ class Project(gobject.GObject):
             gadget.add_signal_handler(SignalInfo(name=signal_name,
                                                  handler=signal_handler,
                                                  after=signal_after))
+
+        self._unsupported_widgets = loader.get_unsupported_widgets()
 
         self.changed = False
 
@@ -211,7 +166,6 @@ class Project(gobject.GObject):
         self.emit('remove-action', action)
 
     def _on_widget_notify_name(self, widget, pspec):
-        
         old_name = self._widget_old_names[widget]
         new_name = widget.get_name()
         if old_name == new_name:
@@ -221,7 +175,7 @@ class Project(gobject.GObject):
 
         del self._widget_old_names[widget]
         del self._widgets[old_name]
-        
+
         gadget = Gadget.from_widget(widget)
         if isinstance(widget, (gtk.MenuBar, gtk.Toolbar)):
             self.uim.update_widget_name(gadget)
@@ -233,21 +187,7 @@ class Project(gobject.GObject):
         self._widget_old_names[widget] = new_name
         self._widgets[widget.get_name()] = widget
 
-        self.emit('widget-name-changed', gadget)
-
-
-    # Class methods
-
-    def open(cls, path, app, buffer=None):
-        loader = GazpachoObjectBuilder(filename=path, buffer=buffer, app=app)
-
-        project = cls(False, app, loader)
-        project.path = path
-        project.name = os.path.basename(path)
-        project._unsupported_widgets = loader.get_unsupported_widgets()
-
-        return project
-    open = classmethod(open)
+        self.emit('gadget-name-changed', gadget)
 
     # Properties
 
@@ -257,10 +197,31 @@ class Project(gobject.GObject):
     def _set_changed(self, value):
         if self._changed != value:
             self._changed = value
-            self.emit('project-changed')
+            self.emit('changed')
     changed = property(_get_changed, _set_changed)
 
     # Public API
+
+    def load(self, filename):
+        """
+        Loads a glade file from a filename and inserts the content of
+        the file in a project.
+
+        @param filename: glade file to open
+        """
+        loader = GazpachoObjectBuilder(filename=filename, app=self._app)
+        self._read_from_loader(loader)
+        self.path = filename
+        self.name = os.path.basename(filename)
+
+    def load_from_buffer(self, buffer):
+        """
+        Loads a glade buffer and inserts the content of the file in a project.
+
+        @param filename: string
+        """
+        loader = GazpachoObjectBuilder(buffer=buffer, app=self._app)
+        self._read_from_loader(loader)
 
     def get_domain(self):
         """
@@ -278,13 +239,18 @@ class Project(gobject.GObject):
         @type domain: string
         """
 
-        # Avoid changing the project if the domain doesn't change
-        if domain == self._domain:
-            return
         self._domain = domain
 
-        # FIXME: Undo/Redo
         self.changed = True
+
+    def get_version(self):
+        """
+        Retrieves the version, possible values are currently
+        'libglade' or 'gtkbuilder'
+
+        @returns: the version
+        """
+        return self._version
 
     def get_unsupported_widgets(self):
         """
@@ -319,21 +285,15 @@ class Project(gobject.GObject):
     def add_widget(self, widget, new_name=False):
         """
         Adds a widget to the project and optionally sets a new name
-        if it already exists. Will emit add-widget signal when done.
+        if it already exists. Will emit add-gadget signal when done.
 
         @param widget:
         @param new_name: If True assign a new name if it already
           exists
         """
-
         # we don't list placeholders
         if isinstance(widget, Placeholder):
             return
-
-        if isinstance(widget, gtk.Container):
-            children = widget.get_children()
-        else:
-            children = []
 
         # The internal widgets (e.g. the label of a GtkButton) are handled
         # by gtk and don't have an associated gadget: we don't want to
@@ -345,6 +305,8 @@ class Project(gobject.GObject):
         gadget = Gadget.from_widget(widget)
         if not gadget:
             return
+
+        children = gadget.get_children()
 
         gadget.project = self
         self._widget_old_names[widget] = widget.get_name()
@@ -359,7 +321,7 @@ class Project(gobject.GObject):
         for child in children:
             self.add_widget(child, new_name=new_name)
 
-        self.emit('add-widget', gadget)
+        self.emit('add-gadget', gadget)
 
     def add_hidden_widget(self, widget):
         """
@@ -367,23 +329,36 @@ class Project(gobject.GObject):
         It also updates the name of the widget
         @param widget: the widget
         """
-
         if not isinstance(widget, gtk.Widget):
             raise TypeError("widget %r is not gtk.Widget instance" % widget)
 
+        if isinstance(widget, gtk.Container):
+            for child in util.get_all_children(widget):
+                self.add_hidden_widget(child)
+
         self._widgets[widget.get_name()] = widget
+
+    def remove_hidden_widget(self, widget):
+        if not isinstance(widget, gtk.Widget):
+            raise TypeError("widget %r is not gtk.Widget instance" % widget)
+
+        if isinstance(widget, gtk.Container):
+            for child in util.get_all_children(widget):
+                self.remove_hidden_widget(child)
+
+        if widget.get_name() in self._widgets.keys():
+            del self._widgets[widget.get_name()]
 
     def remove_widget(self, widget):
         if isinstance(widget, Placeholder):
             return
 
-        if isinstance(widget, gtk.Container):
-            for child in widget.get_children():
-                self.remove_widget(child)
-
         gadget = Gadget.from_widget(widget)
         if not gadget:
             return
+
+        for child in gadget.get_children():
+            self.remove_widget(child)
 
         if widget in self.selection:
             self.selection.remove(widget, False)
@@ -391,7 +366,21 @@ class Project(gobject.GObject):
 
         del self._widgets[widget.get_name()]
 
-        self.emit('remove-widget', gadget)
+        self.emit('remove-gadget', gadget)
+
+    def delete_selection(self):
+        """Delete the widget in the selection calling the right command"""
+        assert len(self.selection) == 1
+
+        widget = self.selection[0]
+        gadget = Gadget.from_widget(widget)
+        if gadget:
+            gapi.delete_gadget(self, gadget)
+
+        elif (isinstance(widget, Placeholder) and widget.is_deletable()):
+            if len(widget.get_parent().get_children()) > 1:
+                cmd = CommandBoxDeletePlaceholder(widget)
+                command_manager.execute(cmd, self)
 
     # XXX: replace_widget
     def replace(self, widget_name, new_widget):
@@ -450,8 +439,8 @@ class Project(gobject.GObject):
 
     def set_new_widget_name(self, widget):
         """Create a new name based on type."""
-        if not isinstance(widget, gtk.Widget):
-            raise TypeError("widget must be a gtk.Widget, not %r" % widget)
+        if not isinstance(widget, gobject.GObject):
+            raise TypeError("Instance must be a GObject, not %r" % widget)
 
         adapter = widget_registry.get_by_type(widget)
         base_name = adapter.generic_name
@@ -466,24 +455,27 @@ class Project(gobject.GObject):
         return name
 
     def save(self, path):
-        self.path = path
-        self.name = os.path.basename(path)
-
         xw = XMLWriter(project=self)
         widgets = self._widgets.values()
         widgets.sort(lambda x, y: cmp(x.name, y.name))
-        retval = xw.write(path, widgets, self.sizegroups, self.uim,
-                          self._domain)
+        models = self.model_manager.get_models()
+        retval = xw.write(path, widgets, self.sizegroups, models, self.uim,
+                          self._domain, self._version)
+
+        self.undo_stack.mark_saved()
+        self.path = path
+        self.name = os.path.basename(path)
 
         self.changed = False
-        self.undo_stack.mark_saved()
+
         return retval
 
     def serialize(self):
         xw = XMLWriter()
         widgets = self._widgets.values()
         widgets.sort(lambda x, y: cmp(x.name, y.name))
-        return xw.serialize_widgets(widgets, self.sizegroups, self.uim)
+        models = self.model_manager.get_models()
+        return xw.serialize_widgets(widgets, self.sizegroups, models, self.uim)
 
 type_register(Project)
 
@@ -612,7 +604,7 @@ class WidgetSelection(gobject.GObject):
     be emitted.
     """
 
-    gsignal('selection_changed')
+    gsignal('selection-changed')
 
     def __init__(self):
         gobject.GObject.__init__(self)

@@ -14,12 +14,12 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
 import optparse
 import os
 import sys
 
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+from gazpacho import __version__
+from gazpacho.i18n import _
 
 PYGTK_REQUIRED = (2, 6, 0)
 KIWI_REQUIRED = (1, 9, 6)
@@ -149,20 +149,37 @@ def show(options, filenames=[]):
 
     gtk.main()
 
+def debug_hook(exctype, value, tb):
+    import traceback
+
+    traceback.print_exception(exctype, value, tb)
+    print
+    print '-- Starting debugger --'
+    print
+    import pdb
+    pdb.pm()
+    raise SystemExit
+
 def launch(options, filenames=[]):
     if options.debug:
         print 'Loading gazpacho'
 
     # Delay imports, so command line parsing is not slowed down
     from kiwi.component import provide_utility
-    from gazpacho.interfaces import IGazpachoApp
+    from gazpacho.interfaces import IGazpachoApp, IPluginManager
     from gazpacho.app.app import Application
-    from gazpacho.debugwindow import DebugWindow, show
+    from gazpacho.app.debugwindow import DebugWindow, show
+    from gazpacho.plugins import PluginManager
+
+    plugin_manager = PluginManager()
+    provide_utility(IPluginManager, plugin_manager)
 
     gazpacho = Application()
     provide_utility(IGazpachoApp, gazpacho)
 
-    if not options.debug:
+    if options.debug:
+        sys.excepthook = debug_hook
+    else:
         DebugWindow.application = gazpacho
         sys.excepthook = show
 
@@ -194,10 +211,11 @@ def launch(options, filenames=[]):
 
     if options.debug:
         print 'Running gazpacho'
+
     gazpacho.run()
 
 def main(args=[]):
-    parser = optparse.OptionParser()
+    parser = optparse.OptionParser(version=__version__)
     parser.add_option('', '--profile',
                       action="store_true",
                       dest="profile",

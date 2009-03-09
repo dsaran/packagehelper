@@ -14,15 +14,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
-
 import gtk
 import gobject
 
+from gazpacho import util
 from gazpacho.placeholder import Placeholder
 from gazpacho.properties import prop_registry, CustomProperty, \
-     StringType, TransparentProperty, BooleanType
-from gazpacho.widget import Gadget
+     StringType, TransparentProperty, BooleanType, IntType
+from gazpacho.gadget import Gadget
 from gazpacho.widgetregistry import widget_registry
 from gazpacho.widgetadaptor import WidgetAdaptor
 
@@ -31,8 +30,6 @@ from gazpacho.widgets.base import image
 from gazpacho.widgets.base import spinbutton
 # pyflakes
 assert image and spinbutton
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
 
 # GtkWidget
 class EventsProp(TransparentProperty):
@@ -72,14 +69,10 @@ class ObjectDataProp(CustomProperty):
 
     def set(self, value):
         self.object.set_data(self.qdata, value)
+        self.notify()
 
 class VisibleProp(ObjectDataProp, BooleanType):
     qdata = 'gazpacho::visible'
-    def __init__(self, *args):
-        super(VisibleProp, self).__init__(*args)
-
-        if not isinstance(self.object, gtk.Window):
-            self.value = True
 
 prop_registry.override_simple('GtkWidget::visible', VisibleProp)
 prop_registry.override_simple('GtkWidget::is-focus', ObjectDataProp,
@@ -90,7 +83,8 @@ prop_registry.override_simple('GtkWidget::is-focus', ObjectDataProp,
 prop_registry.override_simple('GtkWidget::has-focus', editable=False,
                               persistent=False)
 
-prop_registry.override_simple('GtkWidget::name', translatable=False)
+prop_registry.override_simple('GtkWidget::name', translatable=False,
+                              priority=0)
 
 class SizeGroupProp(CustomProperty, StringType):
     # we can remove this class when depending in gtk 2.8 since this property
@@ -99,16 +93,47 @@ class SizeGroupProp(CustomProperty, StringType):
     translatable = False
     custom = True
 
+    def __init__(self, object):
+        super(SizeGroupProp, self).__init__(object)
+
     def get(self):
         return self.object.get_data('gazpacho::sizegroup')
 
     def set(self, value):
         self.object.set_data('gazpacho::sizegroup', value)
+        self.notify()
 
     def save(self):
+        # gtkbuilder does not use this fake property
+        if self._project.get_version() == 'gtkbuilder':
+            return None
         return self.get() or None
 
 prop_registry.override_property('GtkWidget::sizegroup', SizeGroupProp)
+
+# FIXME: should be for *all* widgets, but only the onces
+#        which has GtkDialog as a parent.
+class ResponseIdProp(CustomProperty, IntType):
+    editable = True
+    translatable = False
+    custom = True
+    label = "Dialog response"
+
+    def __init__(self, object):
+        super(ResponseIdProp, self).__init__(object)
+
+    def get(self):
+        return self.object.get_data('gazpacho::response-id')
+
+    def set(self, value):
+        self.object.set_data('gazpacho::response-id', value)
+        self.notify()
+
+    def save(self):
+        if self._project.get_version() == 'gtkbuilder':
+            return None
+        return super(ResponseIdProp, self).save()
+prop_registry.override_property('GtkWidget::response-id', ResponseIdProp)
 
 # GtkContainer
 prop_registry.override_simple('GtkContainer::border-width',
@@ -118,7 +143,10 @@ prop_registry.override_simple('GtkContainer::resize-mode',
 
 class ContainerAdaptor(WidgetAdaptor):
     def get_children(self, context, widget):
-        return widget.get_children()
+        children = []
+        if isinstance(widget, gtk.Container):
+            children += util.get_all_children(widget)
+        return children
 
     def replace_child(self, context, current, new, container):
         if current is None:
@@ -249,6 +277,7 @@ class LabelAdaptor(WidgetAdaptor):
         label.set_alignment(0.0, 0.5)
 
 prop_registry.override_simple('GtkLabel::mnemonic-widget', editable=True)
+prop_registry.override_simple('GtkLabel::label', priority=1)
 
 # GtkFrame
 class FrameAdaptor(ContainerAdaptor):
@@ -290,5 +319,6 @@ if p is not None:
 #                              default=False)
 #prop_registry.override_simple('GtkVSeparator::expand', parent='GtkHBox',
 #                              default=False)
+
 
 

@@ -70,6 +70,7 @@ class WidgetInfo(BaseInfo):
         self.constructor  = attrs.get('constructor')
         self.children = []
         self.properties = []
+        self.attributes = {} # these are used for layout (e.g. cell renderers)
         self.signals = []
         self.uis = []
         self.accelerators = []
@@ -77,6 +78,9 @@ class WidgetInfo(BaseInfo):
         self.gobj = None
         # If it's a placeholder, used by code for unsupported widgets
         self.placeholder = False
+        # these attributes are useful for models:
+        self.columns = []
+        self.rows = []
 
     def is_internal_child(self):
         if self.parent and self.parent.internal_child:
@@ -89,9 +93,11 @@ class WidgetInfo(BaseInfo):
 class ChildInfo(BaseInfo):
     def __init__(self, attrs, parent):
         BaseInfo.__init__(self)
+        self.type = attrs.get('type')
         self.internal_child = attrs.get('internal-child')
         self.properties = []
         self.packing_properties = []
+        self.attributes = {}
         self.placeholder = False
         self.parent = parent
         self.widget = None
@@ -136,12 +142,53 @@ class UIInfo(BaseInfo):
         self.filename = attrs.get('filename')
         self.merge = str2bool(attrs.get('merge', 'yes'))
 
+class SizeGroupInfo(BaseInfo):
+    def __init__(self, name):
+        BaseInfo.__init__(self)
+        self.name = name
+        self.widgets = []
+
+class AttributeInfo(BaseInfo):
+    def __init__(self, attrs):
+        BaseInfo.__init__(self)
+        self.name = str(attrs.get('name'))
+
+class ColumnsInfo(BaseInfo):
+    def __init__(self, attrs):
+        BaseInfo.__init__(self)
+        self.columns = []
+
+class ColumnInfo(BaseInfo):
+    def __init__(self, attrs):
+        BaseInfo.__init__(self)
+        type_name = str(attrs.get('type'))
+        try:
+            self.type = gobject.type_from_name(type_name)
+        except RuntimeError:
+            raise ParseError('the type %s is not a valid GType' % type_name)
+
+class RowInfo(BaseInfo):
+    def __init__(self, attrs):
+        BaseInfo.__init__(self)
+        self.cols = []
+
+class ColInfo(BaseInfo):
+    def __init__(self, attrs):
+        BaseInfo.__init__(self)
+        try:
+            self.id = int(attrs.get('id'))
+        except ValueError:
+            raise ParseError('id attribute must be integer')
+
 class ExpatParser(object):
-    def __init__(self, domain):
-        self._domain = domain
+    def __init__(self, builder):
+        self._builder = builder
         self.requires = []
         self._stack = Stack()
         self._state_stack = Stack()
+        self._ui_state = False
+        self._widgets_state = False
+        self._sizegroups = []
         self._parser = expat.ParserCreate()
         self._parser.buffer_text = True
         self._parser.StartElementHandler = self._handle_startelement
@@ -162,11 +209,19 @@ class ExpatParser(object):
         except expat.ExpatError, e:
             raise ParseError(e)
 
-    def get_domain(self):
-        return self._domain
+    def _build_ui(self, name, attrs):
+        extra = ''
+        for attr, value in attrs.items():
+            extra += " %s=\"%s\"" % (attr, value)
+
+        ui = self._stack.peek()
+        ui.data += "<%s%s>" % (name, extra)
 
     # Expat callbacks
     def _handle_startelement(self, name, attrs):
+        if self._ui_state:
+            self._build_ui(name, attrs)
+            return
         self._state_stack.push(name)
         name = name.replace('-', '_')
         func = getattr(self, '_start_%s' % name, None)
@@ -175,6 +230,14 @@ class ExpatParser(object):
             self._stack.push(item)
 
     def _handle_endelement(self, name):
+        if self._ui_state:
+            ui = self._stack.peek()
+            if name != "ui":
+                ui.data += "</%s>" % name
+                return
+            elif not ui.data.startswith("<ui>"):
+                ui.data = "<ui>%s</ui>" % ui.data
+
         self._state_stack.pop()
         name = name.replace('-', '_')
         func = getattr(self, '_end_%s' % name, None)
@@ -191,9 +254,19 @@ class ExpatParser(object):
     def _start_glade_interface(self, attrs):
         # libglade extension, add a domain argument to the interface
         if 'domain' in attrs:
-            self._domain = str(attrs['domain'])
+            self._builder._domain = str(attrs['domain'])
+        self._builder._version = "libglade"
 
     def _end_glade_interface(self, obj):
+        pass
+
+    def _start_interface(self, attrs):
+        # libglade extension, add a domain argument to the interface
+        if 'domain' in attrs:
+            self._builder._domain = str(attrs['domain'])
+        self._builder._version = "gtkbuilder"
+
+    def _end_interface(self, attrs):
         pass
 
     def _start_requires(self, attrs):
@@ -213,32 +286,52 @@ class ExpatParser(object):
         obj = self._stack.peek()
         obj.signals.append(signal)
 
-    def _start_widget(self, attrs):
+    def _start__common(self, attrs):
         if not 'class' in attrs:
             raise ParseError("<widget> needs a class attribute")
         if not 'id' in attrs:
             raise ParseError("<widget> needs an id attribute")
 
         return WidgetInfo(attrs, self._stack.peek())
-    _start_object = _start_widget
 
-    def _end_widget(self, obj):
+    def _start_widget(self, attrs):
+        if self._widgets_state:
+            obj = self._stack.peek()
+            obj.widgets.append(str(attrs.get('name')))
+            return
+        else:
+            if self._builder._version == 'gtkbuilder':
+                raise ParseError("Unknown tag: widget")
+        return self._start__common(attrs)
+
+    def _start_object(self, attrs):
+        if self._builder._version == 'libglade':
+            raise ParseError("Unknown tag: object")
+        return self._start__common(attrs)
+
+    def _end__common(self, obj):
         obj.parent = self._stack.peek()
 
         if not obj.gobj:
-            obj.gobj = self._build_phase1(obj)
+            obj.gobj = self._builder._build_phase1(obj)
 
-        self._build_phase2(obj)
+        self._builder._build_phase2(obj)
 
         if obj.parent:
             obj.parent.widget = obj.gobj
 
-    _end_object = _end_widget
+    def _end_widget(self, attrs):
+        if self._widgets_state:
+            return
+        return self._end__common(attrs)
+
+    def _end_object(self, attrs):
+        return self._end__common(attrs)
 
     def _start_child(self, attrs):
         obj = self._stack.peek()
         if not obj.gobj:
-            obj.gobj = self._build_phase1(obj)
+            obj.gobj = self._builder._build_phase1(obj)
 
         return ChildInfo(attrs, parent=obj)
 
@@ -260,7 +353,8 @@ class ExpatParser(object):
         # Note that we should not write properties with empty strings from
         # the start, but that is another bug
         if prop.translatable and prop.data:
-            prop.data = dgettext(self._domain, prop.data)
+            if not self._builder._ignore_domain:
+                prop.data = dgettext(self._builder._domain, prop.data)
 
         obj = self._stack.peek()
 
@@ -273,11 +367,14 @@ class ExpatParser(object):
             raise ParseError("property must be a node of widget or packing")
 
     def _start_ui(self, attrs):
-        if not 'id' in attrs:
-            raise ParseError("<ui> needs an id attribute")
+        if self._builder._version != 'gtkbuilder':
+            if not 'id' in attrs:
+                raise ParseError("<ui> needs an id attribute")
+        self._ui_state = True
         return UIInfo(attrs)
 
     def _end_ui(self, ui):
+        self._ui_state = False
         if not ui.data or ui.filename:
             raise ParseError("<ui> needs CDATA or filename")
 
@@ -304,9 +401,73 @@ class ExpatParser(object):
         obj = self._stack.peek()
         obj.accelerators.append(accelerator)
 
+    def _start_widgets(self, attrs):
+        self._widgets_state = True
+        obj = self._stack.peek()
+        return SizeGroupInfo(obj.id)
+
+    def _end_widgets(self, obj):
+        self._builder._add_sizegroup_widgets(obj.name, obj.widgets)
+
+    def _start_attribute(self, attrs):
+        if not 'name' in attrs:
+            raise ParseError("<attribute> needs a name attribute")
+        return AttributeInfo(attrs)
+
+    def _end_attribute(self, attribute):
+        obj = self._stack.peek()
+
+        try:
+            data = int(attribute.data)
+        except ValueError:
+            raise ParseError("attribute value must be an integer")
+
+        property_type = self._state_stack.peek()
+        if property_type == 'attributes':
+            obj.attributes[attribute.name] = data
+        else:
+            raise ParseError("attribute must be a node of <attributes>")
+
+    def _start_column(self, attrs):
+        if not 'type' in attrs:
+            raise ParseError("<column> needs a type attribute")
+        return ColumnInfo(attrs)
+
+    def _end_column(self, column):
+        obj = self._stack.peek()
+        parent_type = self._state_stack.peek()
+        if parent_type == 'columns':
+            obj.columns.append(column)
+        else:
+            raise ParseError("column must be a node of <columns>")
+
+    def _start_row(self, attrs):
+        return RowInfo(attrs)
+
+    def _end_row(self, row):
+        obj = self._stack.peek()
+        parent_type = self._state_stack.peek()
+        if parent_type == 'data':
+            obj.rows.append(row)
+        else:
+            raise ParseError("row must be a node of <data>")
+
+    def _start_col(self, attrs):
+        if not 'id' in attrs:
+            raise ParseError("<col> needs an id attribute")
+        return ColInfo(attrs)
+
+    def _end_col(self, col):
+        obj = self._stack.peek()
+        parent_type = self._state_stack.peek()
+        if parent_type == 'row':
+            obj.cols.append(col)
+        else:
+            raise ParseError("col must be a node of <row>")
+
 class ObjectBuilder:
     def __init__(self, filename='', buffer=None, root=None, placeholder=None,
-                 custom=None, domain=None):
+                 custom=None, domain=None, ignore_domain=False):
         if ((not filename and not buffer) or
             (filename and buffer)):
             raise TypeError("need a filename or a buffer")
@@ -317,6 +478,7 @@ class ObjectBuilder:
         self._placeholder = placeholder
         self._custom = custom
         self._domain = domain
+        self._ignore_domain = ignore_domain
 
         # maps the classes of widgets that failed to load to lists of
         # widget ids
@@ -339,6 +501,7 @@ class ObjectBuilder:
         self._accel_group = None
         self._delayed_properties = {}
         self._internal_children = {}
+        self._sizegroup_widgets = {}
 
         # Public
         self.toplevels = []
@@ -352,14 +515,11 @@ class ObjectBuilder:
             if domain == 'messages':
                 domain = None
 
-        self._parser = ExpatParser(domain)
-        self._parser._build_phase1 = self._build_phase1
-        self._parser._build_phase2 = self._build_phase2
+        self._parser = ExpatParser(self)
         if filename:
             self._parser.parse_file(filename)
         elif buffer:
             self._parser.parse_stream(buffer)
-        self._domain = self._parser.get_domain()
         self._parse_done()
 
     def __len__(self):
@@ -372,6 +532,9 @@ class ObjectBuilder:
 
     def get_domain(self):
         return self._domain
+
+    def get_version(self):
+        return self._version
 
     def get_widget(self, widget):
         return self._widgets.get(widget)
@@ -510,7 +673,7 @@ class ObjectBuilder:
                     other = self._widgets.get(value)
                     if other is None:
                         raise ParseError(
-                            "property %s of %s refers to widget %s which "
+                            "property %s of %s refers to object %s which "
                             "does not exist" % (pspec.name, obj_id,value))
                     prop_list.append((pspec.name, other))
                 else:
@@ -555,8 +718,8 @@ class ObjectBuilder:
 
     def _uimanager_construct(self, uimanager_name, obj_id):
         uimanager = self._widgets[uimanager_name]
-
         widget = uimanager.get_widget('ui/' + obj_id)
+        widget.set_data('gazpacho::uimanager-name', uimanager_name)
         if widget is None:
             # XXX: untested code
             uimanager_name = self._uistates.get(obj_id)
@@ -678,13 +841,17 @@ class ObjectBuilder:
                 gobj = self._uimanager_construct(constructor, obj.id)
             else:
                 raise ParseError("constructor %s for object %s could not "
-                                 "be found" % (obj.id, obj.constructor))
+                                 "be found" % (obj.constructor, obj.id))
             self._constructed_objects[gobj] = self._widgets[constructor]
         else:
             gobj = adapter.construct(obj.id, gtype, construct)
 
         if gobj:
             self._add_widget(obj.id, gobj)
+
+            if isinstance(gobj, gtk.ListStore):
+                adapter.set_column_types(gobj, obj.columns)
+                adapter.fill(gobj, obj.rows)
 
             adapter.set_properties(gobj, normal)
 
@@ -767,12 +934,16 @@ class ObjectBuilder:
         try:
             adapter.add(gobj,
                         widget,
-                        child.packing_properties)
+                        child.packing_properties,
+                        child.type)
         except NotImplementedError:
             raise ParseError(
                 '%s of type %s has children, but its not supported' % (
                 child.parent.id,
                 gobject.type_name(gobj)))
+
+        if isinstance(gobj, gtk.CellLayout):
+            adapter.set_cell_renderer_attributes(gobj, widget, child.attributes)
 
     def _attach_accel_groups(self):
         # This iterates of all objects constructed by a gtk.UIManager
@@ -787,7 +958,16 @@ class ObjectBuilder:
             if not accel_group in gtk.accel_groups_from_object(toplevel):
                 toplevel.add_accel_group(accel_group)
 
+    def _add_sizegroup_widgets(self, group_name, widget_names):
+        self._sizegroup_widgets[group_name] = widget_names
+
     def _setup_sizegroups(self):
+        # gtkbuilder way
+        for group_name, widget_names in self._sizegroup_widgets.items():
+            for widget_name in widget_names:
+                widget = self._widgets[widget_name]
+                widget.set_data('gazpacho::sizegroup', group_name)
+
         for widget in self._widgets.values():
             # Collect all the sizegroups
             if isinstance(widget, gtk.SizeGroup):

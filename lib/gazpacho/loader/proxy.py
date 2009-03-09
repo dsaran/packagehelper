@@ -1,10 +1,6 @@
-import gettext
-
 from inspect import getmembers, ismethod
 
 from gazpacho.loader.loader import ObjectBuilder
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
 
 class Proxy(object):
     def __init__(self, gladefile=None, gladestream=None, root=None):
@@ -57,7 +53,7 @@ class Proxy(object):
                 else:
                     print ('Warning: the widget %s is not on my widget tree '
                            'neither in the action list') % widget_name
-        
+
     def __getattr__(self, name):
         """Easy way to access the widgets by their name."""
         return self._wt.get_widget(name)
