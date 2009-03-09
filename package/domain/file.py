@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.4 2009-02-07 17:40:27 daniel Exp $
+# Version: $Id: file.py,v 1.5 2009-03-09 01:12:59 daniel Exp $
 
 from os import sep
 from path import path as Path
@@ -37,8 +37,10 @@ class File:
 
         if path:
             self._path = path
+            if not hasattr(self._path, 'splitall'):
+                self._path = Path(self._path)
 
-            fileDetails = path.splitall()
+            fileDetails = self._path.splitall()
             self._name = fileDetails[-1]
 
         if parse:
@@ -53,39 +55,45 @@ class File:
                 log.warn("Unknown file path: " + path)
                 raise ValueError
 
-    def get_name(self):
+    def getname(self):
         return self._name
 
-    def get_database(self):
+    def getdatabase(self):
         return self._database
 
-    def get_type(self):
+    def gettype(self):
         return self._type
 
-    def get_path(self):
+    def getpath(self):
         return self._path #self._basepath + self._path
 
-    def get_basepath(self):
+    def getbasepath(self):
         return self._basepath
 
-    def set_name(self, name):
+    def setname(self, name):
+        print "setting name"
         self._name = name
 
-    def set_database(self, database):
+    def setdatabase(self, database):
         self._database = database
 
-    def set_type(self, type):
+    def settype(self, type):
         self._type = type
 
-    def set_path(self, path):
+    def setpath(self, path):
         self._path = path
+
+    name = property(getname, setname, doc="File name (ex: /path/to/filename.ext -> filename.ext)")
+    database = property(getdatabase, setdatabase, doc="Database extracted from path")
+    type = property(gettype, settype, doc="Type extracted from path")
+    path = property(getpath, setpath, doc="Full path of file")
 
     def __repr__(self):
         return str(self._path)
 
     def __str__(self):
         return "<File name: %s, database: %s, type: %s>" \
-                % (self._name, self._database, self._type)
+                % (self.name, self.database, self.type)
 
     def get_order(self):
         if (not self.TYPE_ORDER.has_key(self._type)):
@@ -105,18 +113,18 @@ class File:
         if (self.__class__ != other.__class__):
             raise TypeError
 
-        if (self.get_database() == other.get_database()):
+        if (self.database == other.database):
             return self.get_order().__cmp__(other.get_order())
         else:
-            return self.get_database().__cmp__(other.get_database())
+            return self.database.__cmp__(other.database)
 
     def __eq__(self, other):
         if other == None or other.__class__ != File:
             return False
 
-        equals = self._name == other.get_name() \
-                 and self._database == other.get_database() \
-                 and self._type == other.get_type()
+        equals = self.name == other.name \
+                 and self.database == other.database \
+                 and self.type == other.type
         return equals
 
     def getInitScript(self):
@@ -126,7 +134,7 @@ class File:
     def getScript(self):
         path = self._path.replace(self._basepath, '', 1)
         value = []
-        value.append('PROMPT Executando script ' + self.get_name())
+        value.append('PROMPT Executando script ' + self.name)
         value.append('@' + path)
         if (self._type in self.CATEGORIES['COMPILABLE']):
             value.append('SHOW ERRORS')
@@ -139,4 +147,56 @@ class File:
             value.append('PROMPT ** Fazer commit se tudo correr bem **')
             value.append('PROMPT *************************************')
         return value
+
+
+class InstallScript(object):
+    """ Represents a install script used to invoke package's sql files."""
+    _name = None
+    #_content = None
+    _description = None
+
+    def __init__(self, name=None, content=None, desc=None):
+        """ Initialize the install script
+            @param name name of file to be created in the filesystem
+            @param content list of files (File objects) to be invoked
+            @param desc description of install script """
+        self._name = name
+        self._content = content or []
+        self._description = desc
+
+    def getname(self):
+        return self._name
+
+    def setname(self, name):
+        self._name = name
+
+    def getcontent(self):
+        return self._content
+
+    def setcontent(self, content):
+        self._content = content
+
+    def getdescription(self):
+        return self._description
+
+    def setdescription(self, description):
+        self._description = description
+
+    def add_file(self, file):
+        self._content.append(file)
+
+    name = property(getname, setname, doc="Script name")
+    content = property(getcontent, setcontent, doc="Content of script ([File, ..])")
+    description = property(getdescription, setdescription, doc="Short description of the script")
+
+    def __eq__(self, other):
+        if not hasattr(other, 'name'):
+            return False
+
+        return self.name == other.name
+
+    def __str__(self):
+        return "<InstallScript name='%s' content=%s/>" % (self.name, str(self.content))
+
+    __repr__ = __str__
 

@@ -34,7 +34,6 @@ import os
 import re
 import string
 
-
 import gobject
 import gtk
 from gtk import gdk
@@ -113,7 +112,7 @@ class SignalBroker(object):
             match = method_regex.match(fname)
             if match is None:
                 continue
-            after, w_name, signal = match.groups()
+            on_after, w_name, signal = match.groups()
             widget = getattr(view, w_name, None)
             if widget is None:
                 raise AttributeError("couldn't find widget %s in %s"
@@ -125,11 +124,13 @@ class SignalBroker(object):
             # Must use getattr; using the class method ends up with it
             # being called unbound and lacking, thus, "self".
             try:
-                if after:
+                if on_after == 'on':
+                    signal_id = widget.connect(signal, methods[fname])
+                elif on_after == 'after':
                     signal_id = widget.connect_after(signal, methods[fname])
                 else:
-                    signal_id = widget.connect(signal, methods[fname])
-            except TypeError:
+                    raise AssertionError
+            except TypeError, e:
                 raise TypeError("Widget %s doesn't provide a signal %s" % (
                                 widget.__class__, signal))
             self._autoconnected.setdefault(widget, []).append((
@@ -486,11 +487,13 @@ class SlaveView(gobject.GObject):
     # Slave handling
     #
 
-    def attach_slave(self, name, slave):
+    def attach_slave(self, name, slave, placeholder_widget=None):
         """Attaches a slaveview to the current view, substituting the
-        widget specified by name.  the widget specified *must* be a
-        eventbox; its child widget will be removed and substituted for
-        the specified slaveview's toplevel widget::
+        widget specified by placeholder_widget. If placeholder_widget is not
+        specified, an widget with the name specified must exist.
+
+        The widget specified *must* be a eventbox; its child widget will be
+        removed and substituted for the specified slaveview's toplevel widget::
 
          .-----------------------. the widget that is indicated in the diagram
          |window/view (self.view)| as placeholder will be substituted for the
@@ -528,7 +531,7 @@ class SlaveView(gobject.GObject):
         else: # slaveview
             new_widget = shell
 
-        placeholder = self.get_widget(name)
+        placeholder = placeholder_widget or self.get_widget(name)
         placeholder.set_data('kiwi::slave', self)
 
         if not placeholder:
@@ -604,7 +607,7 @@ class SlaveView(gobject.GObject):
 
     def get_sizegroups(self):
         """
-        @returns: a list of sizegroups for the current view.
+        Get a list of sizegroups for the current view.
         """
         if not self._glade_adaptor:
             return []
@@ -965,6 +968,13 @@ def _get_gaxml():
         return
     return GAXMLWidgetTree
 
+def _get_builder():
+    try:
+        from kiwi.ui.builderloader import BuilderWidgetTree
+    except ImportError:
+        return
+    return BuilderWidgetTree
+
 def _open_glade(view, gladefile, domain):
     if not gladefile:
         raise ValueError("A gladefile wasn't provided.")
@@ -990,7 +1000,13 @@ def _open_glade(view, gladefile, domain):
     # glade-3
     # <?xml version="1.0" encoding="UTF-8" standalone="no"?>
     # <!DOCTYPE glade-interface SYSTEM "glade-2.0.dtd">
-    if 'glade-2.0.dtd' in sniff:
+    if '<interface' in sniff:
+        if not hasattr(gtk, 'Builder'):
+            raise AssertionError(
+                "PyGTK 2.12 or higher is required for builder support")
+        WidgetTree = _get_builder()
+        loader_name = 'builder'
+    elif 'glade-2.0.dtd' in sniff:
         WidgetTree = _get_libglade()
         loader_name = 'libglade'
     elif 'gaxml-0.1.dtd' in sniff:

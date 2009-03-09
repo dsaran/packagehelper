@@ -68,6 +68,9 @@ class CVS:
 
         # This is necessary because cvs does not accept absolute directories
         # with -d option.
+        # Need to backup original location to avoid breaking other components
+        # who might need to get program location.
+        original_cwd = os.getcwd()
         os.chdir(dest.abspath())
         cvs_path = self.get_config().get_cvs()
 
@@ -80,6 +83,8 @@ class CVS:
                 self.module)
 
         output, error = self.runner.run(command)
+
+        os.chdir(original_cwd)
 
         if output:
             log.info(output)

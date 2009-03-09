@@ -34,6 +34,8 @@ from kiwi.ui.entry import KiwiEntry
 from kiwi.ui.entrycompletion import KiwiEntryCompletion
 from kiwi.utils import gsignal, type_register
 
+from kiwi.ui.cellrenderer import ComboDetailsCellRenderer
+
 log = Logger('kiwi.ui.combo')
 
 
@@ -77,9 +79,10 @@ class _ComboEntryPopup(gtk.Window):
         self._treeview.add_events(gdk.BUTTON_PRESS_MASK)
         self._selection = self._treeview.get_selection()
         self._selection.set_mode(gtk.SELECTION_BROWSE)
+        self._renderer = ComboDetailsCellRenderer()
         self._treeview.append_column(
-            gtk.TreeViewColumn('Foo', gtk.CellRendererText(),
-                               text=0))
+            gtk.TreeViewColumn('Foo', self._renderer,
+                               label=0, data=1))
         self._treeview.set_headers_visible(False)
         self._sw.add(self._treeview)
         self._treeview.show()
@@ -279,12 +282,11 @@ class _ComboEntryPopup(gtk.Window):
             rows = self._visible_rows
             self._sw.set_policy(hpolicy, gtk.POLICY_ALWAYS)
 
-        focus_padding = treeview.style_get_property('focus-line-width') * 2
-        cell_height = treeview.get_column(0).cell_get_size()[4]
-        height = (cell_height + focus_padding) * rows
+        cell_height = treeview.get_cell_area(0, treeview.get_column(0)).height
+        height = cell_height * rows
 
         screen = self._comboentry.get_screen()
-        monitor_num = screen.get_monitor_at_window(sample.window)
+        monitor_num = screen.get_monitor_at_window(sample.entry.window)
         monitor = screen.get_monitor_geometry(monitor_num)
 
         if x < monitor.x:
@@ -292,13 +294,13 @@ class _ComboEntryPopup(gtk.Window):
         elif x + width > monitor.x + monitor.width:
             x = monitor.x + monitor.width - width
 
-        if y + sample.allocation.height + height <= monitor.y + monitor.height:
-            y += sample.allocation.height
+        if y + sample.entry.allocation.height + height <= monitor.y + monitor.height:
+            y += sample.entry.allocation.height
         elif y - height >= monitor.y:
             y -= height
-        elif (monitor.y + monitor.height - (y + sample.allocation.height) >
+        elif (monitor.y + monitor.height - (y + sample.entry.allocation.height) >
               y - monitor.y):
-            y += sample.allocation.height
+            y += sample.entry.allocation.height
             height = monitor.y + monitor.height - y
         else :
             height = y - monitor.y
@@ -345,9 +347,12 @@ class _ComboEntryPopup(gtk.Window):
                 treeiter = model.convert_child_iter_to_iter(treeiter)
         self._selection.select_iter(treeiter)
 
+    def set_details_callback(self, callable):
+        self._renderer.set_details_callback(callable)
+
 type_register(_ComboEntryPopup)
 
-class ComboEntry(gtk.HBox):
+class ComboEntry(gtk.VBox):
 
     implements(IEasyCombo)
 
@@ -356,13 +361,19 @@ class ComboEntry(gtk.HBox):
 
     def __init__(self, entry=None):
         """
+        Create a new ComboEntry object.
         @param entry: a gtk.Entry subclass to use
         """
-        gtk.HBox.__init__(self)
+        gtk.VBox.__init__(self)
         self._popping_down = False
 
         if not entry:
             entry = KiwiEntry()
+
+        self.hbox = gtk.HBox()
+        self.pack_start(gtk.EventBox())
+        self.pack_start(self.hbox, expand=False)
+        self.pack_start(gtk.EventBox())
 
         self.mode = ComboMode.UNKNOWN
         self.entry = entry
@@ -374,14 +385,17 @@ class ComboEntry(gtk.HBox):
                            self._on_entry__scroll_event)
         self.entry.connect('key-press-event',
                            self._on_entry__key_press_event)
-        self.pack_start(self.entry, True, True)
-        self.entry.show()
+        self.entry.connect('focus-out-event',
+                           self._on_entry__focus_out_event)
+
+        self.hbox.pack_start(self.entry, True, True)
+        self.hbox.show_all()
 
         self._button = gtk.ToggleButton()
         self._button.connect('scroll-event', self._on_entry__scroll_event)
         self._button.connect('toggled', self._on_button__toggled)
         self._button.set_focus_on_click(False)
-        self.pack_end(self._button, False, False)
+        self.hbox.pack_end(self._button, False, False)
         self._button.show()
 
         arrow = gtk.Arrow(gtk.ARROW_DOWN, gtk.SHADOW_NONE)
@@ -405,6 +419,12 @@ class ComboEntry(gtk.HBox):
         self.entry.grab_focus()
 
     # Callbacks
+    def _on_entry__focus_out_event(self, widget, event):
+        # The popup window should be hidden if the entry loses the focus,
+        # unless we have a combo entry and the user clicked the toggle button
+        # to show the popup window
+        if not self._button.get_active():
+            self.popdown()
 
     def _on_entry_completion__match_selected(self, completion, model, iter):
         # the iter we receive is specific to the tree model filter used
@@ -502,13 +522,15 @@ class ComboEntry(gtk.HBox):
 
     def set_text(self, text):
         """
+        Sets the text.
         @param text:
         """
         self.entry.set_text(text)
 
     def get_text(self):
         """
-        @returns: current text
+        Gets the current text.
+        @returns: the text.
         """
         return self.entry.get_text()
 
@@ -529,13 +551,15 @@ class ComboEntry(gtk.HBox):
 
     def get_model(self):
         """
-        @returns: our model
+        Gets our model.
+        @returns: model
         @rtype: gtk.TreeModel
         """
         return self._model
 
     def set_active_iter(self, iter):
         """
+        Set the iter selected.
         @param iter: iter to select
         @type iter: gtk.TreeIter
         """
@@ -546,7 +570,8 @@ class ComboEntry(gtk.HBox):
 
     def get_active_iter(self):
         """
-        @returns: the selected iter
+        Gets the selected iter.
+        @returns: iter selected.
         @rtype: gtk.TreeIter
         """
         return self._popup.get_selected_iter()
@@ -560,6 +585,14 @@ class ComboEntry(gtk.HBox):
 
     def set_active(self, rowno):
         self.set_active_iter(self._model[rowno].iter)
+
+    def set_details_callback(self, callable):
+        """Display some details as a second line on each entry
+
+        @param callable: a callable that expects an object and returns a
+                         string
+        """
+        self._popup.set_details_callback(callable)
 
     # IEasyCombo interface
 

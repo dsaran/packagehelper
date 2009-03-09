@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.6 2009-02-07 17:40:27 daniel Exp $
+# Version: $Id: processor.py,v 1.7 2009-03-09 01:12:59 daniel Exp $
 
 import logging
 from os import environ, popen, chdir
@@ -85,8 +85,8 @@ class PackageProcessor:
         log.debug("done.")
 
         script = File(script_file, path, False)
-        script.set_database(db)
-        script.set_type(type)
+        script.database = db
+        script.type = type
         return script
 
     def run(self):

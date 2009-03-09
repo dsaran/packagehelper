@@ -41,6 +41,7 @@ class currency(Decimal):
 
     def __new__(cls, value):
         """
+        Convert value to currency.
         @param value: value to convert
         @type value: string or number
         """
@@ -126,8 +127,8 @@ class currency(Decimal):
                 if frac_digits == 127:
                     frac_digits = 2
 
-            format = '%%.%sf' % frac_digits
-            dec_part = (format % value)[-frac_digits:]
+            format = '%%.%sf' % (frac_digits+1)
+            dec_part = (format % value)[-(frac_digits+1):-1]
 
             mon_decimal_point = conv.get('mon_decimal_point', '.')
             currency += mon_decimal_point + dec_part

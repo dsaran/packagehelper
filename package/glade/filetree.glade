@@ -1,6 +1,86 @@
 <?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
 <!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
 <glade-interface>
+    <widget class="GtkDialog" id="editbox">
+        <property name="default_height">260</property>
+        <property name="default_width">320</property>
+        <property name="type_hint">normal</property>
+        <child internal-child="vbox">
+            <widget class="GtkVBox" id="dialog1-vbox">
+                <property name="border_width">2</property>
+                <property name="visible">True</property>
+                <child>
+                    <widget class="GtkHBox" id="hbox1">
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="ProxyLabel" id="kiwilabel1">
+                                <property name="label" context="yes" translatable="yes">Nome</property>
+                                <property name="model_attribute">kiwilabel1</property>
+                                <property name="visible">True</property>
+                                <property name="xalign">0.0</property>
+                                <property name="xpad">2</property>
+                            </widget>
+                            <packing>
+                                <property name="expand">False</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="ProxyEntry" id="new_name">
+                                <property name="has_tooltip">True</property>
+                                <property name="model_attribute">new_name</property>
+                                <property name="tooltip_markup" context="yes" translatable="yes">Digite o novo nome para o script selecionado</property>
+                                <property name="tooltip_text" context="yes" translatable="yes">Digite o novo nome para o script selecionado</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="position">2</property>
+                    </packing>
+                </child>
+                <child internal-child="action_area">
+                    <widget class="GtkHButtonBox" id="dialog1-action_area">
+                        <property name="border_width">5</property>
+                        <property name="layout_style">end</property>
+                        <property name="spacing">6</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="ProxyButton" id="cancel_button">
+                                <property name="data_type">str</property>
+                                <property name="label" context="yes" translatable="yes">Cancelar</property>
+                                <property name="model_attribute">cancel_button</property>
+                                <property name="visible">True</property>
+                            </widget>
+                        </child>
+                        <child>
+                            <widget class="ProxyButton" id="ok_button">
+                                <property name="can_default">True</property>
+                                <property name="data_type">str</property>
+                                <property name="extension_events">all</property>
+                                <property name="has_default">True</property>
+                                <property name="is_focus">True</property>
+                                <property name="label" context="yes" translatable="yes">OK</property>
+                                <property name="model_attribute">ok_button</property>
+                                <property name="response_id">1</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="pack_type">end</property>
+                    </packing>
+                </child>
+            </widget>
+        </child>
+    </widget>
     <widget class="GtkWindow" id="filetree">
         <property name="default_height">250</property>
         <property name="default_width">440</property>
@@ -30,12 +110,36 @@
                     </packing>
                 </child>
                 <child>
-                    <placeholder/>
+                    <widget class="ProxyLabel" id="error_msg">
+                        <property name="can_focus">True</property>
+                        <property name="mnemonic_widget">fileTree</property>
+                        <property name="model_attribute">error_msg</property>
+                        <property name="selectable">True</property>
+                        <property name="visible">True</property>
+                        <property name="xalign">0.0</property>
+                    </widget>
                     <packing>
+                        <property name="expand">False</property>
                         <property name="position">2</property>
                     </packing>
                 </child>
+                <child>
+                    <widget class="GtkStatusbar" id="statusbar1">
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="position">3</property>
+                    </packing>
+                </child>
             </widget>
+        </child>
+    </widget>
+    <widget class="GtkWindow" id="window1">
+        <property name="default_height">250</property>
+        <property name="default_width">440</property>
+        <child>
+            <placeholder/>
         </child>
     </widget>
 </glade-interface>

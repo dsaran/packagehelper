@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $Id: plsql.py,v 1.7 2009-02-19 22:17:28 daniel Exp $ 
+# Version: $Id: plsql.py,v 1.8 2009-03-09 01:12:59 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):
@@ -127,11 +127,12 @@ class plsqlScanner(yappsrt.Scanner):
         ("'SELECT'", re.compile('SELECT')),
         ("'WHEN'", re.compile('WHEN')),
         ("'EXCEPTION'", re.compile('EXCEPTION')),
-        ("';'", re.compile(';')),
         ("':='", re.compile(':=')),
         ("'ELSE'", re.compile('ELSE')),
         ("'THEN'", re.compile('THEN')),
         ("'IF'", re.compile('IF')),
+        ("';'", re.compile(';')),
+        ("'/'", re.compile('/')),
         ("'END'", re.compile('END')),
         ("'BEGIN'", re.compile('BEGIN')),
         ('"AS"', re.compile('AS')),
@@ -227,8 +228,8 @@ class plsql(yappsrt.Parser):
         _context = self.Context(_parent, self._scanner, self._pos, 'identifier', [])
         ID = self._scan('ID')
         result = Identifier(id=ID)
-        _token = self._peek("'IN'", "'OUT'", 'ID', 'DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
-        if self._peek("'IN'", "'OUT'", 'DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', 'ID', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') in ["'IN'", "'OUT'"]:
+        _token = self._peek("'IN'", "'OUT'", 'ID', 'DOT', "':='", "';'", "'\\\\('", 'END', '"IS"', '"AS"', "'VALUES'", "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
+        if self._peek("'IN'", "'OUT'", 'DOT', "':='", "';'", "'\\\\('", 'END', '"IS"', '"AS"', "'VALUES'", "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', 'ID', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') in ["'IN'", "'OUT'"]:
             _token = self._peek("'IN'", "'OUT'")
             if _token == "'IN'":
                 self._scan("'IN'")
@@ -239,10 +240,10 @@ class plsql(yappsrt.Parser):
             ID = self._scan('ID')
             result.type = ID
         else:
-            if self._peek('ID', 'DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') == 'ID':
+            if self._peek('ID', 'DOT', "':='", "';'", "'\\\\('", 'END', '"IS"', '"AS"', "'VALUES'", "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"') == 'ID':
                 ID = self._scan('ID')
                 result.alias = ID
-        _token = self._peek('DOT', "':='", "'\\\\('", "';'", "'VALUES'", 'END', '"IS"', '"AS"', "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', 'ID', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
+        _token = self._peek('DOT', "':='", "';'", "'\\\\('", 'END', '"IS"', '"AS"', "'VALUES'", "'\\\\^'", "'!'", "'='", "'<'", "'>'", '"\'"', 'NUM', 'ID', "','", "'\\\\)'", "'THEN'", "'AND'", "'OR'", "'WHERE'", "'FROM'", '";"', '"/"')
         if _token != 'DOT':
             pass
         else: # == 'DOT'
@@ -414,23 +415,48 @@ class plsql(yappsrt.Parser):
         else: # == '"AS"'
             self._scan('"AS"')
         result.members = []
+        if self._peek("'BEGIN'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'END'") == "'BEGIN'":
+            self._scan("'BEGIN'")
+        while self._peek("'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") != "'END'":
+            object_type = self.object_type(_context)
+            member= Source(type=object_type)
+            callable = self.callable(_context)
+            member.id = callable
+            _token = self._peek('END', '"IS"')
+            if _token == 'END':
+                END = self._scan('END')
+            else: # == '"IS"'
+                self._scan('"IS"')
+                block = self.block(_context)
+                result.members.append(member)
+        if self._peek() not in ["'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'"]:
+            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(["'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'END'"]))
+        self._scan("'END'")
+        ID = self._scan('ID')
+        if self._peek('END', "'/'") == 'END':
+            END = self._scan('END')
+        self._scan("'/'")
         return result
 
-    def code(self, _parent=None):
-        _context = self.Context(_parent, self._scanner, self._pos, 'code', [])
+    def block(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'block', [])
         _token = self._peek("'BEGIN'", "'IF'", 'ID', "'EXCEPTION'", "'WHEN'")
         if _token == "'BEGIN'":
             self._scan("'BEGIN'")
-            code = self.code(_context)
+            block = self.block(_context)
             self._scan("'END'")
+            if self._peek('ID', "';'", "'END'", "'WHEN'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") == 'ID':
+                ID = self._scan('ID')
+            if self._peek("';'", "'END'", "'WHEN'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") == "';'":
+                self._scan("';'")
         elif _token == "'IF'":
             self._scan("'IF'")
             comparison = self.comparison(_context)
             self._scan("'THEN'")
-            code = self.code(_context)
-            if self._peek("'ELSE'", "'END'", "'WHEN'") == "'ELSE'":
+            executable_code = self.executable_code(_context)
+            if self._peek("'ELSE'", "'END'") == "'ELSE'":
                 self._scan("'ELSE'")
-                code = self.code(_context)
+                executable_code = self.executable_code(_context)
             self._scan("'END'")
             self._scan("'IF'")
         elif _token != 'ID':
@@ -441,6 +467,12 @@ class plsql(yappsrt.Parser):
                 self._scan("':='")
             callable = self.callable(_context)
             self._scan("';'")
+
+    def executable_code(self, _parent=None):
+        _context = self.Context(_parent, self._scanner, self._pos, 'executable_code', [])
+        _token = self._peek('ID')
+        callable = self.callable(_context)
+        self._scan("';'")
 
     def exception_handling(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'exception_handling', [])
@@ -453,8 +485,8 @@ class plsql(yappsrt.Parser):
             while 1:
                 self._scan("'WHEN'")
                 ID = self._scan('ID')
-                code = self.code(_context)
-                if self._peek("'WHEN'", "'END'", "'ELSE'") != "'WHEN'": break
+                block = self.block(_context)
+                if self._peek("'WHEN'", "'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") != "'WHEN'": break
 
     def select_statement(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'select_statement', [])
