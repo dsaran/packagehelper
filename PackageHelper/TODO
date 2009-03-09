@@ -1,9 +1,18 @@
+Bugs:
+* drag and drop on filetree does not update model.
+    * now it updates when moving INTO but no before and after
+    * It is necessary to create tests for other drags
+* get_data returns data out of order
+
 Interface:
 * Help messages
 * Show feedback while processing package (now the screen freezes until it is finished)
 * Display result from CVS while it is running
+* Turn UI into a wizard
+* Display Script organization before writing to files
 
 Parser:
 * Add support to  "insert as select"
 * Complete the grammar for select statements (using, having, order, group, etc)
 * Allow parenthesis on where clause
+* Parsing full packages broken

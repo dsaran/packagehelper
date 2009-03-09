@@ -28,9 +28,9 @@ class RegexParser(Parser):
 
         file = File()
         database = Database(map['database'].upper(), map['user'].upper())
-        file.set_type(map['type'].upper())
-        file.set_database(database)
-        file.set_name(map['filename'])
+        file.type = map['type'].upper()
+        file.database = database
+        file.name = map['filename']
         return file
 
 

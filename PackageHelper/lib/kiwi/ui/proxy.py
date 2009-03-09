@@ -33,6 +33,7 @@ import gtk
 
 from kiwi import ValueUnset
 from kiwi.accessor import kgetattr, ksetattr, clear_attr_cache
+from kiwi.datatypes import converter
 from kiwi.decorators import deprecated
 from kiwi.interfaces import IProxyWidget, IValidatableProxyWidget
 from kiwi.log import Logger
@@ -54,6 +55,11 @@ def unblock_widget(widget):
     if connection_id:
         widget.handler_unblock(connection_id)
 
+def _get_widget_data_type(widget):
+    data_type = widget.get_property('data-type')
+    c = converter.get_converter(data_type)
+    return c.type
+
 class Proxy:
     """ A Proxy is a class that 'attaches' an instance to an interface's
     widgets, and transparently manipulates that instance's attributes as
@@ -66,6 +72,7 @@ class Proxy:
 
     def __init__(self, view, model=None, widgets=()):
         """
+        Create a new Proxy object.
         @param view:    view attched to the slave
         @type  view:    a L{kiwi.ui.views.BaseView} subclass
         @param model:   model attached to proxy
@@ -114,7 +121,7 @@ class Proxy:
                              % (widget_name, widget,
                                 self._view.__class__.__name__))
 
-        data_type = widget.get_property('data-type')
+        data_type = _get_widget_data_type(widget)
         if data_type is None:
             raise ProxyError("The kiwi widget %s (%r) in view %s should "
                              "have a data type set" % (
@@ -298,7 +305,7 @@ class Proxy:
         # The type of value should match the data-type property. The two
         # exceptions to this rule are ValueUnset and None
         if not (value is ValueUnset or value is None):
-            data_type = widget.get_property('data-type')
+            data_type = _get_widget_data_type(widget)
             value_type = type(value)
             if not isinstance(value, data_type):
                 raise TypeError(

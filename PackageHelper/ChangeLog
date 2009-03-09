@@ -1,3 +1,38 @@
+2009-03-08  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* lib/kiwi:
+	    Upgraded to version 1.9.24.
+	* test.py:
+	* test/package/gui/tc_filetree.py:
+	    Added test cases for FileTree.
+	* package/types/parsers.py:
+	* package/processor.py:
+	* package/domain/file.py:
+		Replaced getters/setters with properties.
+	* package/glade/filetree.glade:
+	* package/gui/filetree.py:
+		Added context menu to rename scripts.
+	* test/parser/tc_plsql.py:
+		Adapted for changes in plsql grammar. 
+	* package/cvs.py:
+	* test/package/tc_cvs.py:
+		Changed export method to back to original location
+		after cvs command to avoid breaking other modules 
+		that might need to use current directory (os.getcwd()).
+
+2009-03-01  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/glade/filetree.glade:
+	* package/gui/filetree.py: 
+		New controller to display files in a treeview.
+	* package/domain/file.py:
+		Added a class to represent the install generated scripts.
+	* parser/plsql.g:
+	* parser/plsql.py:
+		Changes to allow parsing a full package body.
+	* test/parser/tc_plsql.py:
+		New Tests to validate changes on package parsing.
+
 2009-02-18  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	Modified files:
@@ -42,8 +77,6 @@
 	* parser/yapps/parsetree.py
 	* parser/yapps/yapps2.py
 	* parser/yapps/yappsrt.py: Yapps engine to generate plsql parser.
-
-=== 1.0.0 ===
 
 2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 

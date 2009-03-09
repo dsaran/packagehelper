@@ -51,6 +51,7 @@ from kiwi.ui.hyperlink import HyperLink
 from kiwi.ui.objectlist import Column, ObjectList, ObjectTree
 from kiwi.ui.widgets.button import ProxyButton
 from kiwi.ui.widgets.checkbutton import ProxyCheckButton
+from kiwi.ui.widgets.colorbutton import ProxyColorButton
 from kiwi.ui.widgets.combo import ProxyComboEntry, ProxyComboBox, \
      ProxyComboBoxEntry
 from kiwi.ui.widgets.entry import ProxyDateEntry, ProxyEntry
@@ -195,7 +196,7 @@ class DataTypeAdaptor(PropertyCustomEditor):
         combo = self._input
         model = self._model
         model.clear()
-        for converter in self._get_converters():
+        for converter in set(self._get_converters()):
             model.append((converter.name, converter.type))
 
         connection_id = combo.get_data('connection-id')
@@ -215,7 +216,8 @@ class DataTypeAdaptor(PropertyCustomEditor):
 
     def _editor_edit(self, combo, proxy, model):
         active_iter = combo.get_active_iter()
-        proxy.set_value(model[active_iter][1])
+        if active_iter:
+            proxy.set_value(model[active_iter][1])
 
 class SpinBtnDataType(DataTypeAdaptor):
     widget_type = ProxySpinButton
@@ -227,7 +229,7 @@ class HScaleDataType(DataTypeAdaptor):
 
 class VScaleDataType(DataTypeAdaptor):
     widget_type = ProxyVScale
-    default = int
+    default = float
 
 class EntryDataType(DataTypeAdaptor):
     widget_type = ProxyEntry
@@ -262,7 +264,7 @@ class DataType(CustomProperty, StringType):
     def save(self):
         value = self.get()
         if value is not None:
-            return value.__name__
+            return value
 
 class BoolOnlyDataType(CustomProperty, StringType):
     translatable = False
@@ -320,6 +322,7 @@ def register_widgets():
         (ProxyEntry, EntryDataType, DataType),
         (ProxyDateEntry, None, DateOnlyDataType),
         (ProxyButton, ButtonDataType, DataType),
+        (ProxyColorButton, ButtonDataType, DataType),
         (ProxyCheckButton, None, BoolOnlyDataType),
         (ProxyLabel, LabelDataType, DataType),
         (ProxyComboBox, ComboBoxDataType, DataType),

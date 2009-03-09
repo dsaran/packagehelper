@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $Id: plsql.g,v 1.7 2009-02-19 22:17:28 daniel Exp $ 
+# Version: $Id: plsql.g,v 1.8 2009-03-09 01:12:59 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):
@@ -256,31 +256,40 @@ parser plsql:
               | "IS"
               | "AS"
             )           {{ result.members = [] }}
-            #('BEGIN')?
-            #(
-            #    object_type {{ member= Source(type=object_type) }}
-            #    callable    {{ member.id = callable }} 
-            #    ( END
-            #      | "IS"
-            #    )      {{ result.members.append(member) }}
-            #    code
-            #    'END'
-            #)*
-            #'END' identifier ";"
-        )              {{ return result }}
+            'BEGIN'?
+            (
+                object_type {{ member= Source(type=object_type) }}
+                callable    {{ member.id = callable }} 
+                (END
+                 | ( 
+                     "IS" block {{ result.members.append(member) }}
+                   )
+                )
+            )*
+            'END' ID END? '/'  {{ return result }}
+        )#      {{ return result }}
 
-    rule code: (
-        ('BEGIN' code 'END' )
-        | ('IF' comparison 'THEN' code
-          ('ELSE' code)?
+    rule block: (
+        'BEGIN' block 'END' ID? ';'?
+        | ('IF' comparison 'THEN' executable_code
+          ('ELSE' executable_code)?
             'END' 'IF')
         | exception_handling
         | (identifier ':=')? callable ';'
     )
 
+    rule executable_code: (
+        callable ';'
+        | identifier 
+            (':=' 
+             ( callable
+             | LITERAL)
+            )? ';'
+    )
+
     rule exception_handling: (
         'EXCEPTION' ID 'THEN'
-        | ('WHEN' ID code)+
+        | ('WHEN' ID block)+
     )
 
     rule select_statement: (

@@ -1,7 +1,7 @@
 #
 # Kiwi: a Framework and Enhanced Widgets for Python
 #
-# Copyright (C) 2001-2007 Async Open Source
+# Copyright (C) 2001-2008 Async Open Source
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -36,12 +36,13 @@ import gtk
 from gtk import gdk
 
 from kiwi.accessor import kgetattr
-from kiwi.datatypes import converter, number, Decimal
+from kiwi.datatypes import converter, number, Decimal, ValidationError
 from kiwi.currency import currency # after datatypes
 from kiwi.enums import Alignment
 from kiwi.log import Logger
 from kiwi.python import enum, slicerange
 from kiwi.utils import PropertyObject, gsignal, gproperty, type_register
+from kiwi.ui.widgets.contextmenu import ContextMenu
 
 _ = lambda m: gettext.dgettext('kiwi', m)
 
@@ -56,6 +57,7 @@ def str2enum(value_name, enum_class):
 def str2bool(value, from_string=converter.from_string):
     "converts a boolean to a enum"
     return from_string(bool, value)
+
 
 class Column(PropertyObject, gobject.GObject):
     """
@@ -113,6 +115,9 @@ class Column(PropertyObject, gobject.GObject):
       - B{radio}: bool I{False}
         -  If true render the column as a radio instead of toggle.
            Only applicable for columns with boolean data types.
+      - B{spin_adjustment}: gtk.Adjustment I{None}
+        -  A gtk.Adjustment instance. If set, render the column cell as
+           a spinbutton.
       - B{use_stock}: bool I{False}
         - If true, this will be rendered as pixbuf from the value which
           should be a stock id.
@@ -130,7 +135,9 @@ class Column(PropertyObject, gobject.GObject):
           (where to put the ...) is needed.
       - B{font-desc}: str I{""}
         - A string passed to pango.FontDescription, for instance "Sans" or
-          "Monospace 28".
+      - B{column}: str None
+        - A string referencing to another column. If this is set a new column
+          will not be created and the column will be packed into the other.
     """
     __gtype_name__ = 'Column'
     gproperty('attribute', str, flags=(gobject.PARAM_READWRITE | gobject.PARAM_CONSTRUCT_ONLY))
@@ -148,6 +155,7 @@ class Column(PropertyObject, gobject.GObject):
     gproperty('editable', bool, default=False)
     gproperty('searchable', bool, default=False)
     gproperty('radio', bool, default=False)
+    gproperty('spin_adjustment', object)
     gproperty('use-stock', bool, default=False)
     gproperty('use-markup', bool, default=False)
     gproperty('icon-size', gtk.IconSize, default=gtk.ICON_SIZE_MENU)
@@ -155,6 +163,7 @@ class Column(PropertyObject, gobject.GObject):
     gproperty('expander', bool, False)
     gproperty('ellipsize', pango.EllipsizeMode, default=pango.ELLIPSIZE_NONE)
     gproperty('font-desc', str)
+    gproperty('column', str)
     #gproperty('title_pixmap', str)
 
     # This can be set in subclasses, to be able to allow custom
@@ -181,7 +190,7 @@ class Column(PropertyObject, gobject.GObject):
         @param data_type: the type of the attribute that will be inserted
             into the column.
 
-        @keyword title_pixmap: (TODO) if set to a filename a pixmap will be
+        @note: title_pixmap: (TODO) if set to a filename a pixmap will be
             used *instead* of the title set. The title string will still be
             used to identify the column in the column selection and in a
             tooltip, if a tooltip is not set.
@@ -227,6 +236,12 @@ class Column(PropertyObject, gobject.GObject):
                     "editable cannot be disabled when using editable_attribute")
             kwargs['editable'] = True
 
+        if 'spin_adjustment' in kwargs:
+            adjustment = kwargs.get('spin_adjustment')
+            if not isinstance(adjustment, gtk.Adjustment):
+                raise TypeError(
+                    "spin_adjustment must be a gtk.Adjustment instance")
+
         PropertyObject.__init__(self, **kwargs)
         gobject.GObject.__init__(self, attribute=attribute)
 
@@ -249,8 +264,13 @@ class Column(PropertyObject, gobject.GObject):
         if (self.data_type is bool and self.format):
             raise TypeError("format is not supported for boolean columns")
 
-        treeview_column = gtk.TreeViewColumn()
+        if not self.column:
+            treeview_column = gtk.TreeViewColumn()
+        else:
+            other_column = objectlist.get_column_by_name(self.column)
+            treeview_column = objectlist.get_treeview_column(other_column)
 
+        treeview_column.attribute = self.attribute
         renderer, renderer_prop = self._guess_renderer_for_type(model)
         if self.on_attach_renderer:
             self.on_attach_renderer(renderer)
@@ -276,13 +296,23 @@ class Column(PropertyObject, gobject.GObject):
             cell_data_func = self._cell_data_pixbuf_func
         elif issubclass(self.data_type, enum):
             cell_data_func = self._cell_data_combo_func
+        elif issubclass(self.data_type, number) and self.spin_adjustment:
+            cell_data_func = self._cell_data_spin_func
         else:
             cell_data_func = self._cell_data_text_func
 
         if self.cell_data_func:
             cell_data_func = self.cell_data_func
 
-        treeview_column.pack_start(renderer)
+        # This is a bit hackish, we should probably
+        # add a proper api to determine the expanding of
+        # individual cells.
+        if self.data_type == gtk.gdk.Pixbuf or self.use_stock:
+            expand = False
+        else:
+            expand = True
+        treeview_column.pack_start(renderer, expand)
+
         treeview_column.set_cell_data_func(renderer, cell_data_func,
                                            (self, renderer_prop))
         treeview_column.set_visible(self.visible)
@@ -305,15 +335,10 @@ class Column(PropertyObject, gobject.GObject):
             if not issubclass(self.data_type, bool):
                 raise TypeError("You can only use radio for boolean columns")
 
-        if self.expander:
-            self._treeview.set_expander_column(treeview_column)
-
-        # typelist here may be none. It's okay; justify_columns will try
-        # and use the specified justifications and if not present will
-        # not touch the column. When typelist is not set,
-        # append/add_list have a chance to fix up the remaining
-        # justification by looking at the first instance's data.
-#        self._justify_columns(columns, typelist)
+        if self.spin_adjustment:
+            if not issubclass(self.data_type, number):
+                raise TypeError("You can only use spin_adjustment for "
+                                "number datatypes")
 
         self.treeview_column = treeview_column
 
@@ -364,6 +389,16 @@ class Column(PropertyObject, gobject.GObject):
                 renderer.connect('edited', self._on_renderer_combo__edited,
                                  model, self.attribute, self)
             prop = 'model'
+        elif issubclass(data_type, number) and self.spin_adjustment:
+            renderer = gtk.CellRendererSpin()
+            if not self.editable:
+                raise TypeError("spin_adjustment columns must be editable")
+
+            renderer.set_property('editable', True)
+            renderer.set_property('adjustment', self.spin_adjustment)
+            renderer.connect('edited', self._on_renderer_spin__edited,
+                             model, self.attribute, self, self.from_string)
+            prop = 'text'
         elif issubclass(data_type, (datetime.date, datetime.time,
                                     basestring, number,
                                     currency)):
@@ -407,7 +442,7 @@ class Column(PropertyObject, gobject.GObject):
         renderer.set_property(renderer_prop, text)
 
         if column.renderer_func:
-            column.renderer_func(renderer, data)
+            column.renderer_func(renderer, row[COL_MODEL])
 
     def _cell_data_pixbuf_func(self, tree_column, renderer, model, treeiter,
                                (column, renderer_prop)):
@@ -426,6 +461,23 @@ class Column(PropertyObject, gobject.GObject):
                                     column.attribute, None)
         text = column.as_string(data)
         renderer.set_property('text', text.lower().capitalize())
+
+    def _cell_data_spin_func(self, tree_column, renderer, model, treeiter,
+                             (column, renderer_prop)):
+        "To render the data of a cell renderer spin"
+        row = model[treeiter]
+        if column.editable_attribute:
+            data = column.get_attribute(row[COL_MODEL],
+                                        column.editable_attribute, None)
+            renderer.set_property('editable', data)
+
+        data = column.get_attribute(row[COL_MODEL],
+                                    column.attribute, None)
+        text = column.as_string(data)
+        renderer.set_property(renderer_prop, text)
+
+        if column.renderer_func:
+            column.renderer_func(renderer, row[COL_MODEL])
 
     def _on_renderer__toggled(self, renderer, path, column):
         setattr(self._model[path][COL_MODEL], column.attribute,
@@ -470,6 +522,17 @@ class Column(PropertyObject, gobject.GObject):
         setattr(obj, attr, value)
         self._objectlist.emit('cell-edited', obj, attr)
 
+    def _on_renderer_spin__edited(self, renderer, path, value,
+                                  model, attr, column, from_string):
+        obj = model[path][COL_MODEL]
+        try:
+            value_model = from_string(value)
+        except ValidationError:
+            return
+
+        setattr(obj, attr, value_model)
+        self._objectlist.emit('cell-edited', obj, attr)
+
     def _on_renderer_combo__edited(self, renderer, path, text,
                                    model, attr, column):
         obj = model[path][COL_MODEL]
@@ -502,7 +565,7 @@ class Column(PropertyObject, gobject.GObject):
 
     def as_string(self, data):
         data_type = self.data_type
-        if data is None:
+        if data is None and data_type != gdk.Pixbuf:
             text = ''
         elif self.format_func:
             text = self.format_func(data)
@@ -520,6 +583,26 @@ class Column(PropertyObject, gobject.GObject):
             text = data
 
         return text
+
+    def set_spinbutton_precision_digits(self, digits):
+        """Set the number of precision digits to be shown in the
+        spinbutton.
+
+        @param digits: the number of precision digits to be set in
+        spinbutton
+        @type digits: int
+        """
+        if not self.spin_adjustment:
+            raise TypeError("You can not set spinbutton precision "
+                            "digits for a column without a spinbutton")
+        if not isinstance(digits, int):
+            raise TypeError("The number of precision digits to be set in "
+                            "the spinbutton must be an integer, %s "
+                            "found" % type(digits))
+
+        renderer = self.treeview_column.get_cell_renderers()[0]
+        renderer.set_property('digits', digits)
+
 
 
 class SequentialColumn(Column):
@@ -553,6 +636,36 @@ class SequentialColumn(Column):
             raise TypeError("%r does not support parameter %s" %
                             (renderer, renderer_prop))
 
+class SearchColumn(Column):
+    """
+    I am a column that should be used in conjunction with
+    L{kiwi.ui.search.SearchSlaveDelegate}
+
+    @param long_title: The title to display in the combo for this field.
+                       This is usefull if you need to display a small
+                       description on the column header, but still want a full
+                       description on the advanced search.
+    @param valid_values: This should be a list of touples (display value, db
+                         value). If provided, then a combo with only this
+                         values will be shown, instead of a free text entry.
+    @param search_attribute: Use this if the name of the db column that should
+                             be searched is different than the attribute of
+                             the model.
+    """
+
+    def __init__(self, attribute, title=None, data_type=None,
+                 long_title=None, valid_values=None, search_attribute=None,
+                 **kwargs):
+        """
+        """
+        self.long_title = long_title
+        self.valid_values = valid_values
+        self.search_attribute = search_attribute
+        self.sensitive = True
+        Column.__init__(self, attribute, title, data_type, **kwargs)
+
+
+
 class ColoredColumn(Column):
     """
     I am a column which can colorize the text of columns under
@@ -569,16 +682,20 @@ class ColoredColumn(Column):
     """
 
     def __init__(self, attribute, title=None, data_type=None,
-                 color=None, data_func=None, **kwargs):
+                 color=None, data_func=None, use_data_model=False, **kwargs):
         if not issubclass(data_type, number):
             raise TypeError("data type must be a number")
         if not callable(data_func):
             raise TypeError("data func must be callable")
 
-        self._color = gdk.color_parse(color)
+        self._color = None
+        if color:
+            self._color = gdk.color_parse(color)
+
         self._color_normal = None
 
         self._data_func = data_func
+        self._use_data_model = use_data_model
 
         Column.__init__(self, attribute, title, data_type, **kwargs)
 
@@ -587,8 +704,16 @@ class ColoredColumn(Column):
         self._color_normal = renderer.get_property('foreground-gdk')
 
     def renderer_func(self, renderer, data):
-        if self._data_func(data):
+        if self._use_data_model:
+            ret = self._data_func(data)
+        else:
+            attr_data = self.get_attribute(data, self.attribute, None)
+            ret = self._data_func(attr_data)
+
+        if ret and self._color:
             color = self._color
+        elif isinstance(ret, gdk.Color):
+            color = ret
         else:
             color = self._color_normal
 
@@ -636,6 +761,8 @@ class _ContextMenu(gtk.Menu):
             if not header_widget:
                 continue
             title = header_widget.get_text()
+            if not title.strip():
+                title = column.attribute.capitalize()
 
             menuitem = gtk.CheckMenuItem(title)
             menuitem.set_active(column.get_visible())
@@ -766,6 +893,7 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
                  sortable=False,
                  model=None):
         """
+        Create a new ObjectList object.
         @param columns:       a list of L{Column}s
         @param objects:       a list of objects to be inserted or None
         @param mode:          selection mode
@@ -848,6 +976,7 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
         PropertyObject.__init__(self)
 
         self.set_selection_mode(mode)
+        self._context_menu = None
 
     # Python list object implementation
     # These methods makes the kiwi list behave more or less
@@ -970,7 +1099,7 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
         """
         self._treeview.freeze_notify()
 
-        row_iter = self._model.insert(index, (instance,))
+        row_iter = self._model.insert(None, index, (instance,))
         self._iters[id(instance)] = row_iter
 
         if self._autosize:
@@ -1012,6 +1141,16 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
         unused_sort_col_id = len(self._columns)
         self._model.set_sort_func(unused_sort_col_id, _sort_func)
         self._model.set_sort_column_id(unused_sort_col_id, order)
+
+    def set_context_menu(self, menu):
+        """Sets a context-menu (eg, when you right click) for the list.
+        @param menu: context menu
+        @type menu: ContextMenu
+        """
+
+        if not isinstance(menu, ContextMenu):
+            raise TypeError
+        self._context_menu = menu
 
     # Properties
 
@@ -1101,12 +1240,12 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
                 if sorted:
                     raise ValueError("Can't make column %s sorted, column"
                                      " %s is already set as sortable" % (
-                        column.attribute, sorted.attribute))
-                sorted = column.sorted
+                        column.attribute, sorted))
+                sorted = column.attribute
             if column.expand:
                 expand = True
 
-        self._sortable = self._sortable or sorted
+        self._sortable = self._sortable or bool(sorted)
 
         for column in columns:
             self._attach_column(column)
@@ -1117,6 +1256,9 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
 
     def _attach_column(self, column):
         treeview_column = column.attach(self)
+        if column.column:
+            return
+
         # we need to set our own widget because otherwise
         # __get_column_button won't work
 
@@ -1151,13 +1293,13 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
             self._treeview.set_search_equal_func(
                 self._treeview_search_equal_func, column)
 
-        if column.expander:
-            self._treeview.set_expander_column(treeview_column)
-
         if column.tooltip:
             widget = self._get_column_button(treeview_column)
             if widget is not None:
                 self._tooltips.set_tip(widget, column.tooltip)
+
+        if column.expander:
+            self._treeview.set_expander_column(treeview_column)
 
     # selection methods
     def _select_and_focus_row(self, row_iter):
@@ -1264,6 +1406,8 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
         if event.type == gtk.gdk.BUTTON_PRESS:
             if event.button == 3:
                 signal_name = 'right-click'
+                if self._context_menu:
+                    self._context_menu.popup(event.button, event.time)
             elif event.button == 2:
                 signal_name = 'middle-click'
             else:
@@ -1367,6 +1511,18 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
 
         return column.treeview_column
 
+    def set_spinbutton_digits(self, column_name, digits):
+        """Set the number of precision digits used by the spinbutton in
+        a column.
+
+        @param column_name: the column name which has the spinbutton
+        @type column_name: str
+        @param digits: a number specifying the precision digits
+        @type digits: int
+        """
+        column = self.get_column_by_name(column_name)
+        column.set_spinbutton_precision_digits(digits)
+
     def grab_focus(self):
         """
         Grabs the focus of the ObjectList
@@ -1390,6 +1546,7 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
 
     def set_columns(self, columns):
         """
+        Set columns.
         @param columns: a sequence of L{Column} objects.
         """
 
@@ -1636,7 +1793,7 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
 
     def get_selected_row_number(self):
         """
-        @returns: the selected row number or None if no rows were selected
+        Get the selected row number or None if no rows were selected
         """
         selection = self._treeview.get_selection()
         if selection.get_mode() == gtk.SELECTION_MULTIPLE:
@@ -1663,6 +1820,7 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
 
     def set_headers_visible(self, value):
         """
+        Show or hide the headers.
         @param value: if true, shows the headers, if false hide then
         """
         self._treeview.set_headers_visible(value)
@@ -1700,7 +1858,7 @@ class ObjectList(PropertyObject, gtk.ScrolledWindow):
 
     def get_dnd_targets(self):
         """
-        @returns: a list of dnd targets ObjectList supports
+        Get a list of dnd targets ObjectList supports
         """
         return [
             ('OBJECTLIST_ROW', 0, 10),
@@ -1759,6 +1917,7 @@ class ObjectTree(ObjectList):
 
     def append(self, parent, instance, select=False):
         """
+        Append the selected row in an instance.
         @param parent: Object or None, representing the parent
         @param instance: the instance to be added
         @param select: select the row
@@ -1768,6 +1927,7 @@ class ObjectTree(ObjectList):
 
     def prepend(self, parent, instance, select=False):
         """
+        Prepend the selected row in an instance.
         @param parent: Object or None, representing the parent
         @param instance: the instance to be added
         @param select: select the row
@@ -1805,6 +1965,42 @@ class ObjectTree(ObjectList):
         self.get_treeview().collapse_row(
             self._model[treeiter].path)
 
+    def get_root(self, instance):
+        """
+        This method returns the root object of a certain instance. If
+        the instance is the root, then returns the given instance.
+        @param instance: an instance which we want the root object
+        """
+        objid = id(instance)
+        if not objid in self._iters:
+            raise ValueError("instance %r is not in the list" % instance)
+
+        instance_iter = self._iters[objid]
+        if self._model.iter_depth(instance_iter) == 0:
+            return self._model[instance_iter][COL_MODEL]
+
+        for iter in self._iters.values():
+            if self._model.is_ancestor(iter, instance_iter):
+                return self.get_root(self._model[iter][COL_MODEL])
+
+    def get_descendants(self, root_instance):
+        """
+        This method returns the descendants objects of a certain instance.
+        If the given instance is a leaf, then return an empty sequence.
+        @param root_instance: an instance which we want the descendants
+        @returns: a sequence of descendants objects
+        """
+        objid = id(root_instance)
+        if not objid in self._iters:
+            raise ValueError("instance %r is not in the list" % root_instance)
+
+        root_instance_iter = self._iters[objid]
+        children = []
+        for iter in self._iters.values():
+            if self._model.is_ancestor(root_instance_iter, iter):
+                children.append(self._model[iter][COL_MODEL])
+        return children
+
     def _on_treeview__row_expanded(self, treeview, treeiter, treepath):
         self.emit('row-expanded', self.get_model()[treeiter][COL_MODEL])
 
@@ -1818,6 +2014,7 @@ class ListLabel(gtk.HBox):
     def __init__(self, klist, column, label='', value_format='%s',
                  font_desc=None):
         """
+        Constructor.
         @param klist:        list to follow
         @type klist:         kiwi.ui.objectlist.ObjectList
         @param column:       name of a column in a klist

@@ -1,5 +1,6 @@
 # Version: $id$
 
+import os
 from test  import mock
 from test.framework import TestCase
 from path import path as Path
@@ -36,7 +37,6 @@ class CvsTest(TestCase):
         self.assertEquals(self.runner.run.call_count, 1)
         self.runner.run.assert_called_with("cvsmock -d%s login" % self.cvsroot)
 
-
     def testExport(self):
         """ Export should call login and then call export with the correct command line."""
         self.cvs.export(self.test_data_dir, self.tag)
@@ -59,3 +59,34 @@ class CvsTest(TestCase):
         self.assertEquals('exists', package_dir.method_calls[0][0])
         self.assertEquals('mkdir', package_dir.method_calls[1][0])
  
+    def testExportCurrentDirectory(self):
+        """ Export should not change current directory."""
+        current_dir_before = self.given_i_am_on_an_existing_directory()
+
+        self.when_i_checkout_files(self.test_data_dir, self.tag)
+
+        self.should_be_on_directory(current_dir_before)
+
+
+    #
+    # Behaviors
+    #
+
+    def given_i_am_on_an_existing_directory(self):
+        try:
+            current_dir = os.getcwd()
+        except OSError, e:
+            self.fail("Impossible to get current directory (%s)" % e.strerror)
+        self.assertTrue(os.path.exists(current_dir), 'Current directory does not exists')
+        return current_dir
+
+    def when_i_checkout_files(self, destination, tag):
+        return self.cvs.export(destination, tag)
+ 
+    def should_be_on_directory(self, directory):
+        try:
+            current_dir = os.getcwd()
+        except OSError, e:
+            self.fail("Impossible to get current directory (%s)" % e.strerror)
+        self.assertEquals(directory, current_dir, "I am on a different directory")
+

@@ -14,10 +14,10 @@ class ParserTests(TestCase):
         self.type = "type_definition"
 
         self.expectedFile = File()
-        self.expectedFile.set_name(self.filename)
-        self.expectedFile.set_type(self.type.upper())
+        self.expectedFile.name = self.filename
+        self.expectedFile.type = self.type.upper()
         expectedDatabase = Database(self.database.upper(), self.user.upper())
-        self.expectedFile.set_database(expectedDatabase)
+        self.expectedFile.database = expectedDatabase
  
 
     def testDefaultParser_DOS(self):

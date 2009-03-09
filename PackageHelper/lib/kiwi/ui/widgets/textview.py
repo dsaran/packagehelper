@@ -56,7 +56,7 @@ class ProxyTextView(PropertyObject, gtk.TextView, ValidatableProxyWidgetMixin):
 
     def read(self):
         if self._is_unset:
-            return ""
+            return ValueUnset
         textbuffer = self._textbuffer
         data = textbuffer.get_text(textbuffer.get_start_iter(),
                                    textbuffer.get_end_iter())
