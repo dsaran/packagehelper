@@ -28,6 +28,13 @@ bugmail=
 [RecentProjects]
 project0=..
 project1=..
+
+# in the plugins section each key represents a plugin
+# and if the value is True that means the plugin should
+# be activated when Gazpacho starts up
+[Plugins]
+foo=True
+bar=True
 """
 
 class ConfigError(Exception):
@@ -76,8 +83,12 @@ def get_app_data_dir(appname):
         try:
             # C:\Documents and Settings\<user>\Application Data
             from win32com.shell.shell import SHGetFolderPath
-            from win32com.shellcon import CSIDL_APPDATA
-            app_data_dir = SHGetFolderPath(0, CSIDL_APPDATA, 0, 0)
+            try:
+                from win32com.shellcon import CSIDL_APPDATA
+                folder_type = CSIDL_APPDATA
+            except ImportError:
+                folder_type = 0x001a
+            app_data_dir = SHGetFolderPath(0, folder_type, 0, 0)
         except ImportError:
             # default to C:\
             app_data_dir = 'C:\\'
@@ -86,10 +97,11 @@ def get_app_data_dir(appname):
         return os.path.join(os.path.expanduser('~'), '.' + appname)
 
 class GazpachoConfig(BaseConfig):
-    sections = ['General', 'RecentProjects']
+    sections = ['General', 'RecentProjects', 'Plugins']
     def __init__(self):
         self.recent_projects = []
         self.lastdirectory = None
+        self.plugins = []
         BaseConfig.__init__(self, self.get_filename())
 
     def get_filename(self):
@@ -159,5 +171,19 @@ class GazpachoConfig(BaseConfig):
         if self.has_option('bugmail'):
             return self.get_option('bugmail')
         return ''
+
+    def set_plugin(self, plugin, activated):
+        if not self._config.has_section('Plugins'):
+            self._config.add_section('Plugins')
+
+        self.set_option(plugin, activated, 'Plugins')
+
+    def get_plugins(self):
+        plugins = []
+        if self._config.has_section('Plugins'):
+            section = self._config.items('Plugins')
+            plugins = [name for name, value in section
+                                if self._config.getboolean('Plugins', name)]
+        return plugins
 
 config = GazpachoConfig()

@@ -13,18 +13,14 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-
-import gettext
-
 import gobject
 import gtk
 from kiwi.environ import environ
 from kiwi.utils import gsignal
 
-from gazpacho.catalog import get_all_catalogs
+from gazpacho.catalog import get_all_catalogs, get_custom_ui_filename, CustomUI
 from gazpacho.dndhandlers import DND_PALETTE_TARGET, INFO_TYPE_PALETTE
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+from gazpacho.i18n import _
 
 class Palette(gtk.VBox):
     gsignal('toggled')
@@ -83,9 +79,16 @@ class Palette(gtk.VBox):
         # button group to which new section buttons must be appended
         self._sections_button_group = None
 
-        for catalog in get_all_catalogs():
-            for group in catalog.widget_groups:
+        catalogs = get_all_catalogs()
+        custom_ui_filename = get_custom_ui_filename()
+        if custom_ui_filename:
+            custom_ui = CustomUI(custom_ui_filename)
+            for group in custom_ui.widget_groups:
                 self.append_widget_group(group)
+        else:
+            for catalog in catalogs:
+                for group in catalog.widget_groups:
+                    self.append_widget_group(group)
 
         # persistent mode means that a widget keep selected after
         # creating an instance of it. It is activated when the
@@ -262,8 +265,7 @@ class Palette(gtk.VBox):
         adaptor = source_gadget.get_data('user')
 
         if adaptor:
-            pixbuf = adaptor.pixbuf
-            source_gadget.drag_source_set_icon_pixbuf(pixbuf)
+            source_gadget.drag_source_set_icon_pixbuf(adaptor.pixbuf)
 
     def _dnd_drag_data_get_cb(self, source_gadget, context,
                               selection_data, info, time):

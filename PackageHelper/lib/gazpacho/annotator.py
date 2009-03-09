@@ -137,7 +137,7 @@ def _calculate_window_offset(gdkwindow):
     It also returns the toplevel """
     x = y = 0
     window = gdkwindow
-    while True:
+    while window:
         if window.get_window_type() != gtk.gdk.WINDOW_CHILD:
             break
         tmp_x, tmp_y = window.get_position()
@@ -261,7 +261,7 @@ def draw_annotations(expose_widget, expose_win):
     actually owned by the widget. This keeps us from repeatedly
     drawing nodes for the same window in the same expose event. """
 
-    from gazpacho.widget import Gadget
+    from gazpacho.gadget import Gadget
 
     expose_gadget = Gadget.from_widget(expose_widget)
     if not expose_gadget:

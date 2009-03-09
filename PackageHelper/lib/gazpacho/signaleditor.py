@@ -14,15 +14,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
-
 import gtk
 import pango
 from kiwi.utils import gsignal, type_register
 
+from gazpacho.command import Command
 from gazpacho.commandmanager import command_manager
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+from gazpacho.i18n import _
 
 (MODE_NOTHING,
  MODE_ADD,
@@ -48,7 +46,7 @@ class SignalInfo(object):
     'my_signal' the normalized name will be 'my-signal'. When
     comparing SignalInfo instances this will be based on the
     normalized name and not the name.
-    
+
     @cvar name:
     @cvar normalized_name:
     @cvar handler:
@@ -124,7 +122,7 @@ class SignalEditor(gtk.VBox):
         """
         Loads all the signals from the gadget and displays them in the view
 
-        @param gadget: a L{gazpacho.widget.Widget} instance
+        @param gadget: a L{gazpacho.gadget.Widget} instance
         """
         self._gadget = gadget
         self._adaptor = gadget and gadget.adaptor or None
@@ -320,7 +318,8 @@ class SignalEditor(gtk.VBox):
                             handler=row[COLUMN_HANDLER],
                             after=row[COLUMN_AFTER],
                             object=row[COLUMN_OBJECT])
-        command_manager.remove_signal(self._gadget, signal)
+        cmd = CommandAddRemoveSignal(self._gadget, signal, False)
+        command_manager.execute(cmd, self._gadget.project)
         self._remove_row(model_iter)
 
     def _create_popup(self, item_iter):
@@ -390,7 +389,8 @@ class SignalEditor(gtk.VBox):
         # we are adding a new handler
         if mode == MODE_ADD:
             signal.after = False
-            command_manager.add_signal(self._gadget, signal)
+            cmd = CommandAddRemoveSignal(self._gadget, signal, True)
+            command_manager.execute(cmd, self._gadget.project)
             row = model[model_iter]
             row[COLUMN_SLOT] = False
             row[COLUMN_HANDLER] = handler
@@ -403,7 +403,8 @@ class SignalEditor(gtk.VBox):
         if mode == MODE_REMOVE:
             signal.handler = old_handler
             signal.object = old_object
-            command_manager.remove_signal(self._gadget, signal)
+            cmd = CommandAddRemoveSignal(self._gadget, signal, False)
+            command_manager.execute(cmd, self._gadget.project)
             self._remove_row(model_iter)
             return
 
@@ -421,7 +422,8 @@ class SignalEditor(gtk.VBox):
             row[COLUMN_HANDLER] = signal.handler
             row[COLUMN_AFTER_VISIBLE] = True
             row[COLUMN_OBJECT] = signal.object
-            command_manager.change_signal(self._gadget, old_signal, signal)
+            cmd = CommandChangeSignal(self._gadget, old_signal, signal)
+            command_manager.execute(cmd, self._gadget.project)
 
     def _after_cell_toggled_cb(self, cell, path_str, data=None):
         model = self._model
@@ -438,8 +440,8 @@ class SignalEditor(gtk.VBox):
         new_signal = SignalInfo(name=signal_name, object=obj,
                                 handler=handler, after=not after)
 
-        command_manager.change_signal(
-            self._gadget, old_signal, new_signal)
+        cmd = CommandChangeSignal(self._gadget, old_signal, new_signal)
+        command_manager.execute(cmd, self._gadget.project)
 
         row[COLUMN_AFTER] = not after
 
@@ -477,3 +479,39 @@ class SignalEditor(gtk.VBox):
         return False
 
 type_register(SignalEditor)
+
+# signal command
+class CommandAddRemoveSignal(Command):
+    def __init__(self, gadget, signal, add):
+        if add:
+            description = _('Add signal handler %s') % signal.handler
+        else:
+            description = _('Remove signal handler %s') % signal.handler
+
+        Command.__init__(self, description)
+        self._add = add
+        self._signal = signal
+        self._gadget = gadget
+
+    def execute(self):
+        if self._add:
+            self._gadget.add_signal_handler(self._signal)
+        else:
+            self._gadget.remove_signal_handler(self._signal)
+
+        self._add = not self._add
+
+class CommandChangeSignal(Command):
+    def __init__(self, gadget, old_signal_handler, new_signal_handler):
+        description = _('Change signal handler for signal "%s"') % \
+                      old_signal_handler.name
+        Command.__init__(self, description)
+        self._gadget = gadget
+        self._old_handler = old_signal_handler
+        self._new_handler = new_signal_handler
+
+    def execute(self):
+        self._gadget.change_signal_handler(self._old_handler,
+                                                    self._new_handler)
+        self._old_handler, self._new_handler = (self._new_handler,
+                                                self._old_handler)

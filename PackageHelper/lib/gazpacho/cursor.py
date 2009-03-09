@@ -26,6 +26,7 @@ class Cursor(object):
     size = (32, 32)
     fallback = gtk.gdk.Cursor(gtk.gdk.PLUS)
 
+    #@classmethod
     def create(cls, pixbuf):
         display = gtk.gdk.display_get_default()
         if not pixbuf or not display.supports_cursor_color():
@@ -54,6 +55,7 @@ class Cursor(object):
         return gtk.gdk.Cursor(display, tmp, *cls.hotspot)
     create = classmethod(create)
 
+    #@classmethod
     def set_for_widget_adaptor(cls, window, widget_adaptor):
         if not widget_adaptor:
             cursor = None

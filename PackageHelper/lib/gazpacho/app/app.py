@@ -14,53 +14,68 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
 import os
 import urllib
 import urlparse
 
 import gtk
 import gobject
+from kiwi.component import get_utility
 from kiwi.environ import environ
 from kiwi.ui.dialogs import BaseDialog, open, save, error, messagedialog
+from kiwi.utils import gsignal, type_register
 
 from gazpacho import __version__
+from gazpacho import gapi
 from gazpacho.actioneditor import GActionsView
 from gazpacho.app.bars import bar_manager
 from gazpacho.app.dialogs import SingleCloseConfirmationDialog, \
-     MultipleCloseConfirmationDialog
+     MultipleCloseConfirmationDialog, UnsupportedWidgetsDialog
+from gazpacho.app.preferences import PreferencesDialog
+from gazpacho.app.uimstate import WidgetUIMState, ActionUIMState, \
+     SizeGroupUIMState
 from gazpacho.clipboard import clipboard, ClipboardWindow
-from gazpacho.constants import MISSING_ICON, STOCK_SIZEGROUP
-from gazpacho.command import CommandStackView
+from gazpacho.command import AccessorCommand
 from gazpacho.commandmanager import command_manager
 from gazpacho.config import config
-from gazpacho.editor import Editor
+from gazpacho.i18n import _
+from gazpacho.interfaces import IPluginManager
 from gazpacho.loader.loader import ParseError, ObjectBuilder
 from gazpacho.palette import palette
 from gazpacho.placeholder import Placeholder
 from gazpacho.project import Project
+from gazpacho.propertyeditor import PropertyEditor
 from gazpacho.sizegroupeditor import SizeGroupView
-from gazpacho.util import rebuild
-from gazpacho.widget import Gadget
+from gazpacho.stockicons import register_stock_icons
+from gazpacho.gadget import Gadget
 from gazpacho.widgetview import WidgetTreeView
 from gazpacho.widgetregistry import widget_registry
 from gazpacho.workspace import WorkSpace
-from gazpacho.uimstate import WidgetUIMState, ActionUIMState, SizeGroupUIMState
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
 
 __all__ = ['Application']
 
 # The maximum number of recent items to display
 MAX_RECENT_ITEMS = 5
 
-class Application(object):
+class Application(gobject.GObject):
+    """
+    Application represents the Gazpacho application itself.
+
+    Signals:
+      set-project: a project is set as the current project. This usually
+        happens when opening a project.
+      close-project: a project is closed
+    """
+    gsignal('set-project', object),
+    gsignal('close-project', object)
 
     # DND information
     TARGET_TYPE_URI = 100
     targets = [('text/uri-list', 0, TARGET_TYPE_URI)]
 
     def __init__(self):
+        gobject.GObject.__init__(self)
+
         # The WidgetAdaptor that we are about to add to a container. None if no
         # class is to be added. This also has to be in sync with the depressed
         # button in the Palette
@@ -68,6 +83,7 @@ class Application(object):
 
         # This is our current project
         self._project = None
+        self._project_counter = 1
 
         # Merge IDs
         self._recent_menu_uid = -1
@@ -89,7 +105,14 @@ class Application(object):
         self._projects = []
         self._show_structure = False
 
+        register_stock_icons()
+
         self._window = self._application_window_create()
+
+        # Initialize the Plugin Manager
+        plugin_manager = get_utility(IPluginManager)
+        plugin_manager.load_plugins()
+        plugin_manager.activate_plugins(config.get_plugins(), self)
 
     def _application_window_create(self):
         application_window = gtk.Window(gtk.WINDOW_TOPLEVEL)
@@ -117,6 +140,8 @@ class Application(object):
 
             # Edit menu
             ('EditMenu', None, _('_Edit')),
+            ('Preferences', gtk.STOCK_PREFERENCES, None, None,
+             _('Open the preferences dialog'), self._preferences_cb),
 
             # Object menu
             ('ObjectMenu', None, _('_Objects')),
@@ -132,8 +157,6 @@ class Application(object):
             ('DebugMenu', None, _('_Debug')),
             ('DumpData', None, _('Dump data'), '<control>M',
               _('Dump debug data'), self._dump_data_cb),
-            ('Reload', None, _('Reload'), None,
-             _('Reload python code'), self._reload_cb),
             ('Preview', None, _('Preview'), None,
              _('Preview current window'), self._preview_cb),
 
@@ -251,7 +274,7 @@ class Application(object):
         self._uim_states[page_num] = state
 
         # Add property editor
-        self._editor = Editor(self)
+        self._editor = PropertyEditor(self)
         vpaned.add2(self._editor)
         self._editor.show_all()
 
@@ -318,7 +341,7 @@ class Application(object):
                 basename = basename[:-6]
 
             ui += '<menuitem action="%s"/>' % basename
-            label = '%d. %s' % (i+ 1, basename)
+            label = '_%d. %s' % (i+ 1, basename)
             action = gtk.Action(basename, label, '', '')
             action.connect('activate', self._open_project_cb, path)
             bar_manager.add_action('RecentProjects', action)
@@ -386,9 +409,9 @@ class Application(object):
         project.selection.connect_object('selection-changed',
                                          self._on_selection_changed,
                                          project)
-        project.connect('project-changed', self._on_project_changed)
-        project.connect('add-widget', self._on_project_add_widget)
-        project.connect('remove-widget', self._on_project_remove_widget)
+        project.connect('changed', self._on_project_changed)
+        project.connect('add-gadget', self._on_project_add_gadget)
+        project.connect('remove-gadget', self._on_project_remove_gadget)
         project.undo_stack.connect('changed', self._on_undo_stack_changed)
 
         self._set_project(project)
@@ -405,7 +428,7 @@ class Application(object):
         previous_action = None
         for project in self._projects:
             action = gtk.RadioAction(project.get_id(), project.name,
-                                     project.name, '', id(project))
+                                     project.name, '', hash(project))
             if previous_action:
                 action.set_group(previous_action)
             action.connect('activate', self._set_project_cb, project)
@@ -467,6 +490,9 @@ class Application(object):
 
             # trigger the selection changed signal to update the editor
             self._project.selection.selection_changed()
+
+            # emit this signals so plugins can do their stuff
+            self.emit('set-project', project)
 
         self._update_palette_sensitivity()
 
@@ -547,8 +573,10 @@ class Application(object):
         for widget in project.get_widgets():
             widget.destroy()
 
-        bar_manager.remove_ui(project.uim_id)
+        bar_manager.remove_ui(-1)
         self._projects.remove(project)
+
+        self.emit('close-project', project)
 
     def _confirm_close_project(self, project):
         """Show a dialog asking the user whether or not to save the
@@ -600,7 +628,7 @@ class Application(object):
 
     def _set_workspace_title(self, widget):
         self._workspace.set_widget_title(
-            widget, _('%s - %s') % (gobject.type_name(widget), widget.name))
+            widget, '%s - %s' % (gobject.type_name(widget), widget.name))
 
     # debugging windows
 
@@ -637,7 +665,10 @@ class Application(object):
         """
         Create and add a new project.
         """
-        project = Project(True, self)
+        project = Project(self)
+        project.name = _('Untitled %d') % self._project_counter
+        self._project_counter += 1
+
         self._add_project(project)
 
     def get_current_project(self):
@@ -677,15 +708,9 @@ class Application(object):
                 self._close_project(project)
                 break
 
+        project = Project(self)
         try:
-            project = Project.open(path, self)
-            failures = project.get_unsupported_widgets()
-            if failures:
-                dialog = UnsupportedWidgetsDialog(self._window, failures)
-                dialog.run()
-                dialog.destroy()
-            self._add_project(project)
-            return project
+            project.load(path)
         except ParseError:
             submsg1 = _('The project could not be loaded')
             submsg2 = _('An error occurred while parsing the file "%s".') % \
@@ -706,6 +731,15 @@ class Application(object):
                       (submsg1, submsg2)
             error(msg)
             self._update_palette_sensitivity()
+
+        failures = project.get_unsupported_widgets()
+        if failures:
+            dialog = UnsupportedWidgetsDialog(self._window, failures)
+            dialog.run()
+            dialog.destroy()
+
+        self._add_project(project)
+        return project
 
     def close_current_project(self):
         """
@@ -742,7 +776,7 @@ class Application(object):
 
     def create(self, type_name):
         adaptor = widget_registry.get_by_name(type_name)
-        self._command_manager.create(adaptor, None, self._project)
+        gapi.create_gadget(self._project, adaptor, None)
 
     def run(self):
         """Display the window and run the application"""
@@ -813,7 +847,8 @@ class Application(object):
         # adaptor may be None if the selector was pressed
         self._add_class = adaptor
         if adaptor and adaptor.is_toplevel():
-            command_manager.create(adaptor, None, self._project)
+            gapi.create_gadget(self._project, adaptor, None)
+
             palette.unselect_widget()
             self._add_class = None
 
@@ -851,7 +886,7 @@ class Application(object):
         """
         self._set_workspace_title(widget)
 
-    def _on_project_add_widget(self, project, gadget):
+    def _on_project_add_gadget(self, project, gadget):
         """
         If a toplevel widget has been added it has to be added to the
         workspace as well.
@@ -869,7 +904,7 @@ class Application(object):
             self._workspace.add(gadget.widget)
             self._set_workspace_title(gadget.widget)
 
-    def _on_project_remove_widget(self, project, gadget):
+    def _on_project_remove_gadget(self, project, gadget):
         """
         If a toplevel widget has been removed from the project it has
         to be removed from the workspace as well.
@@ -933,17 +968,21 @@ class Application(object):
     def _open_project_cb(self, action, path):
         self.open_project(path)
 
+    def _create_command_view(self):
+        from gazpacho.commandview import CommandView
+        view = CommandView()
+        self._add_view(view)
+
+        title = _('Command Stack')
+        action = bar_manager.get_action(
+            '/MainMenu/DebugMenu/ShowCommandStack')
+        self._command_stack_window = self._create_debugging_window(view,
+                                                                   title,
+                                                                   action)
+
     def _show_command_stack_cb(self, action):
         if self._command_stack_window is None:
-            view = CommandStackView()
-            self._add_view(view)
-
-            title = _('Command Stack')
-            action = bar_manager.get_action(
-                '/MainMenu/DebugMenu/ShowCommandStack')
-            self._command_stack_window = self._create_debugging_window(view,
-                                                                       title,
-                                                                       action)
+            self._create_command_view()
             self._command_stack_window.show()
         else:
             if self._command_stack_window.get_property('visible'):
@@ -1030,6 +1069,9 @@ class Application(object):
             return
 
         config.save()
+
+        plugin_manager = get_utility(IPluginManager)
+        plugin_manager.deactivate_all()
         gtk.main_quit()
 
     # Edit action callbacks
@@ -1054,6 +1096,10 @@ class Application(object):
         else:
             workspace.hide()
 
+    def _preferences_cb(self, action):
+        dialog = PreferencesDialog()
+        dialog.run()
+
     # Project action callbacks
 
     def _project_properties_cb(self, action):
@@ -1069,7 +1115,7 @@ class Application(object):
         hbox.show()
 
         label = gtk.Label()
-        label.set_markup_with_mnemonic(_('_Domain:'))
+        label.set_markup_with_mnemonic(_('_Translation domain:'))
         hbox.pack_start(label, False, False)
         label.show()
 
@@ -1082,7 +1128,13 @@ class Application(object):
 
         response = b.run()
         if response == gtk.RESPONSE_CLOSE:
-            project.set_domain(entry.get_text())
+            domain = entry.get_text()
+            if domain != project.get_domain():
+                cmd = AccessorCommand(_('Set domain to %s') % domain,
+                                      domain,
+                                      project.set_domain,
+                                      project.get_domain)
+                command_manager.execute(cmd, project)
         b.destroy()
 
     # Debug action callbacks
@@ -1112,22 +1164,16 @@ class Application(object):
                 continue
             dump_widget(widget)
 
-    def _reload_cb(self, action):
-        gobject.idle_add(rebuild)
-
     def _preview_cb(self, action):
         project = self.get_current_project()
         if not project.selection:
             return
 
+        xml = project.serialize()
+        builder = ObjectBuilder(buffer=xml)
         toplevel = project.selection[0].get_toplevel()
-        gadget = Gadget.from_widget(toplevel)
-        builder = ObjectBuilder(buffer=gadget.to_xml())
-
-        for widget in builder.get_widgets():
-            if not isinstance(widget, gtk.Window):
-                continue
-            widget.show_all()
+        widget = builder.get_widget(toplevel.get_name())
+        widget.show_all()
 
     # Help action callbacks
 
@@ -1149,71 +1195,4 @@ class Application(object):
 
     # Do not add anything here, add it above in the appropriate section
 
-def register_stock_icons():
-
-    # Register icons
-    icon_factory = gtk.IconFactory()
-
-    # "icon missing"
-    for fname, stock_id in [('gazpacho-icon.png', MISSING_ICON),
-                            ('sizegroup-both.png', STOCK_SIZEGROUP)]:
-        icon_source = gtk.IconSource()
-        icon_source.set_size_wildcarded(True)
-        icon_source.set_filename(environ.find_resource('pixmap', fname))
-        icon_set = gtk.IconSet()
-        icon_set.add_source(icon_source)
-        icon_factory.add(stock_id, icon_set)
-
-    icon_factory.add_default()
-
-class UnsupportedWidgetsDialog(gtk.Dialog):
-    """
-    Dialog used to display informatin about widgets that are not
-    supported by Gazpacho.
-    """
-
-    def __init__(self, window, widgets):
-        """
-        Initialize the dialog.
-
-        @param widgets: dict mapping widget class to a list of widget ids
-        @type: widgets: dict (type: list (of str))
-        """
-        gtk.Dialog.__init__(self,
-                            title='',
-                            parent=window,
-                            flags=gtk.DIALOG_DESTROY_WITH_PARENT | \
-                            gtk.DIALOG_NO_SEPARATOR,
-                            buttons=(gtk.STOCK_CLOSE, gtk.RESPONSE_CLOSE))
-
-        self.set_border_width(12)
-        self.vbox.set_spacing(6)
-
-        msg = _('Unsupported widgets')
-        label = gtk.Label('<b><big>%s</big></b>' % msg)
-        label.set_use_markup(True)
-        self.vbox.pack_start(label, False)
-
-        msg = _("The following widgets could not be loaded."
-                " Please note that if you save this file"
-                " these widgets will be lost.")
-        label = gtk.Label('<small>%s</small>' % msg)
-        label.set_line_wrap(True)
-        label.set_use_markup(True)
-        self.vbox.pack_start(label, False)
-
-        msg = self._create_widget_message(widgets)
-        label = gtk.Label(msg)
-        self.vbox.pack_start(label, False)
-
-        self.vbox.show_all()
-
-    def _create_widget_message(self, widgets):
-        msg_list = []
-        for widget_class, widget_ids in widgets.iteritems():
-            for widget_id in widget_ids:
-                msg_list.append('%s (%s)' % (widget_class, widget_id))
-
-        return '\n'.join(msg_list)
-
-register_stock_icons()
+type_register(Application)

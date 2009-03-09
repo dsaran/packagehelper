@@ -18,7 +18,7 @@ import gtk
 
 from gazpacho.placeholder import Placeholder
 from gazpacho.properties import prop_registry
-from gazpacho.widget import Gadget
+from gazpacho.gadget import Gadget
 from gazpacho.widgetregistry import widget_registry
 from gazpacho.widgets.base.window import WindowAdaptor
 
@@ -69,7 +69,7 @@ class DialogAdaptor(WindowAdaptor):
         """
         # XXX not sure if we can assume that there actually is a vbox
         # and an action_area here?
-        
+
         vbox = Gadget.from_widget(dialog.vbox)
         if vbox:
             vbox.get_prop('border-width').editable = False
@@ -77,7 +77,7 @@ class DialogAdaptor(WindowAdaptor):
         action_area = Gadget.from_widget(dialog.action_area)
         if action_area:
             action_area.get_prop('border-width').editable = False
-            action_area.get_prop('spacing').editable = False        
+            action_area.get_prop('spacing').editable = False
 
     def load(self, context, widget):
         gadget = super(WindowAdaptor, self).load(context, widget)

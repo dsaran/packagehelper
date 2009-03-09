@@ -14,8 +14,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
-
 import gtk
 import gobject
 from kiwi.component import get_utility
@@ -23,14 +21,14 @@ from kiwi.ui.dialogs import BaseDialog
 from kiwi.utils import gsignal
 
 from gazpacho.app.bars import bar_manager
+from gazpacho.command import FlipFlopCommandMixin, Command
 from gazpacho.commandmanager import command_manager
 from gazpacho.gaction import GAction, GActionGroup
+from gazpacho.i18n import _
 from gazpacho.interfaces import IGazpachoApp
 from gazpacho.stockicons import StockIconList
 from gazpacho.signalhandlers import SignalHandlerStorage
 from gazpacho.util import select_iter
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
 
 (COL_OBJECT,) = range(1)
 
@@ -108,7 +106,13 @@ class GActionsView(gtk.ScrolledWindow):
             get_utility(IGazpachoApp).get_window(), parent, None)
         if dialog.run() == gtk.RESPONSE_OK:
             values = dialog.get_values()
-            command_manager.add_action(values, parent, self.project)
+            new_gact = GAction(parent, values['name'], values['label'],
+                               values['short_label'], values['is_important'],
+                               values['tooltip'], values['stock_id'],
+                               values['callback'], values['accelerator'])
+            cmd = CommandAddRemoveAction(parent, new_gact, True)
+            command_manager.execute(cmd, self.project)
+
         dialog.destroy()
 
     def add_action_group(self):
@@ -119,16 +123,20 @@ class GActionsView(gtk.ScrolledWindow):
             get_utility(IGazpachoApp).get_window(), None)
         if dialog.run() == gtk.RESPONSE_OK:
             name = dialog.get_action_group_name()
-            command_manager.add_action_group(name, self.project)
+            gaction_group = GActionGroup(name)
+            cmd = CommandAddRemoveActionGroup(gaction_group, self.project, True)
+            command_manager.execute(cmd, self.project)
         dialog.destroy()
 
     def remove_action(self, gaction):
         """Remove the action group. This method will not remove the
         action group directly but delegate to the command manager."""
         if isinstance(gaction, GActionGroup):
-            command_manager.remove_action_group(gaction, self.project)
+            cmd = CommandAddRemoveActionGroup(gaction, self.project, False)
         else:
-            command_manager.remove_action(gaction, self.project)
+            cmd = CommandAddRemoveAction(gaction.parent, gaction, False)
+
+        command_manager.execute(cmd, self.project)
 
     def edit_action(self, gaction):
         """Edit the action or action group. This method will not edit
@@ -139,16 +147,18 @@ class GActionsView(gtk.ScrolledWindow):
                 gaction.parent, gaction)
             if dialog.run() == gtk.RESPONSE_OK:
                 new_values = dialog.get_values()
-                command_manager.edit_action(gaction, new_values,
-                                            self.project)
+                cmd = CommandEditAction(gaction, new_values, self.project)
+                command_manager.execute(cmd, self.project)
+
             dialog.destroy()
         else:
             dialog = GActionGroupDialog(get_utility(IGazpachoApp).get_window(),
                                         gaction)
             if dialog.run() == gtk.RESPONSE_OK:
                 new_name = dialog.get_action_group_name()
-                command_manager.edit_action_group(gaction, new_name,
-                                                  self.project)
+                cmd = CommandEditActionGroup(gaction, new_name, self.project)
+                command_manager.execute(cmd, self.project)
+
             dialog.destroy()
 
     def _populate_model(self):
@@ -661,3 +671,95 @@ class GActionGroupDialog(BaseDialog):
         return self._id.get_text()
 
 gobject.type_register(GActionGroupDialog)
+
+class CommandAddRemoveAction(FlipFlopCommandMixin, Command):
+    def __init__(self, parent, gact, add):
+        FlipFlopCommandMixin.__init__(self, add)
+        if add:
+            description = _('Add action %s') % gact.name
+        else:
+            description = _('Remove action %s') % gact.name
+
+        Command.__init__(self, description)
+
+        self.gact = gact
+        self.parent = parent
+
+    def _add_execute(self):
+        self.parent.add_action(self.gact)
+    _execute_state1 = _add_execute
+
+    def _remove_execute(self):
+        self.parent.remove_action(self.gact)
+    _execute_state2 = _remove_execute
+
+class CommandEditAction(Command):
+    def __init__(self, gact, new_values, project):
+        Command.__init__(self, _('Edit action %s') % gact.name)
+
+        self.new_values = new_values
+        self.gact = gact
+        self.project = project
+
+    def execute(self):
+        old_values = {
+            'name' : self.gact.name,
+            'label': self.gact.label,
+            'short_label': self.gact.short_label,
+            'is_important': self.gact.is_important,
+            'stock_id': self.gact.stock_id,
+            'tooltip': self.gact.tooltip,
+            'accelerator': self.gact.accelerator,
+            'callback': self.gact.callback,
+            }
+        self.gact.name = self.new_values['name']
+        self.gact.label = self.new_values['label']
+        self.gact.short_label = self.new_values['short_label']
+        self.gact.is_important = self.new_values['is_important']
+        self.gact.stock_id = self.new_values['stock_id']
+        self.gact.tooltip = self.new_values['tooltip']
+        self.gact.accelerator = self.new_values['accelerator']
+        self.gact.callback = self.new_values['callback']
+        self.gact.parent.update_action(self.gact, old_values['name'])
+        self.new_values = old_values
+        self.project.change_action_name(self.gact)
+
+class CommandAddRemoveActionGroup(FlipFlopCommandMixin, Command):
+    def __init__(self, gaction_group, project, add):
+        FlipFlopCommandMixin.__init__(self, add)
+        if add:
+            description = _('Add action group %s') % gaction_group.name
+        else:
+            description = _('Remove action group %s') % gaction_group.name
+        Command.__init__(self, description)
+
+        self.project = project
+        self.gaction_group = gaction_group
+        self.gactions = self.gaction_group.get_actions()
+
+    def _add_execute(self):
+        self.project.add_action_group(self.gaction_group)
+        for gaction in self.gactions:
+            self.gaction_group.add_action(gaction)
+        return self.gaction_group
+    _execute_state1 = _add_execute
+
+    def _remove_execute(self):
+        self.project.remove_action_group(self.gaction_group)
+        return self.gaction_group
+    _execute_state2 = _remove_execute
+
+class CommandEditActionGroup(Command):
+    def __init__(self, gaction_group, new_name, project):
+        description = _('Edit action group %s') % gaction_group.name
+        Command.__init__(self, description)
+
+        self.new_name = new_name
+        self.gaction_group = gaction_group
+        self.project = project
+
+    def execute(self):
+        old_name = self.gaction_group.name
+        self.gaction_group.name = self.new_name
+        self.new_name = old_name
+        self.project.change_action_name(self.gaction_group)

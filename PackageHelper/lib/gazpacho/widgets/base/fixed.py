@@ -16,9 +16,9 @@
 
 import gtk
 
-from gazpacho.commandmanager import command_manager
+from gazpacho import gapi
 from gazpacho.cursor import Cursor
-from gazpacho.widget import Gadget
+from gazpacho.gadget import Gadget
 from gazpacho.widgets.base.base import ContainerAdaptor
 
 class FixedAdaptor(ContainerAdaptor):
@@ -46,8 +46,8 @@ class FixedAdaptor(ContainerAdaptor):
         project = context.get_project()
         if project._app.add_class:
             gadget = Gadget.from_widget(fixed)
-            command_manager.create(project._app.add_class, None,
-                                   project, gadget)
+            gapi.create_gadget(project, project.get_app().add_class,
+                               None, gadget)
         return False
 
     def motion_notify(self, context, fixed, event):

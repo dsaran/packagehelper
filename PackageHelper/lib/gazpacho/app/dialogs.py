@@ -14,12 +14,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
-
 import gtk
 from kiwi.ui.dialogs import BaseDialog
 
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+from gazpacho.i18n import _
 
 class CloseConfirmationDialog(BaseDialog):
     """A base class for the close confirmation dialogs. It lets the
@@ -172,3 +170,53 @@ class MultipleCloseConfirmationDialog(CloseConfirmationDialog):
     def get_projects(self):
         """Get a list of the projects that should be saved."""
         return [project for saved, project in self._model if saved]
+
+class UnsupportedWidgetsDialog(gtk.Dialog):
+    """
+    Dialog used to display informatin about widgets that are not
+    supported by Gazpacho.
+    """
+
+    def __init__(self, window, widgets):
+        """
+        Initialize the dialog.
+
+        @param widgets: dict mapping widget class to a list of widget ids
+        @type: widgets: dict (type: list (of str))
+        """
+        gtk.Dialog.__init__(self,
+                            title='',
+                            parent=window,
+                            flags=gtk.DIALOG_DESTROY_WITH_PARENT | \
+                            gtk.DIALOG_NO_SEPARATOR,
+                            buttons=(gtk.STOCK_CLOSE, gtk.RESPONSE_CLOSE))
+
+        self.set_border_width(12)
+        self.vbox.set_spacing(6)
+
+        msg = _('Unsupported widgets')
+        label = gtk.Label('<b><big>%s</big></b>' % msg)
+        label.set_use_markup(True)
+        self.vbox.pack_start(label, False)
+
+        msg = _("The following widgets could not be loaded."
+                " Please note that if you save this file"
+                " these widgets will be lost.")
+        label = gtk.Label('<small>%s</small>' % msg)
+        label.set_line_wrap(True)
+        label.set_use_markup(True)
+        self.vbox.pack_start(label, False)
+
+        msg = self._create_widget_message(widgets)
+        label = gtk.Label(msg)
+        self.vbox.pack_start(label, False)
+
+        self.vbox.show_all()
+
+    def _create_widget_message(self, widgets):
+        msg_list = []
+        for widget_class, widget_ids in widgets.iteritems():
+            for widget_id in widget_ids:
+                msg_list.append('%s (%s)' % (widget_class, widget_id))
+
+        return '\n'.join(msg_list)

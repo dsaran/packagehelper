@@ -15,8 +15,6 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import os
-
 from gazpacho.widgetregistry import widget_registry
 from gazpacho.interfaces import BaseLibrary
 from gazpacho.loader.custom import adapter_registry
@@ -80,6 +78,8 @@ class PythonLibrary(BaseLibrary):
         BaseLibrary.__init__(self, name, library_name)
         self.name = name
 
+        self.library_name = library_name
+
         if not library_name:
             library_name = name
         full = 'gazpacho.widgets.' + name
@@ -109,13 +109,11 @@ class PythonLibrary(BaseLibrary):
 
             try:
                 module = __import__(modulename, {}, {}, modulename)
-            except ImportError, e:
+            except ImportError:
                 print "Could not load module: %s" % modulename
                 raise
-            except SyntaxError, e:
-                print 'SYNTAX ERROR in %s:%d for module %s!' % (
-                    os.path.basename(e.filename), e.lineno, modulename)
-                return
+            except SyntaxError:
+                raise
 
             klass = getattr(module, class_name, None)
 
@@ -125,7 +123,7 @@ class PythonLibrary(BaseLibrary):
             except RuntimeError:
                 raise LibraryLoadError(
                     'Failed to get ancestor for %s' % type_name)
-        return klass()
+        return klass
 
     def get_property_adaptor_class(self, type_name, property_name,
                                    property_type, class_name):

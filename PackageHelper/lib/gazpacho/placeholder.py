@@ -18,6 +18,7 @@ import gobject
 import gtk
 from kiwi.component import get_utility
 
+from gazpacho import gapi
 from gazpacho.annotator import draw_annotations
 from gazpacho.commandmanager import command_manager
 from gazpacho.cursor import Cursor
@@ -136,7 +137,8 @@ class Placeholder(gtk.Widget):
             # A widget type is selected in the palette.
             # Add a new widget of that type
             if app.add_class:
-                command_manager.create(app.add_class, self, None)
+                gapi.create_gadget(app.get_current_project(), app.add_class,
+                                   self)
 
             # Shift clicking circles through the widget tree by
             # choosing the parent of the currently selected widget.
@@ -190,7 +192,6 @@ class Placeholder(gtk.Widget):
             return False
 
         return len(gtk_parent.get_children()) > 1
-
 
 gobject.type_register(Placeholder)
 

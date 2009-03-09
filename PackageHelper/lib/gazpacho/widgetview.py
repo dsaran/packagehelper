@@ -22,8 +22,8 @@ from kiwi.utils import gsignal
 from gazpacho.app.bars import bar_manager
 from gazpacho.commandmanager import command_manager
 from gazpacho.popup import Popup
-from gazpacho.widget import Gadget
-from gazpacho.util import select_iter
+from gazpacho.gadget import Gadget
+from gazpacho.util import select_iter, get_all_children
 from gazpacho.signalhandlers import SignalHandlerStorage
 
 (GADGET_COLUMN, N_COLUMNS) = range(2)
@@ -104,12 +104,12 @@ class WidgetTreeView(gtk.ScrolledWindow):
         self._populate_model()
 
         # Here we connect to all the signals of the project that interest us
-        self._handlers.connect(project, 'add-widget',
-                               self._on_project_add_widget)
-        self._handlers.connect(project, 'remove-widget',
-                               self._on_project_remove_widget)
-        self._handlers.connect(project, 'widget-name-changed',
-                               self._on_project_widget_name_changed)
+        self._handlers.connect(project, 'add-gadget',
+                               self._on_project_add_gadget)
+        self._handlers.connect(project, 'remove-gadget',
+                               self._on_project_remove_gadget)
+        self._handlers.connect(project, 'gadget-name-changed',
+                               self._on_project_gadget_name_changed)
         self._handlers.connect(project.selection, 'selection-changed',
                                self._on_selection_changed)
 
@@ -130,9 +130,9 @@ class WidgetTreeView(gtk.ScrolledWindow):
             gadget = Gadget.from_widget(w)
             if gadget:
                 iter = self._model.append(parent_iter, (gadget,))
-            if add_children and isinstance(w, gtk.Container):
-                children = w.get_children()
-                self._populate_model_real(children, iter, True)
+                if add_children:
+                    children = gadget.get_children()
+                    self._populate_model_real(children, iter, True)
 
     def _add_columns(self):
         column = gtk.TreeViewColumn()
@@ -190,10 +190,13 @@ class WidgetTreeView(gtk.ScrolledWindow):
 
         Please note that not all widget has a gadget associated with them
         so there are some special cases we need to handle."""
-        if not isinstance(parent, gtk.Container):
-            return
+        parent_gadget = Gadget.from_widget(parent)
+        if parent_gadget:
+            children = parent_gadget.get_children()
+        else:
+            children = get_all_children(parent)
 
-        for child in parent.get_children():
+        for child in children:
             gadget = Gadget.from_widget(child)
             if not gadget:
                 if isinstance(child, gtk.Container):
@@ -219,7 +222,10 @@ class WidgetTreeView(gtk.ScrolledWindow):
         model, iters = self._tree_selection.get_selected_rows()
         gadgets = []
         for iter in iters:
-            gadgets.append(model[iter][GADGET_COLUMN])
+            gadget = model[iter][GADGET_COLUMN]
+	    # Workaround for bug #344275
+            if gadget:
+                gadgets.append(gadget)
         return gadgets
 
     #
@@ -290,7 +296,7 @@ class WidgetTreeView(gtk.ScrolledWindow):
         if event.keyval in (gtk.keysyms.Delete, gtk.keysyms.KP_Delete):
             bar_manager.activate_action('Delete')
 
-    def _on_project_add_widget(self, project, gadget):
+    def _on_project_add_gadget(self, project, gadget):
         """
         When the widget is added to the project it should be added to
         the widget tree as well.
@@ -319,7 +325,7 @@ class WidgetTreeView(gtk.ScrolledWindow):
 
         select_iter(self._tree_view, gadget_iter)
 
-    def _on_project_remove_widget(self, project, gadget):
+    def _on_project_remove_gadget(self, project, gadget):
         """
         Remove the widget from the widget tree when it's removed from
         the project.
@@ -328,7 +334,7 @@ class WidgetTreeView(gtk.ScrolledWindow):
         if iter:
             self._model.remove(iter)
 
-    def _on_project_widget_name_changed(self, project, widget):
+    def _on_project_gadget_name_changed(self, project, widget):
         """
         Update the name of the widget in the widget tree when the name
         of the widget is changed.

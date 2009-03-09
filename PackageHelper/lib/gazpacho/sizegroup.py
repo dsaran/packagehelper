@@ -17,8 +17,13 @@
 import gobject
 import gtk
 from kiwi.utils import gsignal, type_register
+from kiwi.component import implements
+
+from gazpacho.interfaces import IReferencable
 
 class GSizeGroup(gobject.GObject):
+
+    implements(IReferencable)
 
     gsignal('name-changed')
     gsignal('gadgets-added', object)
@@ -104,7 +109,7 @@ class GSizeGroup(gobject.GObject):
         Check if the size group has the gadget.
 
         @param gadget: the gadget to test
-        @type gadget: gazpacho.widget.Widget
+        @type gadget: gazpacho.gadget.Widget
 
         @return: true if the gadget is in the group
         @rtype: bool
@@ -116,7 +121,7 @@ class GSizeGroup(gobject.GObject):
         Get the gadgets for this group.
 
         @return: the gadgets
-        @rtype: list (of gazpacho.widget.Widget)
+        @rtype: list (of gazpacho.gadget.Widget)
         """
         return self._gadgets[:]
 
@@ -125,13 +130,14 @@ class GSizeGroup(gobject.GObject):
         Add gadgets to the SizeGroup.
 
         @param gadgets: the gadgets to add
-        @type gadgets: list (of gazpacho.widget.Widget)
+        @type gadgets: list (of gazpacho.gadget.Widget)
         """
         if not gadgets:
             return
 
         self._gadgets += gadgets
         for gadget in gadgets:
+            gadget.references.add_referrer(self)
             prop = gadget.get_prop('sizegroup')
             prop.value = self._name
             self._add_widget(gadget.widget)
@@ -143,16 +149,41 @@ class GSizeGroup(gobject.GObject):
         Remove gadgets from the sizegroup.
 
         @param gadgets: the gadgets to remove
-        @type gadgets: list (of gazpacho.widget.Widget)
+        @type gadgets: list (of gazpacho.gadget.Widget)
         """
         if not gadgets:
             return
 
         for gadget in gadgets:
+            gadget.references.remove_referrer(self)
             self._gadgets.remove(gadget)
             self._remove_widget(gadget.widget)
+            prop = gadget.get_prop('sizegroup')
+            prop.value = None
 
         self.emit('gadgets-removed', gadgets)
+
+    # IReferencable
+ 
+    def remove_reference(self, gadget):
+        """
+        See L{gazpacho.interfaces.IReferencable.remove_reference}
+        """
+        self._gadgets.remove(gadget)
+        prop = gadget.get_prop('sizegroup')
+        prop.value = None
+        self._remove_widget(gadget.widget)
+        self.emit('gadgets-removed', [gadget])
+ 
+    def add_reference(self, gadget):
+        """
+        See L{gazpacho.interfaces.IReferencable.add_reference}
+        """
+        self._gadgets.append(gadget)
+        prop = gadget.get_prop('sizegroup')
+        prop.value = self._name
+        self._add_widget(gadget.widget)
+        self.emit('gadgets-added', [gadget])
 
     #
     # Private methods

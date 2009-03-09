@@ -18,7 +18,7 @@ import gtk
 
 from gazpacho.placeholder import Placeholder
 from gazpacho.properties import prop_registry, CustomProperty, IntType
-from gazpacho.widget import Gadget
+from gazpacho.gadget import Gadget
 from gazpacho.widgets.base.base import ContainerAdaptor
 
 class NotebookAdaptor(ContainerAdaptor):

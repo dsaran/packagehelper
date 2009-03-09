@@ -14,13 +14,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
-
 import gtk
 
-from gazpacho import util
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+from gazpacho import gapi, util
+from gazpacho.clipboard import clipboard
+from gazpacho.command import ContainerCommand
+from gazpacho.commandmanager import command_manager
+from gazpacho.properties import CommandSetProperty
+from gazpacho.i18n import _
 
 class Popup(object):
     """This class defines a popup menu and its behaviour
@@ -53,30 +54,97 @@ class Popup(object):
             gadget.select()
 
     def _cut_cb(self, item, gadget):
-        self._command_manager.cut(gadget)
+        clipboard.cut(gadget)
 
     def _copy_cb(self, item, gadget):
-        self._command_manager.copy(gadget)
+        clipboard.copy(gadget)
 
-    def _paste_cb(self, item, widget):
-        gadget = util.get_parent(widget)
-        self._command_manager.paste(widget, gadget.project)
+    def _paste_cb(self, item, placeholder):
+        gadget = util.get_parent(placeholder)
+        if isinstance(placeholder, gtk.TreeView):
+            from gazpacho.gadget import Gadget
+            clipboard.paste(Gadget.from_widget(placeholder))
+        else:
+            clipboard.paste(placeholder, gadget.project)
 
     def _delete_cb(self, item, gadget):
-        self._command_manager.delete(gadget)
+        gapi.delete_gadget(gadget.project, gadget)
 
     def _box_insert_cb(self, item, gadget, after):
+        from gazpacho.widgets.base.box import CommandBoxInsertPlaceholder
         parent_pos = self._find_parent_box_and_pos(gadget)
         if parent_pos is None:
             return
 
         (parent, pos) = parent_pos
-        self._command_manager.box_insert_placeholder(parent, pos, after)
+        cmd = CommandBoxInsertPlaceholder(parent, pos, after)
+        self._command_manager.execute(cmd, parent.project)
+
+    def _table_insert(self, gadget, row=False, column=False, before=False):
+        from gazpacho.gadget import Gadget
+
+        selected = gadget.project.selection[0]
+        table = gadget.widget
+
+        # First resize table
+        if row:
+            old_prop_name = 'top-attach'
+            n_rows = gadget.get_prop('n-rows')
+            cmds = [CommandSetProperty(n_rows, n_rows.value + 1)]
+            desc = 'row'
+        elif column:
+            old_prop_name = 'left-attach'
+            n_columns = gadget.get_prop('n-columns')
+            cmds = [CommandSetProperty(n_columns, n_columns.value + 1)]
+            desc = 'column'
+        else:
+            raise AssertionError
+
+        # XXX: Remove this hack, it is selection related, the table
+        #      might be selected when we enter here. Requires UI changes
+        try:
+            old = table.child_get_property(selected, old_prop_name)
+        except TypeError:
+            return
+
+        if before:
+            old -= 1
+
+        # Secondly move children
+        for child in table.get_children():
+            child_gadget = Gadget.from_widget(child)
+            # No need to move placeholders
+            if not child_gadget:
+                continue
+
+            if row:
+                pos = child_gadget.get_child_prop('y-pos')
+            else: # column
+                pos = child_gadget.get_child_prop('x-pos')
+
+            if pos.value > old:
+                cmds.append(CommandSetProperty(pos, pos.value + 1))
+
+        # Execute everything in one go
+        command_manager.execute(
+            ContainerCommand('Adding a %s to table' % desc, *cmds),
+            gadget.project)
+
+    def _table_insert_row_before_cb(self, item, gadget):
+        self._table_insert(gadget, row=True, before=True)
+
+    def _table_insert_row_after_cb(self, item, gadget):
+        self._table_insert(gadget, row=True)
+
+    def _table_insert_column_before_cb(self, item, gadget):
+        self._table_insert(gadget, column=True, before=True)
+
+    def _table_insert_column_after_cb(self, item, gadget):
+        self._table_insert(gadget, column=True)
 
     # aux methods
     def _create_menu(self, gadget, add_children=True):
         from gazpacho.placeholder import Placeholder
-
         popup_menu = gtk.Menu()
 
         self._append_item(popup_menu, None,
@@ -103,6 +171,15 @@ class Popup(object):
 
             self._append_item(popup_menu, _('Insert after'), None, True,
                               self._box_insert_cb, gadget, True)
+        elif isinstance(gadget.widget, gtk.Table):
+            self._append_item(popup_menu, _('Insert row before'), None, True,
+                              self._table_insert_row_before_cb, gadget)
+            self._append_item(popup_menu, _('Insert row after '), None, True,
+                              self._table_insert_row_after_cb, gadget)
+            self._append_item(popup_menu, _('Insert column before'), None, True,
+                              self._table_insert_column_before_cb, gadget)
+            self._append_item(popup_menu, _('Insert column after '), None, True,
+                              self._table_insert_column_after_cb, gadget)
 
         if add_children and not gadget.is_toplevel():
             parent = gadget.get_parent()
@@ -164,7 +241,12 @@ class Popup(object):
 
 class PlaceholderPopup(Popup):
     def _delete_placeholder_cb(self, item, placeholder):
-        self._command_manager.delete_placeholder(placeholder)
+        from gazpacho.widgets.base.box import CommandBoxDeletePlaceholder
+
+        parent = util.get_parent(placeholder)
+        if len(parent.widget.get_children()) >= 1:
+            cmd = CommandBoxDeletePlaceholder(placeholder)
+            self._command_manager.execute(cmd, parent.project)
 
     def _create_menu(self, placeholder, add_children=False):
         from gazpacho.clipboard import clipboard

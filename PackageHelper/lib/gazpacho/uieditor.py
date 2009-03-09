@@ -14,21 +14,22 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
 
-import gettext
+import operator
 import xml.dom.minidom
 
 import gtk
 import gobject
 from kiwi.ui.dialogs import BaseDialog
 
-from gazpacho.editor import PropertyEditorDialog
+from gazpacho.i18n import _
+from gazpacho.propertyeditor import PropertyEditorDialog
 from gazpacho.util import select_iter
+from gazpacho.command import Command
+from gazpacho.commandmanager import command_manager
 
 # XXX: Remove
 def xml_filter_nodes(nodes, node_type):
     return [node for node in nodes if node.nodeType == node_type]
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
 
 class UIEditor(PropertyEditorDialog):
     def __init__(self):
@@ -199,7 +200,9 @@ class UIEditor(PropertyEditorDialog):
 
     def _set_ui(self):
         ui_string = self.root_node.toxml()
-        self.uim.update_ui(self.gadget, ui_string, 'initial-state')
+        cmd = CommandUpdateUIDefinitions(self.gadget, ui_string,
+                                         'initial-state')
+        command_manager.execute(cmd, self.gadget.project)
 
     # callbacks
     def _on_selection_changed(self, selection):
@@ -300,10 +303,7 @@ class ChooseActionDialog(BaseDialog):
         BaseDialog.__init__(self, parent=toplevel,
                             buttons=(gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL,
                                      gtk.STOCK_OK, gtk.RESPONSE_OK))
-        self.set_border_width(6)
         self.set_resizable(False)
-        self.set_has_separator(False)
-        self.vbox.set_spacing(6)
 
         self.label = gtk.Label(_('Choose an action')+':')
         self.vbox.pack_start(self.label, False)
@@ -316,7 +316,9 @@ class ChooseActionDialog(BaseDialog):
         self.actions.add_attribute(renderer, 'text', 0)
 
         for action_group in action_groups:
-            for action in action_group.get_actions():
+            actions = action_group.get_actions()
+            actions.sort(key=operator.attrgetter('name'))
+            for action in actions:
                 model.append(('%s/%s' % (action_group.name, action.name),))
 
         self.actions.set_active(0)
@@ -373,6 +375,14 @@ class AddToolitemDialog(AddMenuDialog):
         self.set_title(_('Adding a toolitem'))
         self.vbox.show_all()
 
+        if len(self.actions.get_model()) > 0:
+            self.select_action.set_sensitive(True)
+            self.select_action.set_active(True)
+        else:
+            self.select_action.set_sensitive(False)
+            self.select_action.set_active(False)
+            self.select_separator.set_active(True)
+
     def use_separator(self):
         return self.select_separator.get_active()
 
@@ -386,3 +396,30 @@ class AddMenuitemDialog(AddToolitemDialog):
         self.vbox.show_all()
 
 gobject.type_register(AddMenuitemDialog)
+
+
+class CommandUpdateUIDefinitions(Command):
+    """
+    Update the UI definitions for a UIManager based widget.
+    """
+
+    def __init__(self, gadget, ui_defs, ui_name, refresh=True):
+        Command.__init__(self, _("Edit UI definitions"))
+        self._gadget = gadget
+        self._defs = ui_defs
+        self._ui_name = ui_name
+        # If this is set to False the UIM won't refresh the gtk widget and
+        # you are responsible of doing so at some point
+        self._refresh = refresh
+
+    def execute(self):
+        uim = self._gadget.project.uim
+        old_defs = uim.get_ui(self._gadget, self._ui_name)[0]
+        uim.update_ui(self._gadget, self._defs, self._ui_name, self._refresh)
+        self._defs = old_defs
+
+    def unifies(self, other):
+        if isinstance(other, CommandUpdateUIDefinitions):
+            return (self._gadget is other._gadget
+                    and self._ui_name == other._ui_name)
+        return False

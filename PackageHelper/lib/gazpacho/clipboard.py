@@ -23,13 +23,15 @@ The Clipboard holds instances of ClipboardItems which contains information
 of the widgets and a XML representation of them.
 """
 
-import gettext
-
 import gobject
 import gtk
 from kiwi.utils import gsignal, type_register
 
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+from gazpacho import util
+
+from gazpacho.command import FlipFlopCommandMixin, Command
+from gazpacho.commandmanager import command_manager
+from gazpacho.i18n import _
 
 class ClipboardItem(object):
     """The ClipboardItem is the data that is stored in the
@@ -37,12 +39,13 @@ class ClipboardItem(object):
     some additional information that can be useful to know about
     without having to recreate the widget.."""
 
-    def __init__(self, widget):
-        self.name = widget.name
-        self.icon = widget.adaptor.icon.get_pixbuf()
-        self.is_toplevel = widget.is_toplevel()
+    def __init__(self, gadget):
+        self.name = gadget.name
+        self.icon = gadget.adaptor.icon.get_pixbuf()
+        self.is_toplevel = gadget.is_toplevel()
+        self.type = gadget.adaptor.type
 
-        self._xml = widget.to_xml()
+        self._xml = gadget.to_xml(skip_external_references=True)
 
     def to_xml(self):
         return self._xml
@@ -87,14 +90,13 @@ class Clipboard(gobject.GObject):
 
     selected = property(get_selected, set_selected)
 
-    def add_widget(self, src_widget):
+    def add_gadget(self, src_gadget):
         """Add a ClipboardItem wrapping the the source widget to the clipboard.
         A 'widget-added' signal is then emitted to indicate that there
         are new data on the clipboard. If the clipboard contains too
         many items the oldest item will be removed and a
         'widget-removed' signal emitted."""
-
-        item = ClipboardItem(src_widget)
+        item = ClipboardItem(src_gadget)
 
         self.content.append(item)
         self.emit('widget-added', item)
@@ -134,8 +136,61 @@ class Clipboard(gobject.GObject):
         if item is None:
             return
 
-        from gazpacho.widget import Gadget
+        from gazpacho.gadget import Gadget
         return Gadget.from_xml(project, item.to_xml(), item.name)
+
+    # public methods for copy/cut/paste
+
+    def copy(self, gadget):
+        """Add a copy of the widget to the clipboard.
+
+        Note that it does not make sense to undo this operation
+        """
+        # internal children cannot be copied. Shoulw we notify the user?
+        if gadget.internal_name is not None:
+            return
+
+        self.add_gadget(gadget)
+
+    def cut(self, gadget):
+        # internal children cannot be cut. Should we notify the user?
+        if gadget.internal_name is not None:
+            return
+
+        # add it to the clipboard
+        self.add_gadget(gadget)
+
+        project = gadget.project
+        if isinstance(gadget.widget, gtk.TreeViewColumn):
+            from gazpacho.util import get_parent
+            from gazpacho.widgets.base.treeview import CommandAddRemoveTreeViewColumn
+            tree_view = get_parent(gadget.widget)
+            cmd = CommandAddRemoveTreeViewColumn(tree_view, gadget,
+                                                 project, False)
+        else:
+            cmd = CommandCutPaste(gadget, project, None, True)
+
+        command_manager.execute(cmd, project)
+
+    def paste(self, placeholder, project):
+        if project is None:
+            raise ValueError("No project has been specified. Cannot paste "
+                             "the widget")
+
+        gadget = self.get_selected_widget(project)
+
+        if (isinstance(placeholder, gtk.TreeView)
+            and isinstance(gadget.widget, gtk.TreeViewColumn)):
+            from gazpacho.gadget import Gadget
+            from gazpacho.widgets.base.treeview import CommandAddRemoveTreeViewColumn
+            tree_view = Gadget.from_widget(placeholder)
+            cmd = CommandAddRemoveTreeViewColumn(tree_view, gadget,
+                                                 project, True)
+        else:
+            cmd = CommandCutPaste(gadget, project, placeholder, False)
+
+        command_manager.execute(cmd, project)
+        return gadget
 
 type_register(Clipboard)
 
@@ -258,3 +313,68 @@ def get_last_iter(model):
         return model.iter_nth_child(None, items - 1)
     return None
 
+
+class CommandCutPaste(FlipFlopCommandMixin, Command):
+
+    def __init__(self, gadget, project, placeholder, cut):
+        FlipFlopCommandMixin.__init__(self, cut)
+
+        if cut:
+            description = _('Cut widget %s into the clipboard') % gadget.name
+        else:
+            description = _('Paste widget %s from the clipboard') % gadget.name
+        Command.__init__(self, description)
+
+        self._project = project
+        self._placeholder = placeholder
+        self._gadget = gadget
+
+    def _execute_cut(self):
+        from gazpacho.gadget import Gadget
+        from gazpacho.placeholder import Placeholder
+
+        gadget = self._gadget
+
+        if not gadget.is_toplevel():
+            parent = gadget.get_parent()
+
+            if not self._placeholder:
+                self._placeholder = Placeholder()
+
+            Gadget.replace(gadget.widget,
+                           self._placeholder, parent)
+
+        gadget.widget.hide()
+        gadget.project.remove_widget(gadget.widget)
+        gadget.deleted = True
+
+    _execute_state1 = _execute_cut
+
+    def _execute_paste(self):
+        # Note that updating the dependencies might replace the
+        # widget's gtk-widget so we need to make sure we refer to the
+        # correct one afterward.
+        from gazpacho.gadget import Gadget
+        self._gadget.deleted = False
+
+        if self._gadget.is_toplevel():
+            project = self._project
+        else:
+            parent = util.get_parent(self._placeholder)
+            project = parent.project
+            Gadget.replace(self._placeholder,
+                           self._gadget.widget,
+                           parent)
+
+        project.add_widget(self._gadget.widget, new_name=True)
+        self._gadget.select()
+
+        self._gadget.widget.show_all()
+
+        # We need to store the project of a toplevel widget to use
+        # when undoing the cut.
+        self._project = project
+
+        return self._gadget
+
+    _execute_state2 = _execute_paste

@@ -45,6 +45,8 @@ MAIN_UI_STRING = """
       <separator name="EM2"/>
       <menuitem action="ShowStructure"/>
       <menuitem action="ShowWorkspace"/>
+      <separator name="EM3"/>
+      <menuitem action="Preferences"/>
     </menu>
     <menu action="ObjectMenu">
     </menu>
@@ -59,7 +61,6 @@ MAIN_UI_STRING = """
       <separator/>
       <menuitem action="Preview"/>
       <menuitem action="DumpData"/>
-      <menuitem action="Reload"/>
     </menu>
     <menu action="HelpMenu">
       <menuitem action="About"/>
@@ -156,8 +157,13 @@ class BarManager(object):
             raise TypeError("action must be a gtk.Action")
 
         action_group = self.get_group(group_name)
+
+        action_name = action.get_name()
+        if action_name in self._action_cache:
+            action_group.remove_action(action)
+
         action_group.add_action(action)
-        self._action_cache[action.get_name()] = action
+        self._action_cache[action_name] = action
 
     def add_actions(self, group_name, *actions):
         """

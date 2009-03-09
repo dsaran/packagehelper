@@ -1,4 +1,4 @@
-# Copyright (C) 2005 by Johan Dahlin
+# Copyright (C) 2005-2006 by Johan Dahlin
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -16,16 +16,17 @@
 
 # properties.py - More black magic than Dumbledore can handle
 
-import gettext
 import sys
 
 import gobject
 import gtk
 from kiwi.environ import environ
+from kiwi.component import implements
 
 from gazpacho.choice import enum_to_string, flags_to_string
-
-_ = lambda msg: gettext.dgettext('gazpacho', msg)
+from gazpacho.interfaces import IReferencable
+from gazpacho.command import Command
+from gazpacho.i18n import _
 
 UNICHAR_PROPERTIES = ('invisible-char', )
 
@@ -34,6 +35,13 @@ class PropertyError(Exception):
 
 class UnsupportedProperty(PropertyError):
     pass
+
+class PropertySetError(PropertyError):
+    """
+    This can only be raised inside a set handler of a PropType subclass.
+    It is raised when an invalid value set, for example when the position
+    of a cell in a table is outside of the table borders.
+    """
 
 class PropertyCustomEditor(object):
     """
@@ -103,10 +111,11 @@ class PropStorage:
         If parent is specified, child properties will also be included.
         This method will create the prop_types and save if they're
         not already created.
+
         @param type_name: name of type
         @type  type_name: string
-        @param parent:    parent type of object
-        @type  parent:    GType
+        @param prop_registry: property registry
+        @type  prop_registry: a PropRegistry
         """
         property_types = []
         for pspec in self._list_properties(type_name):
@@ -121,19 +130,37 @@ class PropStorage:
         for prop_type in property_types[:]:
             if (not prop_type.readable or
                 not prop_type.writable or
-                prop_type.disabled):
+                not prop_type.enabled):
                 property_types.remove(prop_type)
 
         return property_types
+
+    def has_prop_type(self, type_name, prop_name):
+        """
+        True if a property from type_name called prop_name exists
+
+        @param type_name: gtype name of owner
+        @type  type_name: string
+        @param prop_name: name of property
+        @type  prop_name: string
+        """
+        prop_type = self._get_type_from_prop_name(type_name, prop_name)
+        if not prop_type:
+            prop_type = self._get_custom(type_name, prop_name)
+
+        return prop_type
 
     def get_prop_type(self, type_name, prop_name, prop_registry):
         """
         Fetch a property from type_name called prop_name, it creates
         the property type if it's not already created.
+
         @param type_name: gtype name of owner
         @type  type_name: string
         @param prop_name: name of property
         @type  prop_name: string
+        @param prop_registry: property registry
+        @type  prop_registry: a PropRegistry
         """
         prop_type = self._get_type_from_prop_name(type_name, prop_name)
         if not prop_type:
@@ -212,6 +239,8 @@ class PropStorage:
     def _get_type_from_prop_name(self, type_name, prop_name):
         """Get the type for type_name::prop_name. If we don't have a PropType
         for this type_name, check in its parent types"""
+        assert type(type_name) == str
+
         while True:
             full_name = type_name + '::' + prop_name
             if full_name in self._types.keys():
@@ -230,6 +259,7 @@ class PropStorage:
         writable = pspec.flags & gobject.PARAM_WRITABLE != 0
         prop_type = PropMeta.new(type_name,
                                  pspec.name,
+                                 pspec.blurb,
                                  base,
                                  pspec.value_type,
                                  pspec.owner_type,
@@ -285,7 +315,8 @@ class PropRegistry:
         @param full_name: complete name of property
         @type  full_name: string (typename::prop_name)
         """
-        self._override_property_internal(self._normal_storage, full_name, klass)
+        self._override_property_internal(self._normal_storage,
+                                         full_name, klass)
 
     def override_child_property(self, full_name, klass):
         """
@@ -320,10 +351,11 @@ class PropRegistry:
         klass.owner_name = type_name
         klass.owner_type = gobject.type_from_name(type_name)
 
-        if not issubclass(klass.editor, PropertyCustomEditor):
-            raise TypeError("editor %r for property class %r needs to be a "
-                            "subclass of PropertyCustomEditor " % (
-                klass.editor, klass))
+        if not issubclass(klass.custom_editor, PropertyCustomEditor):
+            raise TypeError(
+                "custom_editor %r for property class %r needs to be a "
+                "subclass of PropertyCustomEditor " %
+                (klass.custom_editor, klass))
 
     def override_simple(self, full_name, base=None, **kwargs):
         """
@@ -347,7 +379,8 @@ class PropRegistry:
         self._override_simple_internal(self._child_storage,
                                        full_name, base, **kwargs)
 
-    def _override_simple_internal(self, storage, full_name, base=None, **kwargs):
+    def _override_simple_internal(self, storage, full_name, base=None,
+                                  **kwargs):
         type_name, prop_name = full_name.split('::')
 
         pspec = storage.get_pspec(type_name, prop_name)
@@ -355,21 +388,40 @@ class PropRegistry:
             raise TypeError("You can only override existing properties, %s "
                             "is not a property" % full_name)
 
-        if not base:
-            base = self._get_base_type(pspec.value_type)
+        # check if the type already exist
+        if storage.has_prop_type(type_name, prop_name):
+            prop_type = storage.get_prop_type(type_name, prop_name, self)
+            # If a base is provided we don't modify the original proptype
+            # but create a new one. This ensures the parent prop is not changed
+            if base and prop_type == base:
+                klass = type(full_name, (base,), kwargs)
 
-        klass = type(full_name, (base,), kwargs)
+                prop_type = storage.create_type_from_pspec(pspec,
+                                                           klass,
+                                                           type_name=type_name)
+            else:
+                # simply update the prop_type
+                for key, value in kwargs.items():
+                    setattr(prop_type, key, value)
 
-        return storage.create_type_from_pspec(pspec,
-                                              klass,
-                                              type_name=type_name)
+        else:
+            if not base:
+                base = self._get_base_type(pspec.value_type)
+
+            klass = type(full_name, (base,), kwargs)
+
+            prop_type = storage.create_type_from_pspec(pspec,
+                                                       klass,
+                                                       type_name=type_name)
+
+        return prop_type
 
     def list(self, type_name, parent=None):
         """
         List all the properties for type_name
         If parent is specified, child properties will also be included.
-        This method will create the prop_types and save if they're
-        not already created.
+        This method will create the prop_types if they're not already created.
+
         @param type_name: name of type
         @type  type_name: string
         @param parent:    parent type of object
@@ -387,6 +439,7 @@ class PropRegistry:
         """
         Fetch a property from type_name called prop_name. It creates
         the property type if it's not already created.
+
         @param type_name: gtype name of owner
         @type  type_name: string
         @param prop_name: name of property
@@ -467,13 +520,15 @@ class PropMeta(type):
     a factory for types which has me as a metaclass.
     """
 
-    def new(mcs, owner_name, name, base, value_type, owner_type,
+    #@classmethod
+    def new(mcs, owner_name, name, description, base, value_type, owner_type,
             readable=True, writable=True, child=False, label=None):
 
         cls = mcs(owner_name + '::' + name, (base,), {})
 
         # This can not be overridden
         cls.name =  name
+        cls.description = description
         cls.type = value_type
         cls.owner_name = owner_name
         cls.owner_type = owner_type
@@ -542,6 +597,7 @@ class PropType(object):
     of me wrap a GObject property.
 
     @cvar name:         name of the property, eg expand
+    @cvar description:  description of the property (it'll show in a tooltip)
     @cvar owner_name:   owner gobject name: GtkWindow
     @cvar type:         type, GType of property
     @cvar owner_type:   type of owner
@@ -558,11 +614,16 @@ class PropType(object):
     @cvar custom:
     @cvar editable:
     @cvar base_type:
-    @cvar editor:       editor instance, subclass of XXX
-    @cvar persistent:   Should we save the property?
+    @cvar editor:        editor
+    @cvar custom_editor: specialized editor
+    @cvar persistent:    Should we save the property?
+    @cvar priority:      Higher priorities appear before lower priorities in
+                         the property editor
+    @cvar has_custom_default: the prop has been customized with a default
     """
 
     name = None
+    description = None
     owner_name = None
     type = None
     owner_type = gobject.TYPE_INVALID
@@ -579,11 +640,15 @@ class PropType(object):
     custom = False
     editable = True
     base_type = None
-    editor = PropertyCustomEditor
+    editor = None
+    custom_editor = PropertyCustomEditor
     persistent = True
-    disabled = False
+    priority = 100
+    has_custom_default = False
 
     def __init__(self, gadget):
+        self._initial = None
+
         cls = type(self)
         assert cls.name != None
         assert cls.owner_name != None
@@ -604,6 +669,7 @@ class PropType(object):
 
         self.load()
 
+    #@property
     def get_object(self):
         return self.gadget.widget
     object = property(get_object)
@@ -626,7 +692,7 @@ class PropType(object):
                     self._value = parent.child_get_property(self.object,
                                                             self.name)
                 else:
-                    # FIXME: This is broke, but needed for
+                    # FIXME: This is broken, but needed for
                     # GtkRadioButton::group,
                     # see tests.test_glade.GladeTest.test_radiobutton
                     try:
@@ -634,7 +700,7 @@ class PropType(object):
                     except TypeError:
                         self._value = None
         else:
-            if self.custom:
+            if self.custom or self.has_custom_default:
                 self._initial = self.default
                 self.set(self.default)
             else:
@@ -650,6 +716,17 @@ class PropType(object):
 
         return repr(self.object)
 
+    def add_change_notify(self, function):
+        if not callable(function):
+            raise TypeError("function must be callable")
+
+        if not custom:
+            if self.child:
+                signal_name = 'child-notify'
+            else:
+                signal_name = 'notify'
+            self.object.connect('%s::%s' % (signal_name, self.name),
+                                lambda self, obj, pspec: function(self))
     def _value_not_readable(self):
         raise PropertyError("%s not readable" % self.name)
 
@@ -693,7 +770,7 @@ class PropType(object):
                 gobject.type_name(self.owner_type), self.name, value, e))
 
     def get_default(self, gobj):
-        if self.custom:
+        if self.custom or self.has_custom_default:
             return self.default
 
         if self.child:
@@ -718,8 +795,9 @@ class PropType(object):
         Return None if it already contains the default value
         """
         value = self.get()
-        if value == None or value == self._initial:
-            return
+        if not self.has_custom_default:
+            if value == None or value == self._initial:
+                return
 
         return str(value)
 
@@ -732,12 +810,22 @@ class PropType(object):
 class CustomProperty(PropType):
     readable = True
     writable = True
+    def __init__(self, object):
+        self._functions = []
+        super(CustomProperty, self).__init__(object)
 
     def get(self):
         return self._get()
 
     def set(self, value):
         self._set(value)
+
+    def add_change_notify(self, function):
+        self._functions.append(function)
+
+    def notify(self):
+        for function in self._functions:
+            function(self)
 
     value = property(lambda self: self.get(),
                      lambda self, value: self.set(value))
@@ -803,12 +891,46 @@ class StringType(PropType):
 prop_registry.add_base_type(StringType, gobject.TYPE_STRING)
 
 class ObjectType(PropType):
+
+    implements(IReferencable)
+
     editable = False
+
+    def set(self, widget):
+        from gazpacho.gadget import Gadget
+
+        # remove old reference
+        old_widget = self.get()
+        if old_widget:
+            old_gadget = Gadget.from_widget(old_widget)
+            old_gadget.references.remove_referrer(self)
+
+        # add new reference
+        if widget:
+            gadget = Gadget.from_widget(widget)
+            gadget.references.add_referrer(self)
+
+        #super(ObjectType, self).set(widget)
+        self._set(widget)
 
     def save(self):
         value = self.get()
         if value:
             return value.get_name()
+
+    # IReferencable
+
+    def remove_reference(self, gadget):
+        """
+        See L{gazpacho.interfaces.IReferencable.remove_reference}
+        """
+        self.object.set_property(self.name, None)
+
+    def add_reference(self, gadget):
+        """
+        See L{gazpacho.interfaces.IReferencable.add_reference}
+        """
+        self.object.set_property(self.name, gadget.widget)
 
 prop_registry.add_base_type(ObjectType, gobject.TYPE_OBJECT)
 
@@ -836,6 +958,7 @@ class BaseNumericType(PropType):
     # number of decimals
     digits = 0
 
+    #@classmethod
     def get_adjustment(cls):
         #if not cls.minimum <= cls.default <= cls.maximum:
         #    raise TypeError(
@@ -859,6 +982,17 @@ class BaseFloatType(BaseNumericType):
     minimum = -10.0**308
     maximum = 10.0**308
     digits = 2
+    def save(self):
+        if not BaseNumericType.save(self):
+            return
+        # Fix for #326723
+        # kiwi/datatypes.py uses %.12g here, but it seems to
+        # be too precise, 0.1 -> 0.10000000149
+        value = self.get()
+        strvalue = str(value)
+        if strvalue.endswith('.0'):
+            return strvalue
+        return '%.8g' % value
 
 class IntType(BaseNumericType):
     minimum = -int(2**31-1)
@@ -884,6 +1018,8 @@ prop_registry.add_base_type(DoubleType, gobject.TYPE_DOUBLE)
 
 class EnumType(PropType):
     enum_class = None
+
+    #@classmethod
     def get_choices(cls):
         choices = []
         if not hasattr(cls.enum_class, '__enum_values__'):
@@ -906,6 +1042,8 @@ prop_registry.add_base_type(EnumType, gobject.TYPE_ENUM)
 
 class FlagsType(PropType):
     flags_class = None
+
+    #@classmethod
     def get_choices(cls):
         if not hasattr(cls.flags_class, '__flags_values__'):
             raise UnsupportedProperty
@@ -920,7 +1058,7 @@ class FlagsType(PropType):
 
     def save(self):
         value = self.get()
-        if value == self._initial or value == 0:
+        if value == self._initial:
             return
         return flags_to_string(value, flags=self.flags_class)
 
@@ -971,6 +1109,59 @@ class ProxiedProperty(TransparentProperty):
 #   TYPE_ULONG
 #   TYPE_UNICHAR
 
+# Property commands
+class CommandSetProperty(Command):
+    def __init__(self,  property, value):
+        description = _('Setting %s of %s') % (
+            property.name, property.get_object_name())
+        Command.__init__(self, description)
+        self._property = property
+        self._value = value
+
+    def execute(self):
+        new_value = self._value
+        # store the current value for undo
+        self._value = self._property.value
+        self._property.set(new_value)
+
+        # TODO: this should not be needed
+        # if the property is the name, we explicitily set the name of the
+        # gadget to trigger the notify signal so several parts of the
+        # interface get updated
+        if self._property.name == 'name':
+            self._property.object.notify('name')
+
+    def unifies(self, other):
+        if isinstance(other, CommandSetProperty):
+            return self._property is other._property
+        return False
+
+    def collapse(self, other):
+        self.description = other.description
+        other.description = None
+
+class CommandSetTranslatableProperty(CommandSetProperty):
+    def __init__(self,  property, value, comment, translatable, has_context):
+        CommandSetProperty.__init__(self, property, value)
+        self._comment = comment
+        self._translatable = translatable
+        self._has_context = has_context
+
+    def execute(self):
+        new_comment = self._comment
+        new_translatable = self._translatable
+        new_has_context = self._has_context
+
+        # store the current value for undo
+        self._comment = self._property.i18n_comment
+        self._translatable = self._property.translatable
+        self._has_context = self._property.has_i18n_context
+
+        CommandSetProperty.execute(self)
+
+        self._property.translatable = new_translatable
+        self._property.i18n_comment = new_comment
+        self._property.has_i18n_context = new_has_context
 
 if __name__ == '__main__':
     win = gtk.Window()

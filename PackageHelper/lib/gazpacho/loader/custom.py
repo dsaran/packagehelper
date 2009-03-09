@@ -67,11 +67,39 @@ def flagsfromstring(value_name, pspec=None, flags=None):
 
     return new_value
 
+def valuefromstringsimpletypes(gtype, string):
+    if gtype in (gobject.TYPE_CHAR, gobject.TYPE_UCHAR):
+        value = string[0]
+    elif gtype == gobject.TYPE_BOOLEAN:
+        value = str2bool(string)
+    elif gtype in (gobject.TYPE_INT, gobject.TYPE_UINT):
+        value = int(string)
+    elif gtype in (gobject.TYPE_LONG, gobject.TYPE_ULONG):
+        value = long(string)
+    elif gtype in (gobject.TYPE_FLOAT, gobject.TYPE_DOUBLE):
+        value = float(string)
+    elif gtype == gobject.TYPE_STRING:
+        value = string
+    elif gobject.type_is_a(gtype, gobject.TYPE_PYOBJECT):
+        value = string
+    elif gobject.type_is_a(gtype, gobject.GBoxed):
+        print 'TODO: boxed'
+        value = None
+    else:
+        raise TypeError("type %r is unknown" % gtype)
+
+    return value
+
 def str2bool(value):
     return value[0].lower() in ('t', 'y') or value == '1'
 
 def get_child_pspec_from_name(gtype, name):
-    for pspec in gtk.container_class_list_child_properties(gtype):
+    if gtk.pygtk_version < (2, 10, 0):
+        pspecs = gtk.container_class_list_child_properties(gtype)
+    else:
+        pspecs = gtype.list_child_properties()
+
+    for pspec in pspecs:
         if pspec.name == name:
             return pspec
 
@@ -102,7 +130,7 @@ class IObjectAdapter:
         """
         pass
 
-    def add(self, gobj, child, properties):
+    def add(self, gobj, child, properties, type):
         """Adds a child to gobj with properties"""
         pass
 
@@ -281,30 +309,23 @@ class GObjectAdapter(Adapter):
         # This is almost a 1:1 copy of glade_xml_set_value_from_string from
         # libglade.
         prop_type = pspec.value_type
-        if prop_type in (gobject.TYPE_CHAR, gobject.TYPE_UCHAR):
-            value = string[0]
-        elif prop_type == gobject.TYPE_BOOLEAN:
-            value = str2bool(string)
-        elif prop_type in (gobject.TYPE_INT, gobject.TYPE_UINT):
-            if gobject.type_name(pspec) == 'GParamUnichar':
-                value = unicode(string and string[0] or "")
-            else:
-                value = int(string)
-        elif prop_type in (gobject.TYPE_LONG, gobject.TYPE_ULONG):
-            value = long(string)
-        elif gobject.type_is_a(prop_type, gobject.TYPE_ENUM):
+
+        if (prop_type in (gobject.TYPE_INT, gobject.TYPE_UINT)
+            and gobject.type_name(pspec) == 'GParamUnichar'):
+            value = unicode(string and string[0] or "")
+            return value
+
+        try:
+            value = valuefromstringsimpletypes(prop_type, string)
+        except TypeError:
+            pass # it's ok if we fail so far, we'll try other types
+        else:
+            return value
+
+        if gobject.type_is_a(prop_type, gobject.TYPE_ENUM):
             value = enumfromstring(string, pspec)
         elif gobject.type_is_a(prop_type, gobject.TYPE_FLAGS):
             value = flagsfromstring(string, pspec)
-        elif prop_type in (gobject.TYPE_FLOAT, gobject.TYPE_DOUBLE):
-            value = float(string)
-        elif prop_type == gobject.TYPE_STRING:
-            value = string
-        elif gobject.type_is_a(prop_type, gobject.TYPE_PYOBJECT):
-            value = string
-        elif gobject.type_is_a(prop_type, gobject.GBoxed):
-            print 'TODO: boxed'
-            value = None
         elif gobject.type_is_a(prop_type, gobject.GObject):
             if gobject.type_is_a(prop_type, gtk.Adjustment):
                 value = gtk.Adjustment(0, 0, 100, 1, 10, 10)
@@ -317,8 +338,8 @@ class GObjectAdapter(Adapter):
                 if filename:
                     # XXX: Handle GError exceptions.
                     value = gdk.pixbuf_new_from_file(filename);
-            elif (gobject.type_is_a(gtk.Widget, prop_type) or
-                  gobject.type_is_a(prop_type, gtk.Widget)):
+            elif (gobject.type_is_a(gobject.GObject, prop_type) or
+                  gobject.type_is_a(prop_type, gobject.GObject)):
                 value = self._build.get_widget(string)
                 if value is None:
                     self._build.add_delayed_property(obj_id, pspec, string)
@@ -329,7 +350,7 @@ class GObjectAdapter(Adapter):
 
         return value
 
-    def add(self, parent, child, properties):
+    def add(self, parent, child, properties, type):
         raise NotImplementedError
 
     def find_internal_child(self, gobj, name):
@@ -343,7 +364,7 @@ class GObjectAdapter(Adapter):
 
 class UIManagerAdapter(GObjectAdapter):
     object_type = gtk.UIManager
-    def add(self, parent, child, properties):
+    def add(self, parent, child, properties, type):
         parent.insert_action_group(child, 0)
 
 class WidgetAdapter(GObjectAdapter):
@@ -383,6 +404,9 @@ class WidgetAdapter(GObjectAdapter):
     def prop_set_sizegroup(self, widget, value):
         widget.set_data('gazpacho::sizegroup', value)
 
+    def prop_set_response_id(self, widget, value):
+        widget.set_data('gazpacho::response-id', int(value))
+
 class PythonWidgetAdapter(WidgetAdapter):
     def construct(self, name, gtype, properties):
         obj = self.object_type()
@@ -391,9 +415,31 @@ class PythonWidgetAdapter(WidgetAdapter):
 
 class ContainerAdapter(WidgetAdapter):
     object_type = gtk.Container
-    def add(self, container, child, properties):
-        container.add(child)
+    def add(self, container, child, properties, type):
+        if not self._add_to_dialog(container, child):
+            container.add(child)
+
         self._set_child_properties(container, child, properties)
+
+    def _add_to_dialog(self, parent, widget):
+        response_id = widget.get_data('gazpacho::response-id')
+        if response_id is not None:
+            dialog = None
+            while parent:
+                if isinstance(parent, gtk.Dialog):
+                    dialog = parent
+                    break
+                parent = parent.parent
+
+            if dialog:
+                # FIXME: Limit to action_area
+                dialog.add_action_widget(widget, response_id)
+
+                # Reset, the real properties will be set afterwards
+                widget.parent.set_child_packing(widget, True, True, 0,
+                                                gtk.PACK_START)
+                return True
+        return False
 
     def _set_child_properties(self, container, child, properties):
         properties = self._getproperties(type(container),
@@ -409,11 +455,11 @@ class ContainerAdapter(WidgetAdapter):
 class ActionGroupAdapter(GObjectAdapter):
     object_type = gtk.ActionGroup
     def construct(self, name, gtype, properties):
-        if not properties.has_key('name'):
+        if not 'name' in properties:
             properties['name'] = name
         return GObjectAdapter.construct(self, name, gtype, properties)
 
-    def add(self, parent, child, properties):
+    def add(self, parent, child, properties, type):
         accel_key = child.get_data('accel_key')
         if accel_key:
             accel_path = "<Actions>/%s/%s" % (parent.get_property('name'),
@@ -429,9 +475,8 @@ class ActionAdapter(GObjectAdapter):
     def construct(self, name, gtype, properties):
         # Gazpacho doesn't save the name for actions
         # So we have set it manually.
-        if not properties.has_key('name'):
+        if not 'name' in properties:
             properties['name'] = name
-
         return GObjectAdapter.construct(self, name, gtype, properties)
 
     def _set_accel(self, action, accel_key, accel_mod):
@@ -494,12 +539,10 @@ class ProgressAdapter(WidgetAdapter):
 
 class ButtonAdapter(ContainerAdapter):
     object_type = gtk.Button
-    def prop_set_response_id(self, button, value):
-        button.set_data('response_id', int(value))
 
 class OptionMenuAdapter(ButtonAdapter):
     object_type = gtk.OptionMenu
-    def add(self, parent, child, properties):
+    def add(self, parent, child, properties, type):
         if not isinstance(child, gtk.Menu):
             print ("warning: the child of the option menu '%s' was "
                    "not a GtkMenu"  % (child.get_name()))
@@ -531,7 +574,7 @@ class CalendarAdapter(WidgetAdapter):
 
 class WindowAdapter(ContainerAdapter):
     object_type = gtk.Window
-    def prop_set_wmclass_name(self, window, value):
+    def prop_set_wmclass_class(self, window, value):
         window.set_wmclass(value, window.wmclass_class)
 
     def prop_set_wmclass_name(self, window, value):
@@ -543,7 +586,7 @@ class WindowAdapter(ContainerAdapter):
 
 class NotebookAdapter(ContainerAdapter):
     object_type = gtk.Notebook
-    def add(self, notebook, child, properties):
+    def add(self, notebook, child, properties, type):
         tab_item = False
         for propinfo in properties[:]:
             if (propinfo.name == 'type' and
@@ -563,14 +606,21 @@ class NotebookAdapter(ContainerAdapter):
 
 class ExpanderAdapter(ContainerAdapter):
     object_type = gtk.Expander, gtk.Frame
-    def add(self, expander, child, properties):
-        label_item = False
+    def _get_label_item(self, properties):
         for propinfo in properties[:]:
             if (propinfo.name == 'type' and
                 propinfo.data == 'label_item'):
-                label_item = True
                 properties.remove(propinfo)
-                break
+                return True
+        return False
+
+    def add(self, expander, child, properties, type):
+        if self._build._version == 'libglade':
+            label_item = self._get_label_item(properties)
+        elif type == 'label_item':
+            label_item = True
+        else:
+            label_item = False
 
         if label_item:
             expander.set_label_widget(child)
@@ -581,7 +631,7 @@ class ExpanderAdapter(ContainerAdapter):
 
 class MenuItemAdapter(ContainerAdapter):
     object_type = gtk.MenuItem
-    def add(self, menuitem, child, properties):
+    def add(self, menuitem, child, properties, type):
         if isinstance(child, gtk.Menu):
             menuitem.set_submenu(child)
         else:
@@ -826,7 +876,7 @@ class FontSelectionDialogAdapter(DialogAdapter):
 
 class TreeViewAdapter(ContainerAdapter):
     object_type = gtk.TreeView
-    def add(self, treeview, child, properties):
+    def add(self, treeview, child, properties, type):
         if not isinstance(child, gtk.TreeViewColumn):
             raise TypeError("Children of GtkTreeView must be a "
                             "GtkTreeViewColumns, not %r" % child)
@@ -835,10 +885,20 @@ class TreeViewAdapter(ContainerAdapter):
 
         # Don't chain to Container add since children are not widgets
 
-class TreeViewColumnAdapter(GObjectAdapter):
+class CellLayoutAdapter(GObjectAdapter):
+    def set_cell_renderer_attributes(self, gobj, cell_renderer, attributes):
+        raise NotImplementedError
+
+class TreeViewColumnAdapter(CellLayoutAdapter):
     object_type = gtk.TreeViewColumn
 
-    def add(self, column, child, properties):
+    def construct(self, name, gtype, properties):
+        gobj = super(TreeViewColumnAdapter, self).construct(name, gtype,
+                                                            properties)
+        gobj.name = name
+        return gobj
+
+    def add(self, column, child, properties, type):
         if not isinstance(child, gtk.CellRenderer):
             raise TypeError("Children of GtkTreeViewColumn must be a "
                             "GtkCellRenderers, not %r" % child)
@@ -861,6 +921,13 @@ class TreeViewColumnAdapter(GObjectAdapter):
         else:
             column.pack_end(child, expand)
 
+    def set_cell_renderer_attributes(self, column, cell_renderer, attributes):
+        for name, value in attributes.items():
+            column.add_attribute(cell_renderer, name, value)
+
+        # this is ugly but's the only way to retrieve the attributes later on
+        cell_renderer.set_data('gazpacho::attributes', attributes)
+
 # Gross hack to make it possible to use FileChooserDialog on win32.
 # See bug http://bugzilla.gnome.org/show_bug.cgi?id=314527
 class FileChooserDialogHack(gtk.FileChooserDialog):
@@ -878,6 +945,30 @@ class ImageAdapter(WidgetAdapter):
             image.set_property('file', newvalue)
         image.set_data('image-file-name', value)
 
+class ListStoreAdapter(GObjectAdapter):
+    object_type = gtk.ListStore
+
+    def construct(self, name, gtype, properties):
+        gobj = super(ListStoreAdapter, self).construct(name, gtype,
+                                                       properties)
+        gobj.name = name
+        return gobj
+
+    def set_column_types(self, store, columns):
+        if columns:
+            types = [col.type for col in columns]
+            store.set_column_types(*types)
+
+    def fill(self, store, rows):
+        types = [store.get_column_type(i) for i in range(store.get_n_columns())]
+        for row_info in rows:
+            values = []
+            for col_info in row_info.cols:
+                gtype = types[col_info.id]
+                value = valuefromstringsimpletypes(gtype, col_info.data)
+                values.append(value)
+
+            store.append(values)
+
 # Global registry
 adapter_registry = AdapterRegistry()
-
