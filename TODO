@@ -10,6 +10,7 @@ Interface:
 * Display result from CVS while it is running
 * Turn UI into a wizard
 * Display Script organization before writing to files
+* Minerva integration
 
 Parser:
 * Add support to  "insert as select"

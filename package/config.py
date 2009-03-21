@@ -1,4 +1,4 @@
-# Version: $Id: config.py,v 1.3 2009-02-07 17:40:27 daniel Exp $
+# Version: $Id: config.py,v 1.4 2009-03-21 20:57:45 daniel Exp $
 
 import os
 import logging
@@ -86,7 +86,7 @@ class Config:
         self._environments.remove(env)
 
     def save(self):
-        save_config(self)
+        self._save_config(self)
 
     def load(self):
         self.set_config(self._load_config())
@@ -128,3 +128,42 @@ class Config:
             file.close()
 
 
+class Repositories:
+
+    def load(self):
+        repos = []
+        config = Config()
+        file = Path(config.REPOSITORY_FILE)
+
+        if file.exists():
+            try:
+                data = file.text()
+                if len(data) > 0:
+                    from yaml import yaml
+                    repos = yaml.load(data)
+            except Exception:
+                log.error("Error loading saved repository data.")
+        else:
+            log.warn("Repository file does not exist!")
+        return repos
+
+    def save(self, repos):
+        file = None
+        log.info("Saving repository information")
+        config = Config()
+        file = Path(config.REPOSITORY_FILE)
+        from yaml import yaml
+        dump = yaml.dump(repos)
+        file.write_text(dump)
+
+
+    #def save(self, repos):
+    #    file = None
+    #    try:
+    #        log.info("Saving repository information")
+    #        config = Config()
+    #        file = open(config.REPOSITORY_FILE, "w")
+    #        from yaml import yaml
+    #        generic.dump(repos, file)
+    #    finally:
+    #        file.close()

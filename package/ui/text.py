@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version $Id: text.py,v 1.2 2009-02-07 17:40:27 daniel Exp $
+# Version $Id: text.py,v 1.3 2009-03-21 20:57:45 daniel Exp $
 
 import logging
 from sys import exit
@@ -113,7 +113,7 @@ class PackageProcessorUI:
         package = Package(self.package)
         package.set_tags(self.tags)
         package.set_repositories(self.repositories)
-        package.set_path(self.directory)
+        package.path = self.directory
         processor = PackageProcessor(package)
 
         return processor 

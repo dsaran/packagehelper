@@ -1,5 +1,5 @@
 #!/usr/bin/python2.5
-# Version: $Id: run.py,v 1.2 2009-02-07 17:40:27 daniel Exp $
+# Version: $Id: run.py,v 1.3 2009-03-21 20:57:45 daniel Exp $
 
 from os import path
 from sys import argv, path as pythonpath
@@ -39,7 +39,8 @@ def run_no_gui():
 
 def run_gui():
     from package.ui.gui import PackageProcessorGUI
-    PackageProcessorGUI()
+    app = PackageProcessorGUI()
+    app.main()
 
 
 if __name__ == "__main__":
@@ -68,3 +69,4 @@ if __name__ == "__main__":
         except Exception:
             log.error("Error loading GUI!", exc_info=1)
             raise
+

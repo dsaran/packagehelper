@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: defect.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: defect.py,v 1.2 2009-03-21 20:57:45 daniel Exp $
 
 class Defect:
 
@@ -36,3 +36,34 @@ class Defect:
         return "<%s - %s - %s>" % (self.id_ptin, self.id_vivo, self.description)
 
     __str__ = __repr__
+
+class Requirement:
+
+    _id = None
+    _description = None
+
+    def __init__(self, id=None, desc=None):
+        self._id = id
+        self._description = desc
+
+    def setid(self, id):
+        self._id = id
+
+    def getid(self):
+        return self._id
+
+    def setdescription(self, desc):
+        self._description = desc
+
+    def getdescription(self):
+        return self._description
+
+    id = property(getid, setid, doc="Requirement ID")
+    description = property(getdescription, setdescription, doc="Requirement description")
+
+    def __repr__(self):
+        return "<Req %s - %s>" % (self.id, self.description)
+
+    __str__ = __repr__
+
+

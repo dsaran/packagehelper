@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.7 2009-03-09 01:12:59 daniel Exp $
+# Version: $Id: processor.py,v 1.8 2009-03-21 20:57:45 daniel Exp $
 
 import logging
 from os import environ, popen, chdir
@@ -9,7 +9,7 @@ from package.domain.repository import Repository
 from package.domain.tag import Tag
 from package.domain.pack import Package
 from package.domain.database import Database
-from package.domain.file import File
+from package.domain.file import File, InstallScript
 from package.util.format import ENCODING
 from package.cvs import CvsError, CVS
 
@@ -21,15 +21,12 @@ class PackageProcessor:
 
     package = None
 
-    def __init__(self):
-        self.tags = []
-        self.repositories = []
-
     @takes("PackageProcessor", Package)
     def __init__(self, package):
         self.package = package
+        self.files_loaded = False
 
-    def getFiles(self, filter):
+    def _get_files(self, filter):
         """ Search for "*.sql" files below the directory tree.
             @param directory the base directory path to search for files.
             @return a list of File instances. """
@@ -54,27 +51,20 @@ class PackageProcessor:
         log.debug("done.")
         return files
 
-    def _generateScript(self, id, db, list):
-        """ Create the SQL script for a list of files.
-            @param id the sequencial number of the file to be created.
-            @param db Database for which the script will be created.
-            @param list a list of File object to be added to the SQL script."""
-        log.debug("Generating script %d_%s_%s..." % (id, db.getUser(), db.getName())) 
-        list.sort()
+    def _write_scripts(self, scripts):
         scriptName = str(id).zfill(3) + '_' + db.getUser() + '_' + db.getName()
-        script_data = []
         script_data.append('SPOOL ' + scriptName + '.log')
         script_data += list[0].getInitScript()
-        type = list[0].get_type()
-
+        script_data = []
+        path = self.package.get_full_path()
 
         for file in list:
             value = file.getScript()
             script_data += value
 
         script_data += list[0].getFinalScript()
+
         script_data.append('SPOOL OFF')
-        path = self.package.get_full_path()
         script_file = path.joinpath(path, scriptName + '.sql')
         try:
             script_file.touch()
@@ -82,11 +72,22 @@ class PackageProcessor:
         except Exception:
             log.error("Error writing script ("+ scriptName +" )", exc_info=1)
             raise
+        pass
+
+    def _generateScript(self, id, db, cat, list):
+        """ Create the SQL script for a list of files.
+            @param id the sequencial number of the file to be created.
+            @param db Database for which the script will be created.
+            @param list a list of File object to be added to the SQL script."""
+        log.debug("Generating script %d_%s_%s..." % (id, db.getUser(), db.getName())) 
+        list.sort()
+        scriptName = "%s_%s_%s.sql" % (str(id).zfill(3), db.getUser(), db.getName())
+        type = list[0].type
+
+        script = InstallScript(scriptName, content=list, desc=cat)
+
         log.debug("done.")
 
-        script = File(script_file, path, False)
-        script.database = db
-        script.type = type
         return script
 
     def run(self):
@@ -106,16 +107,18 @@ class PackageProcessor:
         log.debug("done.")
         return scripts, errors
 
+    def prepare_package(self):
+        """ Prepare environment for package.
+            Creates directory for files"""
+        os.mkdir(self.package.path)
+
     def process_files(self):
         """ Process previous checked out files generating the SQL scripts.
             @return a list with the generated SQL scripts."""
         log.info("Processing files...")
-        categories = {}
-        self.package.set_files([])
-        files = self.getFiles("*.sql")
-        for file in files:
-            categories[file.get_category()] = ''
-            self.package.add_file(file)
+
+        if not self.files_loaded:
+            self._load_files()
 
         scriptId = 0
         groupedList = self.package.getGroupedFiles()
@@ -126,11 +129,11 @@ class PackageProcessor:
             for cat in groupedList[db]:
                 scriptId += 1
                 files = groupedList[db][cat]
-                script = self._generateScript(scriptId, db, files)
+                script = self._generateScript(scriptId, db, cat, files)
                 scripts.append(script)
         log.info("Processing files done.")
 
-        otherfiles = self.process_other()
+        otherfiles = self._process_other()
         return scripts
 
     def checkout_files(self):
@@ -162,14 +165,22 @@ class PackageProcessor:
                     except CvsError, e:
                         status.append(e.message)
 
-
         log.info("done.")
+
+        if not self.files_loaded:
+            self._load_files()
+
         return status
 
+    def _load_files(self):
+        self.package.set_files([])
+        files = self._get_files("*.sql")
+        for file in files:
+            self.package.add_file(file)
 
-    def process_other(self):
-        xmls = self.getFiles("*.xml")
-        shellscripts = self.getFiles("*.sh")
+    def _process_other(self):
+        xmls = self._get_files("*.xml")
+        shellscripts = self._get_files("*.sh")
         basedir = self.package.get_full_path()
         chdir(basedir)
         otherfiles = []
@@ -199,12 +210,12 @@ class PackageProcessor:
                 otherfiles.append(sh)
 
         log.info("Cleaning up empty directories...")
-        self.clean_directory(basedir)
+        self._clean_directory(basedir)
 
         return otherfiles
 
 
-    def clean_directory(self, dir):
+    def _clean_directory(self, dir):
         if not dir.isdir() or self.package.get_full_path() == dir:
             return
         gen = dir.walkfiles()
@@ -215,5 +226,5 @@ class PackageProcessor:
             return
         for d in dir.listdir():
             if d.isdir():
-                self.clean_directory(d)
+                self._clean_directory(d)
 
