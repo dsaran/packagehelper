@@ -1,0 +1,365 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
+<glade-interface>
+    <widget class="GtkUIManager" id="uimanager">
+        <child>
+            <widget class="GtkActionGroup" id="DefaultActions">
+                <child>
+                    <widget class="GtkAction" id="PackageMenu">
+                        <property name="name">PackageMenu</property>
+                        <property name="label" translatable="yes">_Pacote</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="checkout">
+                        <property name="name">checkout</property>
+                        <property name="label" translatable="yes">Checkout</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="checkout_action">
+                        <property name="name">checkout_action</property>
+                        <property name="label" translatable="yes">Checkout</property>
+                        <property name="tooltip" translatable="yes">Checkout</property>
+                        <property name="stock_id">gtk-network</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="ferramentas">
+                        <property name="name">ferramentas</property>
+                        <property name="label" translatable="yes">Ferramentas</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="gerar_scripts">
+                        <property name="name">gerar_scripts</property>
+                        <property name="label" translatable="yes">Gerar Scripts</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="open_action">
+                        <property name="name">open_action</property>
+                        <property name="label" translatable="yes">_Abrir</property>
+                        <property name="tooltip" translatable="yes">Open a file</property>
+                        <property name="stock_id">gtk-open</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="pacote">
+                        <property name="name">pacote</property>
+                        <property name="label" translatable="yes">Pacote</property>
+                        <property name="short_label" translatable="yes">Pacotes</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="pacote-2">
+                        <property name="name">pacote-2</property>
+                        <property name="label" translatable="yes">Pacote</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="preferences_action">
+                        <property name="name">preferences_action</property>
+                        <property name="label" translatable="yes">_Preferências</property>
+                        <property name="stock_id">gtk-preferences</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="process_action">
+                        <property name="name">process_action</property>
+                        <property name="label" translatable="yes">Gerar scripts</property>
+                        <property name="tooltip" translatable="yes">Gerar scripts</property>
+                        <property name="stock_id">gtk-convert</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="quit_action">
+                        <property name="name">quit_action</property>
+                        <property name="label" translatable="yes">Sai_r</property>
+                        <property name="tooltip" translatable="yes">Quit the program</property>
+                        <property name="stock_id">gtk-quit</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="save_action">
+                        <property name="name">save_action</property>
+                        <property name="label" translatable="yes">_Salvar</property>
+                        <property name="is_important">True</property>
+                        <property name="tooltip" translatable="yes">Save a file</property>
+                        <property name="stock_id">gtk-save</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="saveas_action">
+                        <property name="name">saveas_action</property>
+                        <property name="label" translatable="yes">Salvar _Como</property>
+                        <property name="tooltip" translatable="yes">Save with a different name</property>
+                        <property name="stock_id">gtk-save-as</property>
+                    </widget>
+                </child>
+            </widget>
+        </child>
+    </widget>
+    <widget class="GtkWindow" id="maindataslave">
+        <property name="default_height">250</property>
+        <property name="default_width">440</property>
+        <child>
+            <widget class="GtkVBox" id="tab1">
+                <property name="border_width">2</property>
+                <property name="visible">True</property>
+                <child>
+                    <widget class="GtkHButtonBox" id="hbuttonbox1">
+                        <property name="layout_style">start</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="ProxyCheckButton" id="checkout_chk">
+                                <property name="active">True</property>
+                                <property name="data_type">bool</property>
+                                <property name="has_tooltip">True</property>
+                                <property name="is_focus">True</property>
+                                <property name="label" context="yes" translatable="yes">Checkout</property>
+                                <property name="model_attribute">checkout</property>
+                                <property name="tooltip_markup" context="yes" translatable="yes">Realizar checkout dos arquivos do CVS.</property>
+                                <property name="tooltip_text" context="yes" translatable="yes">Realizar checkout dos arquivos do CVS.</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="expand">False</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="ProxyCheckButton" id="process_chk">
+                                <property name="active">True</property>
+                                <property name="data_type">bool</property>
+                                <property name="has_tooltip">True</property>
+                                <property name="label" context="yes" translatable="yes">Gerar scripts</property>
+                                <property name="model_attribute">process</property>
+                                <property name="tooltip_markup" context="yes" translatable="yes">Gerar scripts de execução para arquivos encontrados no diretório do pacote.</property>
+                                <property name="tooltip_text" context="yes" translatable="yes">Gerar scripts de execução para arquivos encontrados no diretório do pacote.</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkTable" id="table1">
+                        <property name="n_columns">7</property>
+                        <property name="n_rows">2</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkLabel" id="label2">
+                                <property name="label" context="yes" translatable="yes">Pacote:</property>
+                                <property name="visible">True</property>
+                                <property name="xalign">0.0</property>
+                            </widget>
+                        </child>
+                        <child>
+                            <widget class="GtkLabel" id="label1">
+                                <property name="label" context="yes" translatable="yes">Caminho:</property>
+                                <property name="visible">True</property>
+                                <property name="xalign">0.0</property>
+                            </widget>
+                            <packing>
+                                <property name="bottom_attach">2</property>
+                                <property name="top_attach">1</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="ProxyEntry" id="package_entry">
+                                <property name="data_type">str</property>
+                                <property name="is_focus">True</property>
+                                <property name="mandatory">True</property>
+                                <property name="model_attribute">name</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">7</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="ProxyEntry" id="path_entry">
+                                <property name="data_type">str</property>
+                                <property name="mandatory">True</property>
+                                <property name="model_attribute">path</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="bottom_attach">2</property>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">6</property>
+                                <property name="top_attach">1</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="GtkButton" id="select_path_button">
+                                <property name="is_focus">True</property>
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="GtkImage" id="image7">
+                                        <property name="stock">gtk-directory</property>
+                                        <property name="visible">True</property>
+                                    </widget>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="bottom_attach">2</property>
+                                <property name="left_attach">6</property>
+                                <property name="right_attach">7</property>
+                                <property name="top_attach">1</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="fill">False</property>
+                        <property name="position">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkHSeparator" id="hseparator2">
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="padding">2</property>
+                        <property name="position">2</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="ObjectList" id="tag_list">
+                        <property name="visible">True</property>
+                        <property name="vscrollbar_policy">automatic</property>
+                    </widget>
+                    <packing>
+                        <property name="position">3</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkHButtonBox" id="hbuttonbox3">
+                        <property name="layout_style">end</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkButton" id="del_tag_button">
+                                <property name="is_focus">True</property>
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="GtkImage" id="image2">
+                                        <property name="stock">gtk-remove</property>
+                                        <property name="visible">True</property>
+                                    </widget>
+                                </child>
+                            </widget>
+                        </child>
+                        <child>
+                            <widget class="GtkButton" id="add_tag_button">
+                                <property name="is_focus">True</property>
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="GtkImage" id="image3">
+                                        <property name="stock">gtk-add</property>
+                                        <property name="visible">True</property>
+                                    </widget>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">2</property>
+                        <property name="position">4</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkHSeparator" id="hseparator3">
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="position">5</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="ObjectList" id="repository_list">
+                        <property name="visible">True</property>
+                        <property name="vscrollbar_policy">automatic</property>
+                    </widget>
+                    <packing>
+                        <property name="position">6</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkHButtonBox" id="hbuttonbox2">
+                        <property name="layout_style">end</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkButton" id="del_repository_button">
+                                <property name="is_focus">True</property>
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="GtkImage" id="image4">
+                                        <property name="stock">gtk-remove</property>
+                                        <property name="visible">True</property>
+                                    </widget>
+                                </child>
+                            </widget>
+                        </child>
+                        <child>
+                            <widget class="GtkButton" id="add_repository_button">
+                                <property name="is_focus">True</property>
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="GtkImage" id="image5">
+                                        <property name="stock">gtk-add</property>
+                                        <property name="visible">True</property>
+                                    </widget>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">2</property>
+                        <property name="position">7</property>
+                    </packing>
+                </child>
+                <child>
+                    <placeholder/>
+                    <packing>
+                        <property name="fill">False</property>
+                        <property name="padding">2</property>
+                        <property name="position">8</property>
+                    </packing>
+                </child>
+                <child>
+                    <placeholder/>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">False</property>
+                        <property name="padding">2</property>
+                        <property name="position">9</property>
+                    </packing>
+                </child>
+                <child>
+                    <placeholder/>
+                    <packing>
+                        <property name="position">10</property>
+                    </packing>
+                </child>
+            </widget>
+        </child>
+    </widget>
+</glade-interface>

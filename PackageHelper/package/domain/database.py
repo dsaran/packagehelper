@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: database.py,v 1.2 2009-01-22 04:10:42 daniel Exp $
+# Version: $Id: database.py,v 1.3 2009-03-21 20:57:45 daniel Exp $
 
 import logging
 
@@ -12,7 +12,7 @@ class Database(object):
 
     _name = None
     _user = None
-    def __init__(self, name, user):
+    def __init__(self, name=None, user=None):
         self._name = name
         self._user = user
 

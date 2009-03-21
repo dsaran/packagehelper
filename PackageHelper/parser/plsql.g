@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $Id: plsql.g,v 1.8 2009-03-09 01:12:59 daniel Exp $ 
+# Version: $Id: plsql.g,v 1.9 2009-03-21 20:57:45 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):
@@ -13,7 +13,9 @@ class SqlStatement(object):
         return self.__dict__[name]
 
     def __repr__(self):
-        return str(self.__dict__)
+        c = str(self.__class__)
+        d = str(self.__dict__)
+        return "\n<%s>\n\t%s\n<%s>"  % (c, d, c)
 
     def __eq__(self, obj):
         #print 'self.__dict__', self.__dict__
@@ -82,9 +84,9 @@ class Identifier(SqlStatement):
 class Source(SqlStatement):
     def __init__(self, id=None, type=None, members=[]):
         SqlStatement.__init__(self, id=id, stmt_type="SOURCE")
+        self.calls = []
         self.type = type
         self.members = members
-
 
 class RelationalOperation(SqlStatement):
     def __init__(self, op1=None, operator=None, op2=None):
@@ -120,10 +122,10 @@ parser plsql:
     token END: "[$;]"
     token NUM: "[0-9]+"
     token ID: r'[a-zA-Z_][a-zA-Z0-9_-]*'
-    token SP: r'\\s'
     token SINGLE_QUOTED_STRING: "[^']*"
     token DOT: '\\.'
     token STAR: '\\*'
+    token ASSIGNMENT: ":="
 
     # White spaces
     ignore: "\\s+"
@@ -136,7 +138,7 @@ parser plsql:
     # Single-line comment
     ignore: "--.*?\r?\n"
     ignore: "[ \t\r\n]+"
-    
+
     rule goal: 
         expr END
 
@@ -157,6 +159,21 @@ parser plsql:
         QUOTED_STRING    {{ return QUOTED_STRING }}
         | NUM            {{ return int(NUM) }}
 
+    rule argument: (
+            ID       {{ result = Identifier(id=ID) }}
+            (  # if identifier matches an argument declaration
+                ( ( 'IN' ('OUT')?
+                   | 'OUT' )
+                  ID     {{ result.type = ID }} 
+                )?
+             |  (  ID     {{ result.type = ID }} 
+                )?
+            )
+            (  # if identifier matches id.id or id.*
+             | DOT ID {{ result = Identifier(id=ID, parent=result) }}
+            )
+        ) {{ return result }}
+
     rule identifier: (
             ID       {{ result = Identifier(id=ID) }}
             (  # if identifier matches an argument declaration
@@ -176,9 +193,9 @@ parser plsql:
         )           {{ return result }}
 
     rule callable: (
-            identifier   {{ result = identifier }}
-            ( list       {{ result = CallableStatement(object=identifier.parent, name=identifier.id, arguments=list) }} )?
-        )                {{ return result }}
+            identifier       {{ result = identifier }}
+            ( argument_list  {{ result = CallableStatement(object=identifier.parent, name=identifier.id, arguments=argument_list) }} )?
+        )                    {{ return result }}
 
     #########
     # Lists #
@@ -186,7 +203,7 @@ parser plsql:
 
     rule list_value:
         LITERAL         {{ return LITERAL }}
-        | callable {{ return callable }}
+        | callable      {{ return callable }}
 
     # List between parenthesis
     rule list:                           {{ result = [] }}
@@ -202,6 +219,18 @@ parser plsql:
                  |',' list_value {{ result.append(list_value) }}
                )* 
            )                     {{ return result }}
+
+    rule argument_list_value:
+        LITERAL         {{ return LITERAL }}
+        | argument {{ return argument }}
+
+    rule argument_list:                 {{ result = [] }}
+               '\\(' 
+                       ( argument_list_value       {{ result.append(argument_list_value) }}
+                         |',' argument_list_value  {{ result.append(argument_list_value) }}
+                       )* 
+               '\\)'                    {{ return result }}
+
  
     #####################
     # PL/SQL Operators #
@@ -241,10 +270,10 @@ parser plsql:
         )                    {{ return sqlobject }} 
 
     rule object_type: (
-        'FUNCTION' {{ result = 'FUNCTION' }}
+        'FUNCTION'    {{ result = 'FUNCTION' }}
         | 'PROCEDURE' {{ result = 'PROCEDURE' }}
-        | 'PACKAGE' {{ result = 'PACKAGE' }}
-          ('BODY' {{ result = 'PACKAGE BODY' }} )?
+        | 'PACKAGE'   {{ result = 'PACKAGE' }}
+          ('BODY'     {{ result = 'PACKAGE BODY' }} )?
         ) {{ return result }}
 
     rule source_declaration: (
@@ -256,36 +285,41 @@ parser plsql:
               | "IS"
               | "AS"
             )           {{ result.members = [] }}
+        )               {{ return result }}
+
+    rule full_source_declaration: (
+            source_declaration      {{ result = source_declaration }}
             'BEGIN'?
             (
-                object_type {{ member= Source(type=object_type) }}
-                callable    {{ member.id = callable }} 
+                object_type         {{ member = Source(type=object_type) }}
+                callable            {{ member.id = callable }} 
                 (END
                  | ( 
-                     "IS" block {{ result.members.append(member) }}
+                     "IS" block     {{ member.calls += block }}
                    )
-                )
+                )                   {{ result.members.append(member) }}
             )*
             'END' ID END? '/'  {{ return result }}
-        )#      {{ return result }}
+        )
 
-    rule block: (
-        'BEGIN' block 'END' ID? ';'?
-        | ('IF' comparison 'THEN' executable_code
-          ('ELSE' executable_code)?
+    rule block: (                                  {{ calls = [] }}
+        ('BEGIN' block 'END' ID? ';'?              {{ calls += block }}
+        | ('IF' comparison 'THEN' executable_code  {{ calls += executable_code }}
+          ('ELSE' executable_code {{ calls += executable_code }} )?
             'END' 'IF')
         | exception_handling
-        | (identifier ':=')? callable ';'
-    )
+        | (identifier ASSIGNMENT)? callable ';'          {{ calls.append(callable) }}
+        )
+    )                                              {{ return calls }}
 
-    rule executable_code: (
-        callable ';'
+    rule executable_code: ( {{ calls = [] }}
+        callable ';'        {{ calls.append(callable) }}
         | identifier 
-            (':=' 
-             ( callable
+            (":=" 
+             ( callable     {{ calls.append(callable) }}
              | LITERAL)
             )? ';'
-    )
+    )                       {{ return calls }}
 
     rule exception_handling: (
         'EXCEPTION' ID 'THEN'

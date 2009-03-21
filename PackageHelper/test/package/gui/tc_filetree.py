@@ -1,13 +1,9 @@
 import unittest
 from test import mock
+from test.package.gui.util import refresh_gui, display, Position
 from test.framework import TestCase
-from package.gui.filetree import FileTree
+from package.ui.filetree import FileTree
 from package.domain.file import File, InstallScript
-from kiwi.python import enum
-import gtk
-import time
-
-SLEEP_TIME = 0
 
 class FileTreeTests(TestCase):
     def setUp(self):
@@ -23,16 +19,15 @@ class FileTreeTests(TestCase):
         self.inst1.content.append(self.f3)
 
         self.data = [self.inst1, self.inst2, self.inst3]
-        self.ft = FileTree([self.inst1, self.inst2, self.inst3])
-
+        self.ft = FileTree(scripts=[self.inst1, self.inst2, self.inst3])
+        display(self.ft)
 
     def tearDown(self):
-        self.ft.hide_and_quit()
-
+        #FIXME: should have a toplevel to display and destroy
+        pass
 
     def testRenameScript(self):
         pass
-
 
     def testGetData(self):
         """ When I get data from filetree result should match expected"""
@@ -134,22 +129,22 @@ class FileTreeTests(TestCase):
 # Helper classes and methods
 #
 
-class Position(enum):
-    BEFORE = gtk.TREE_VIEW_DROP_BEFORE
-    INTO = gtk.TREE_VIEW_DROP_INTO_OR_BEFORE
-    AFTER = gtk.TREE_VIEW_DROP_AFTER
-
-
-def display(widget):
-        widget.show_all()
-        refresh_gui()
-        widget.hide()
-        refresh_gui(0)
-
-def refresh_gui(delay=SLEEP_TIME):
-    while gtk.events_pending():
-        gtk.main_iteration_do(block=False)
-    time.sleep(delay)
+#class Position(enum):
+#    BEFORE = gtk.TREE_VIEW_DROP_BEFORE
+#    INTO = gtk.TREE_VIEW_DROP_INTO_OR_BEFORE
+#    AFTER = gtk.TREE_VIEW_DROP_AFTER
+#
+#
+#def display(widget):
+#        widget.show_all()
+#        refresh_gui()
+#        widget.hide()
+#        refresh_gui(0)
+#
+#def refresh_gui(delay=SLEEP_TIME):
+#    while gtk.events_pending():
+#        gtk.main_iteration_do(block=False)
+#    time.sleep(delay)
 
 if __name__ == '__main__':
     from sys import path as pythonpath

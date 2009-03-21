@@ -1,0 +1,126 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
+<glade-interface>
+    <widget class="GtkUIManager" id="uimanager">
+        <child>
+            <widget class="GtkActionGroup" id="DefaultActions">
+                <child>
+                    <widget class="GtkAction" id="checkout">
+                        <property name="name">checkout</property>
+                        <property name="label" translatable="yes">Checkout</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="ferramentas">
+                        <property name="name">ferramentas</property>
+                        <property name="label" translatable="yes">Ferramentas</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="open_action">
+                        <property name="name">open_action</property>
+                        <property name="label" translatable="yes">_Abrir</property>
+                        <property name="tooltip" translatable="yes">Open a file</property>
+                        <property name="stock_id">gtk-open</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="preferences_action">
+                        <property name="name">preferences_action</property>
+                        <property name="label" translatable="yes">_Preferências</property>
+                        <property name="stock_id">gtk-preferences</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="quit_action">
+                        <property name="name">quit_action</property>
+                        <property name="label" translatable="yes">Sai_r</property>
+                        <property name="tooltip" translatable="yes">Quit the program</property>
+                        <property name="stock_id">gtk-quit</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="save_action">
+                        <property name="name">save_action</property>
+                        <property name="label" translatable="yes">_Salvar</property>
+                        <property name="is_important">True</property>
+                        <property name="tooltip" translatable="yes">Save a file</property>
+                        <property name="stock_id">gtk-save</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="saveas_action">
+                        <property name="name">saveas_action</property>
+                        <property name="label" translatable="yes">Salvar _Como</property>
+                        <property name="tooltip" translatable="yes">Save with a different name</property>
+                        <property name="stock_id">gtk-save-as</property>
+                    </widget>
+                </child>
+            </widget>
+        </child>
+        <ui id="initial-state"><![CDATA[<ui>
+<menubar action="menubar1" name="menubar1"><menu action="ferramentas" name="ferramentas"><menuitem action="preferences_action" name="preferences_action"/></menu></menubar>
+</ui>]]></ui>
+    </widget>
+    <widget class="GtkWindow" id="app2">
+        <property name="border_width">2</property>
+        <property name="default_height">600</property>
+        <property name="default_width">800</property>
+        <property name="height_request">600</property>
+        <property name="role">PHMainWindow</property>
+        <property name="title" context="yes" translatable="yes">Package Helper</property>
+        <property name="width_request">800</property>
+        <child>
+            <widget class="GtkVBox" id="main_vbox">
+                <property name="visible">True</property>
+                <child>
+                    <widget constructor="initial-state" class="GtkMenuBar" id="menubar1">
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                    </packing>
+                </child>
+                <child>
+                    <placeholder/>
+                    <packing>
+                        <property name="position">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkEventBox" id="wizard_holder">
+                        <property name="visible">True</property>
+                        <child>
+                            <placeholder/>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="position">2</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkScrolledWindow" id="sw1">
+                        <property name="height_request">200</property>
+                        <property name="hscrollbar_policy">automatic</property>
+                        <property name="shadow_type">in</property>
+                        <property name="visible">True</property>
+                        <property name="vscrollbar_policy">automatic</property>
+                        <child>
+                            <widget class="GtkTextView" id="logger_view">
+                                <property name="can_focus">False</property>
+                                <property name="editable">False</property>
+                                <property name="height_request">100</property>
+                                <property name="sensitive">False</property>
+                                <property name="visible">True</property>
+                            </widget>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="position">3</property>
+                    </packing>
+                </child>
+            </widget>
+        </child>
+    </widget>
+</glade-interface>

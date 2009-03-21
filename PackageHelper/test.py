@@ -25,6 +25,8 @@ import test.package.types.tc_loader
 import test.package.rollback.tc_parser
 import test.parser.tc_plsql
 import test.package.gui.tc_filetree
+import test.package.gui.tc_app
+import test.package.tc_domain
 
 
 tests = []
@@ -35,6 +37,11 @@ tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.types.tc_p
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.types.tc_loader.LoaderTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.parser.tc_plsql.PlSqlParserTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_filetree.FileTreeTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_app.AppGuiTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_app.MainDataStepTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_app.ReleaseNotesStepTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_app.ManageFilesStepTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_domain.PackageTests))
 
 # Broken until plsql parser (yapps) is finished.
 #tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.rollback.tc_parser.SqlParserTests))

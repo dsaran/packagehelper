@@ -1,3 +1,56 @@
+2009-03-21  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test.py: Added tests for application GUI slaves and domain objects.
+	* package/config.py:
+		Functions on config module moved to Config class.
+		Storing/loading repositories is now reponsability of config module.
+	* package/processor.py:
+		Internal methods renamed to _method_name.
+		Processing of scripts and writting it to files are now 2 separated
+		methods.
+		There is now a public method for creating package structure.
+	* package/domain/database.py:
+		Constructor arguments are not mandatory anymore.
+	* package/domain/defect.py: New class for Requirement data.
+	* package/domain/pack.py:
+		Using properties instead of old-style getters/setters.
+		New properties for requirements and operations (checkout and process).
+	* package/glade/app.glade:
+		This class is for now deprecated.
+	* package/glade/app2.glade:
+		New application using wizard-like style.
+	* package/glade/filelistslave.glade:
+	* package/glade/maindataslave.glade:
+	* package/glade/managefilesslave.glade:
+	* package/glade/releasenotesstep.glade:
+	* package/glade/scriptlistslave.glade:
+		Lists were removed from this file and are now slaves.
+	* package/ui/filetree.py: Moved from package.gui module.
+	* package/ui/gui.py: Logic moved to slaves.
+	* package/ui/listslave.py: Slaves for gui components.
+	* package/ui/text.py:
+	* package/ui/editor.py:
+		Changes to use python properties.
+	* test/package/tc_domain.py:
+		Test cases for internal domain objects logic.
+	* test/package/tc_processor.py:
+		Adding mocks for methods now being tested.
+	* test/package/gui/tc_app.py:
+		Test cases for application GUI and slaves.
+	* test/package/gui/tc_filetree.py:
+		Changed to work with FileTree as a slave.
+	* test/package/gui/util.py: Utilities for GUI test cases.
+	* test/parser/tc_plsql.py:
+		Test cases changed to BDD-like style.
+		Full package body parsing changed to break tests so we can reflect
+		the reality.
+
+2009-03-13  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* parser/plsql.g:
+	* parser/plsql.py:
+		Fixed package grammar
+
 2009-03-08  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* lib/kiwi:

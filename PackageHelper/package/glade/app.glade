@@ -613,15 +613,19 @@
                             <widget class="GtkVBox" id="tab3">
                                 <property name="visible">True</property>
                                 <child>
-                                    <widget class="ObjectList" id="filelist">
+                                    <widget class="GtkEventBox" id="filelist_holder">
                                         <property name="visible">True</property>
-                                        <property name="vscrollbar_policy">automatic</property>
+                                        <child>
+                                            <placeholder/>
+                                        </child>
                                     </widget>
                                 </child>
                                 <child>
-                                    <widget class="ObjectList" id="scriptlist">
+                                    <widget class="GtkEventBox" id="scriptlist_holder">
                                         <property name="visible">True</property>
-                                        <property name="vscrollbar_policy">automatic</property>
+                                        <child>
+                                            <placeholder/>
+                                        </child>
                                     </widget>
                                     <packing>
                                         <property name="position">1</property>

@@ -1,4 +1,4 @@
-# Version: $Id: editor.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id: editor.py,v 1.2 2009-03-21 20:57:45 daniel Exp $
 
 import logging
 from kiwi.ui.delegates import Delegate
@@ -20,7 +20,7 @@ class Editor(Delegate):
     def __init__(self, file):
         Delegate.__init__(self, delete_handler=self.quit_if_last)
 
-        self._file = path(file.get_path())
+        self._file = path(file.path)
         if not self._file.exists():
             log.error("File not found: %s" % self._file)
             return

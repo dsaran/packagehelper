@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.5 2009-03-09 01:12:59 daniel Exp $
+# Version: $Id: file.py,v 1.6 2009-03-21 20:57:45 daniel Exp $
 
 from os import sep
 from path import path as Path
@@ -9,7 +9,7 @@ import logging
 
 log = logging.getLogger('File')
 
-class File:
+class File(object):
     TYPE_ORDER = {'TAB':1, 'VIEW':5, 'DDL':10, 'TRG':15, 'IDX':20, 'DML':25, 'ACT_BD':30, 'PKH':35, 'PKB':40, 'GRANT':45}
     CATEGORIES = {'COMPILABLE':['PKH', 'PKB', 'FNC', 'PRC', 'GRANT', 'TRG', 'IDX', 'DDL', 'VIEW', 'TAB'], 'COMMITABLE':['DML', 'ACT_BD']}
 
@@ -71,7 +71,6 @@ class File:
         return self._basepath
 
     def setname(self, name):
-        print "setting name"
         self._name = name
 
     def setdatabase(self, database):

@@ -1,0 +1,317 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
+<glade-interface>
+    <widget class="GtkWindow" id="releasenotesstep">
+        <property name="default_height">250</property>
+        <property name="default_width">440</property>
+        <child>
+            <widget class="GtkVBox" id="tab4">
+                <property name="visible">True</property>
+                <child>
+                    <widget class="GtkFrame" id="frame2">
+                        <property name="label" context="yes" translatable="yes">Defeitos</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkHBox" id="hbox1">
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="ObjectList" id="defectlist">
+                                        <property name="visible">True</property>
+                                        <property name="vscrollbar_policy">automatic</property>
+                                    </widget>
+                                </child>
+                                <child>
+                                    <widget class="GtkTable" id="table3">
+                                        <property name="n_columns">2</property>
+                                        <property name="n_rows">4</property>
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <widget class="GtkLabel" id="label6">
+                                                <property name="label" context="yes" translatable="yes">ID PTIn:</property>
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1.0</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="x_options">fill</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkLabel" id="label7">
+                                                <property name="label" context="yes" translatable="yes">ID Vivo:</property>
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1.0</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">2</property>
+                                                <property name="top_attach">1</property>
+                                                <property name="x_options">fill</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkLabel" id="label8">
+                                                <property name="label" context="yes" translatable="yes">Descrição:</property>
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1.0</property>
+                                                <property name="yalign">0.0</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">3</property>
+                                                <property name="top_attach">2</property>
+                                                <property name="x_options">fill</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkHButtonBox" id="hbuttonbox6">
+                                                <property name="layout_style">end</property>
+                                                <property name="visible">True</property>
+                                                <child>
+                                                    <widget class="GtkButton" id="del_defect_button">
+                                                        <property name="is_focus">True</property>
+                                                        <property name="visible">True</property>
+                                                        <child>
+                                                            <widget class="GtkImage" id="image12">
+                                                                <property name="stock">gtk-remove</property>
+                                                                <property name="visible">True</property>
+                                                            </widget>
+                                                        </child>
+                                                    </widget>
+                                                </child>
+                                                <child>
+                                                    <widget class="GtkButton" id="add_defect_button">
+                                                        <property name="is_focus">True</property>
+                                                        <property name="visible">True</property>
+                                                        <child>
+                                                            <widget class="GtkImage" id="image12">
+                                                                <property name="stock">gtk-add</property>
+                                                                <property name="visible">True</property>
+                                                            </widget>
+                                                        </child>
+                                                    </widget>
+                                                    <packing>
+                                                        <property name="position">1</property>
+                                                    </packing>
+                                                </child>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">4</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="top_attach">3</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="ProxyEntry" id="defect_ptin_entry">
+                                                <property name="data_type">str</property>
+                                                <property name="model_attribute">defect_ptin_entry</property>
+                                                <property name="visible">True</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="left_attach">1</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="ProxyEntry" id="defect_vivo_entry">
+                                                <property name="data_type">str</property>
+                                                <property name="model_attribute">defect_vivo_entry</property>
+                                                <property name="visible">True</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">2</property>
+                                                <property name="left_attach">1</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="top_attach">1</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkScrolledWindow" id="scrolledwindow1">
+                                                <property name="hscrollbar_policy">never</property>
+                                                <property name="is_focus">True</property>
+                                                <property name="shadow_type">etched-in</property>
+                                                <property name="visible">True</property>
+                                                <property name="vscrollbar_policy">automatic</property>
+                                                <child>
+                                                    <widget class="ProxyTextView" id="defect_desc_entry">
+                                                        <property name="data_type">unicode</property>
+                                                        <property name="is_focus">True</property>
+                                                        <property name="model_attribute">defect_desc_entry</property>
+                                                        <property name="visible">True</property>
+                                                        <property name="wrap_mode">word-char</property>
+                                                    </widget>
+                                                </child>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">3</property>
+                                                <property name="left_attach">1</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="top_attach">2</property>
+                                                <property name="y_padding">1</property>
+                                            </packing>
+                                        </child>
+                                    </widget>
+                                    <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">1</property>
+                                    </packing>
+                                </child>
+                            </widget>
+                        </child>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkFrame" id="frame1">
+                        <property name="label" context="yes" translatable="yes">Pedidos</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkHBox" id="hbox2">
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="ObjectList" id="requirementlist">
+                                        <property name="visible">True</property>
+                                    </widget>
+                                </child>
+                                <child>
+                                    <widget class="GtkTable" id="table1">
+                                        <property name="n_columns">2</property>
+                                        <property name="n_rows">3</property>
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <widget class="ProxyLabel" id="kiwilabel1">
+                                                <property name="label" context="yes" translatable="yes">ID Pedido:</property>
+                                                <property name="model_attribute">kiwilabel1</property>
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1.0</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="x_options">fill</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="ProxyLabel" id="kiwilabel2">
+                                                <property name="label" context="yes" translatable="yes">Descrição:</property>
+                                                <property name="model_attribute">kiwilabel2</property>
+                                                <property name="visible">True</property>
+                                                <property name="xalign">1.0</property>
+                                                <property name="yalign">0.0</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">2</property>
+                                                <property name="top_attach">1</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkHButtonBox" id="hbuttonbox1">
+                                                <property name="layout_style">end</property>
+                                                <property name="visible">True</property>
+                                                <child>
+                                                    <widget class="GtkButton" id="del_req_button">
+                                                        <property name="is_focus">True</property>
+                                                        <property name="visible">True</property>
+                                                        <child>
+                                                            <widget class="GtkImage" id="image12">
+                                                                <property name="stock">gtk-remove</property>
+                                                                <property name="visible">True</property>
+                                                            </widget>
+                                                        </child>
+                                                    </widget>
+                                                </child>
+                                                <child>
+                                                    <widget class="GtkButton" id="add_req_button">
+                                                        <property name="is_focus">True</property>
+                                                        <property name="visible">True</property>
+                                                        <child>
+                                                            <widget class="GtkImage" id="image12">
+                                                                <property name="stock">gtk-add</property>
+                                                                <property name="visible">True</property>
+                                                            </widget>
+                                                        </child>
+                                                    </widget>
+                                                    <packing>
+                                                        <property name="position">1</property>
+                                                    </packing>
+                                                </child>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">3</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="top_attach">2</property>
+                                                <property name="x_options">fill</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="ProxyEntry" id="req_id_entry">
+                                                <property name="is_focus">True</property>
+                                                <property name="model_attribute">req_id_entry</property>
+                                                <property name="visible">True</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="left_attach">1</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="y_options">fill</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkScrolledWindow" id="scrolledwindow2">
+                                                <property name="hscrollbar_policy">never</property>
+                                                <property name="is_focus">True</property>
+                                                <property name="shadow_type">in</property>
+                                                <property name="visible">True</property>
+                                                <property name="vscrollbar_policy">automatic</property>
+                                                <child>
+                                                    <widget class="ProxyTextView" id="req_desc_entry">
+                                                        <property name="data_type">str</property>
+                                                        <property name="is_focus">True</property>
+                                                        <property name="model_attribute">req_desc</property>
+                                                        <property name="visible">True</property>
+                                                        <property name="wrap_mode">word</property>
+                                                    </widget>
+                                                </child>
+                                            </widget>
+                                            <packing>
+                                                <property name="bottom_attach">2</property>
+                                                <property name="left_attach">1</property>
+                                                <property name="right_attach">2</property>
+                                                <property name="top_attach">1</property>
+                                            </packing>
+                                        </child>
+                                    </widget>
+                                    <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">1</property>
+                                    </packing>
+                                </child>
+                            </widget>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="position">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkHButtonBox" id="hbuttonbox7">
+                        <property name="layout_style">end</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkButton" id="generate_rn_button">
+                                <property name="image_position">top</property>
+                                <property name="label" context="yes" translatable="yes">Gerar RN</property>
+                                <property name="visible">True</property>
+                            </widget>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="position">2</property>
+                    </packing>
+                </child>
+            </widget>
+        </child>
+    </widget>
+</glade-interface>

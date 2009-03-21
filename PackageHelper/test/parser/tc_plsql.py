@@ -7,12 +7,12 @@ quoted_string = "' a quoted string'"
 insert_columns = "(a, b, c,d,e ,f)"
 insert_values = "(1, 'b', 3,'d')"
 full_package_declaration = """
-CREATE OR REPLACE PACKAGE BODY my_package(arg1 IN NUMBER) IS
+CREATE OR REPLACE PACKAGE BODY my_package IS
     PROCEDURE test(blah NUMBER)
     IS
     BEGIN
         IF 1 < 2 THEN
-            a();
+            b := a();
         ELSE
             n();
         END IF
@@ -279,24 +279,82 @@ class PlSqlParserTests(TestCase):
         where = [ RelationalOperation(op1=value1, operator='EQ', op2=2) ]
         expected = SelectStatement(columns=[column1, column2], tables=[table1, table2], where_clause=where)
 
-        result = plsql.parse('select_statement', select)
+        self.given_i_have_some_code(code=select, description="Select statement with multiple tables")
 
-        self.assertTrue(result, "Select statement not parsed")
-        self.assertEquals(expected, result)
+        self.when_i_parse_code(rule='select_statement')
+
+        self.should_be_parsed_correctly(expected)
 
     def testIgnoreSetCommand(self):
         """ PlSqlParser should ignore SET command"""
-        comment = "SET serveroutput on \n 'some literal'"
-        result = plsql.parse("LITERAL", comment)
-        self.assertEquals("'some literal'", result)
+        set_command = "SET serveroutput on \n 'some literal'"
+        expected = "'some literal'"
+
+        self.given_i_have_some_code(set_command, description='SET command')
+
+        self.when_i_parse_code(rule="LITERAL")
+
+        self.should_be_parsed_correctly(expected)
+
+    def _testPackageWithCode(self):
+        """ <Broken> PlSqlParser should parse Package Body code"""
+        self.given_i_have_full_package_body()
+
+        self.when_i_parse_code(rule='full_source_declaration')
+
+        self.should_be_parsed_correctly()
 
     def testPackageWithCode(self):
-        """ PlSqlParser should parse a Package Body code"""
+        """ PlSqlParser should parse Package Body code ignoring its contents"""
+        pkg_id = Identifier(id='my_package')
+        expected = Source(id=pkg_id, type='PACKAGE BODY')
 
-        result = plsql.parse("goal", full_package_declaration)
-        self.assertTrue(result, "Full package declaration not parsed.")
+        self.given_i_have_full_package_body()
 
-        
+        self.when_i_parse_code(rule='source_declaration')
 
+        self.should_be_parsed_correctly(expected)
 
+    #############
+    ## Behavior #
+    #############
+
+    #
+    # Given clauses
+    #
+    def given_i_have_some_code(self, code, description=None):
+        self.code_to_parse = code
+        self.code_description = description
+
+    def given_i_have_full_package_body(self):
+        proc_arg = Identifier(id='blah', type='NUMBER')
+        proc_id = CallableStatement(name='test', arguments=[proc_arg])
+        call_a = CallableStatement(name='a')
+        call_n = CallableStatement(name='n')
+        calls = [call_a, call_n]
+        proc = Source(id=proc_id, type='PROCEDURE') 
+        proc.calls = calls
+
+        pkg_id = Identifier(id='my_package')
+        pkg = Source(id=pkg_id, type='PACKAGE BODY', members=[proc])
+
+        self.code_description = 'Full package body'
+        self.code_to_parse = full_package_declaration
+        self.expected = pkg
+
+    #
+    # When clauses
+    #
+
+    def when_i_parse_code(self, rule='goal'):
+        self.result = plsql.parse(rule, self.code_to_parse)
+
+    #
+    # Should clauses
+    #
+
+    def should_be_parsed_correctly(self, expected=None):
+        self.expected = expected or self.expected
+        self.assertTrue(self.result, self.code_description + " not parsed.")
+        self.assertEquals(self.expected, self.result, self.code_description + " not correctly parsed");
 
