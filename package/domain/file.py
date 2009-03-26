@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.6 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id: file.py,v 1.7 2009-03-26 02:31:43 daniel Exp $
 
 from os import sep
 from path import path as Path
@@ -147,46 +147,32 @@ class File(object):
             value.append('PROMPT *************************************')
         return value
 
+    def remove(self):
+        self.path.remove()
 
 class InstallScript(object):
     """ Represents a install script used to invoke package's sql files."""
-    _name = None
-    #_content = None
-    _description = None
+
+    """Script name"""
+    name = None
+    """Short description of the script"""
+    description = None
+    """Content of script ([File, ..])"""
+    content = None
 
     def __init__(self, name=None, content=None, desc=None):
         """ Initialize the install script
             @param name name of file to be created in the filesystem
             @param content list of files (File objects) to be invoked
-            @param desc description of install script """
-        self._name = name
-        self._content = content or []
-        self._description = desc
-
-    def getname(self):
-        return self._name
-
-    def setname(self, name):
-        self._name = name
-
-    def getcontent(self):
-        return self._content
-
-    def setcontent(self, content):
-        self._content = content
-
-    def getdescription(self):
-        return self._description
-
-    def setdescription(self, description):
-        self._description = description
+            @param desc description of install script.
+        """
+        self.name = name
+        self.content = content or []
+        self.description = desc
+        self.path = None
 
     def add_file(self, file):
         self._content.append(file)
-
-    name = property(getname, setname, doc="Script name")
-    content = property(getcontent, setcontent, doc="Content of script ([File, ..])")
-    description = property(getdescription, setdescription, doc="Short description of the script")
 
     def __eq__(self, other):
         if not hasattr(other, 'name'):
@@ -199,3 +185,14 @@ class InstallScript(object):
 
     __repr__ = __str__
 
+    def create(self):
+        """ Write Install Script to filesystem.
+        """
+        raise NotImplementedError("Create method not implemented.") 
+
+    def remove(self):
+        """ Remove script from filesystem if it was already written.
+        """
+        if self.path:
+            self.path.remove()
+ 

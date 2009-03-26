@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.8 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id: processor.py,v 1.9 2009-03-26 02:31:43 daniel Exp $
 
 import logging
 from os import environ, popen, chdir
@@ -172,6 +172,16 @@ class PackageProcessor:
 
         return status
 
+    def clean(self, full=False):
+        log.info("Cleaning package data...")
+        for script in self.package.scripts:
+            log.debug("Removing file %s" % script)
+            script.remove()
+            self.package.scripts.remove(script)
+        if full:
+            raise NotImplementedError("Clean has no full behavior implemented")
+        log.info("done.")
+ 
     def _load_files(self):
         self.package.set_files([])
         files = self._get_files("*.sql")

@@ -219,6 +219,7 @@
                         </child>
                     </widget>
                     <packing>
+                        <property name="expand">False</property>
                         <property name="fill">False</property>
                         <property name="position">1</property>
                     </packing>
@@ -228,135 +229,121 @@
                         <property name="visible">True</property>
                     </widget>
                     <packing>
+                        <property name="expand">False</property>
                         <property name="padding">2</property>
                         <property name="position">2</property>
                     </packing>
                 </child>
                 <child>
-                    <widget class="ObjectList" id="tag_list">
+                    <widget class="GtkVPaned" id="vpaned1">
+                        <property name="position">113</property>
+                        <property name="position_set">True</property>
                         <property name="visible">True</property>
-                        <property name="vscrollbar_policy">automatic</property>
+                        <child>
+                            <widget class="GtkHBox" id="tag_hbox">
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="ObjectList" id="tag_list">
+                                        <property name="has_tooltip">True</property>
+                                        <property name="tooltip_markup" context="yes" translatable="yes">Clique sobre uma tag para alterar seu nome.</property>
+                                        <property name="tooltip_text" context="yes" translatable="yes">Clique sobre uma tag para alterar seu nome.</property>
+                                        <property name="visible">True</property>
+                                        <property name="vscrollbar_policy">automatic</property>
+                                    </widget>
+                                </child>
+                                <child>
+                                    <widget class="GtkVButtonBox" id="vbuttonbox1">
+                                        <property name="layout_style">start</property>
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <widget class="GtkButton" id="add_tag_button">
+                                                <property name="is_focus">True</property>
+                                                <property name="visible">True</property>
+                                                <child>
+                                                    <widget class="GtkImage" id="image3">
+                                                        <property name="stock">gtk-add</property>
+                                                        <property name="visible">True</property>
+                                                    </widget>
+                                                </child>
+                                            </widget>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkButton" id="del_tag_button">
+                                                <property name="is_focus">True</property>
+                                                <property name="visible">True</property>
+                                                <child>
+                                                    <widget class="GtkImage" id="image2">
+                                                        <property name="stock">gtk-remove</property>
+                                                        <property name="visible">True</property>
+                                                    </widget>
+                                                </child>
+                                            </widget>
+                                            <packing>
+                                                <property name="position">1</property>
+                                            </packing>
+                                        </child>
+                                    </widget>
+                                    <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">1</property>
+                                    </packing>
+                                </child>
+                            </widget>
+                        </child>
+                        <child>
+                            <widget class="GtkHBox" id="repo_hbox">
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="ObjectList" id="repository_list">
+                                        <property name="visible">True</property>
+                                        <property name="vscrollbar_policy">automatic</property>
+                                    </widget>
+                                </child>
+                                <child>
+                                    <widget class="GtkVButtonBox" id="vbuttonbox2">
+                                        <property name="layout_style">start</property>
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <widget class="GtkButton" id="add_repository_button">
+                                                <property name="is_focus">True</property>
+                                                <property name="visible">True</property>
+                                                <child>
+                                                    <widget class="GtkImage" id="image5">
+                                                        <property name="stock">gtk-add</property>
+                                                        <property name="visible">True</property>
+                                                    </widget>
+                                                </child>
+                                            </widget>
+                                        </child>
+                                        <child>
+                                            <widget class="GtkButton" id="del_repository_button">
+                                                <property name="is_focus">True</property>
+                                                <property name="visible">True</property>
+                                                <child>
+                                                    <widget class="GtkImage" id="image4">
+                                                        <property name="stock">gtk-remove</property>
+                                                        <property name="visible">True</property>
+                                                    </widget>
+                                                </child>
+                                            </widget>
+                                            <packing>
+                                                <property name="position">1</property>
+                                            </packing>
+                                        </child>
+                                    </widget>
+                                    <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">1</property>
+                                    </packing>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="resize">True</property>
+                            </packing>
+                        </child>
                     </widget>
                     <packing>
                         <property name="position">3</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="GtkHButtonBox" id="hbuttonbox3">
-                        <property name="layout_style">end</property>
-                        <property name="visible">True</property>
-                        <child>
-                            <widget class="GtkButton" id="del_tag_button">
-                                <property name="is_focus">True</property>
-                                <property name="visible">True</property>
-                                <child>
-                                    <widget class="GtkImage" id="image2">
-                                        <property name="stock">gtk-remove</property>
-                                        <property name="visible">True</property>
-                                    </widget>
-                                </child>
-                            </widget>
-                        </child>
-                        <child>
-                            <widget class="GtkButton" id="add_tag_button">
-                                <property name="is_focus">True</property>
-                                <property name="visible">True</property>
-                                <child>
-                                    <widget class="GtkImage" id="image3">
-                                        <property name="stock">gtk-add</property>
-                                        <property name="visible">True</property>
-                                    </widget>
-                                </child>
-                            </widget>
-                            <packing>
-                                <property name="position">1</property>
-                            </packing>
-                        </child>
-                    </widget>
-                    <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="padding">2</property>
-                        <property name="position">4</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="GtkHSeparator" id="hseparator3">
-                        <property name="visible">True</property>
-                    </widget>
-                    <packing>
-                        <property name="position">5</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="ObjectList" id="repository_list">
-                        <property name="visible">True</property>
-                        <property name="vscrollbar_policy">automatic</property>
-                    </widget>
-                    <packing>
-                        <property name="position">6</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="GtkHButtonBox" id="hbuttonbox2">
-                        <property name="layout_style">end</property>
-                        <property name="visible">True</property>
-                        <child>
-                            <widget class="GtkButton" id="del_repository_button">
-                                <property name="is_focus">True</property>
-                                <property name="visible">True</property>
-                                <child>
-                                    <widget class="GtkImage" id="image4">
-                                        <property name="stock">gtk-remove</property>
-                                        <property name="visible">True</property>
-                                    </widget>
-                                </child>
-                            </widget>
-                        </child>
-                        <child>
-                            <widget class="GtkButton" id="add_repository_button">
-                                <property name="is_focus">True</property>
-                                <property name="visible">True</property>
-                                <child>
-                                    <widget class="GtkImage" id="image5">
-                                        <property name="stock">gtk-add</property>
-                                        <property name="visible">True</property>
-                                    </widget>
-                                </child>
-                            </widget>
-                            <packing>
-                                <property name="position">1</property>
-                            </packing>
-                        </child>
-                    </widget>
-                    <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="padding">2</property>
-                        <property name="position">7</property>
-                    </packing>
-                </child>
-                <child>
-                    <placeholder/>
-                    <packing>
-                        <property name="fill">False</property>
-                        <property name="padding">2</property>
-                        <property name="position">8</property>
-                    </packing>
-                </child>
-                <child>
-                    <placeholder/>
-                    <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">False</property>
-                        <property name="padding">2</property>
-                        <property name="position">9</property>
-                    </packing>
-                </child>
-                <child>
-                    <placeholder/>
-                    <packing>
-                        <property name="position">10</property>
                     </packing>
                 </child>
             </widget>

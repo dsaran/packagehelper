@@ -23,15 +23,16 @@ class FileTree(GladeSlaveDelegate):
 
     TARGETS = [('FILE_TREE_ROW', gtk.TARGET_SAME_WIDGET, 1)]
 
-    def __init__(self, model=None, scripts=None):
+    def __init__(self, model=None, scripts=None, statusbar=None):
         GladeSlaveDelegate.__init__(self, gladefile=self.gladefile)
 
         self.model = model or self
         self.model.scripts = self.fileTree
 
+        self.statusbar = statusbar
+
         self.fileTree.set_columns([Column('name', data_type=str, searchable=True, 
                                    expand=True)])
-        self.base_path.set_text("Scripts")
         if scripts:
             self._set_message("")
             self._fill(scripts)
@@ -151,7 +152,8 @@ class FileTree(GladeSlaveDelegate):
         self._set_message("")
 
     def _set_message(self, message):
-        self.statusbar1.push(0, message)
+        if self.statusbar:
+            self.statusbar.push(0, message)
 
     def get_data(self):
         """ Returns tree data into a list of scripts.

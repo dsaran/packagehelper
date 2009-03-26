@@ -1,3 +1,28 @@
+2009-03-25  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/config.py:
+		Config files changed to YAML.
+	* package/processor.py:
+		Processor now has a public method to clean previously processed
+		database.
+	* package/domain/file.py:
+		Removed getters/setters since File properties are public.
+	* package/glade/app2.glade:
+	* package/glade/filetree.glade:
+	* package/glade/maindataslave.glade:
+	* package/glade/managefilesslave.glade:
+	* package/glade/releasenotesstep.glade:
+		Added Vertical Paned Window to allow user to resize GUI components.
+		Statusbar from filetree moved to main window.
+		Small improvements in layout.
+	* package/ui/filetree.py:
+	* package/ui/gui.py:
+	* package/ui/listslave.py:
+		Changes to allow slaves to use main statusbar.
+	* package/ui/wizard.py:
+		Extended PluggableWizard allow customizations on default wizard
+		behavior.
+
 2009-03-21  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* test.py: Added tests for application GUI slaves and domain objects.

@@ -8,11 +8,14 @@
             <widget class="GtkVBox" id="tab4">
                 <property name="visible">True</property>
                 <child>
-                    <widget class="GtkFrame" id="frame2">
+                    <widget class="GtkExpander" id="expander1">
+                        <property name="expanded">True</property>
+                        <property name="is_focus">True</property>
                         <property name="label" context="yes" translatable="yes">Defeitos</property>
                         <property name="visible">True</property>
                         <child>
-                            <widget class="GtkHBox" id="hbox1">
+                            <widget class="GtkHBox" id="hbox4">
+                                <property name="border_width">1</property>
                                 <property name="visible">True</property>
                                 <child>
                                     <widget class="ObjectList" id="defectlist">
@@ -21,12 +24,12 @@
                                     </widget>
                                 </child>
                                 <child>
-                                    <widget class="GtkTable" id="table3">
+                                    <widget class="GtkTable" id="table4">
                                         <property name="n_columns">2</property>
                                         <property name="n_rows">4</property>
                                         <property name="visible">True</property>
                                         <child>
-                                            <widget class="GtkLabel" id="label6">
+                                            <widget class="GtkLabel" id="label9">
                                                 <property name="label" context="yes" translatable="yes">ID PTIn:</property>
                                                 <property name="visible">True</property>
                                                 <property name="xalign">1.0</property>
@@ -37,7 +40,7 @@
                                             </packing>
                                         </child>
                                         <child>
-                                            <widget class="GtkLabel" id="label7">
+                                            <widget class="GtkLabel" id="label5">
                                                 <property name="label" context="yes" translatable="yes">ID Vivo:</property>
                                                 <property name="visible">True</property>
                                                 <property name="xalign">1.0</property>
@@ -50,7 +53,7 @@
                                             </packing>
                                         </child>
                                         <child>
-                                            <widget class="GtkLabel" id="label8">
+                                            <widget class="GtkLabel" id="label4">
                                                 <property name="label" context="yes" translatable="yes">Descrição:</property>
                                                 <property name="visible">True</property>
                                                 <property name="xalign">1.0</property>
@@ -64,7 +67,7 @@
                                             </packing>
                                         </child>
                                         <child>
-                                            <widget class="GtkHButtonBox" id="hbuttonbox6">
+                                            <widget class="GtkHButtonBox" id="hbuttonbox3">
                                                 <property name="layout_style">end</property>
                                                 <property name="visible">True</property>
                                                 <child>
@@ -130,6 +133,7 @@
                                         </child>
                                         <child>
                                             <widget class="GtkScrolledWindow" id="scrolledwindow1">
+                                                <property name="border_width">1</property>
                                                 <property name="hscrollbar_policy">never</property>
                                                 <property name="is_focus">True</property>
                                                 <property name="shadow_type">etched-in</property>
@@ -164,11 +168,14 @@
                     </widget>
                 </child>
                 <child>
-                    <widget class="GtkFrame" id="frame1">
+                    <widget class="GtkExpander" id="expander2">
+                        <property name="expanded">True</property>
+                        <property name="is_focus">True</property>
                         <property name="label" context="yes" translatable="yes">Pedidos</property>
                         <property name="visible">True</property>
                         <child>
-                            <widget class="GtkHBox" id="hbox2">
+                            <widget class="GtkHBox" id="hbox6">
+                                <property name="border_width">1</property>
                                 <property name="visible">True</property>
                                 <child>
                                     <widget class="ObjectList" id="requirementlist">
@@ -176,12 +183,12 @@
                                     </widget>
                                 </child>
                                 <child>
-                                    <widget class="GtkTable" id="table1">
+                                    <widget class="GtkTable" id="table6">
                                         <property name="n_columns">2</property>
                                         <property name="n_rows">3</property>
                                         <property name="visible">True</property>
                                         <child>
-                                            <widget class="ProxyLabel" id="kiwilabel1">
+                                            <widget class="ProxyLabel" id="kiwilabel6">
                                                 <property name="label" context="yes" translatable="yes">ID Pedido:</property>
                                                 <property name="model_attribute">kiwilabel1</property>
                                                 <property name="visible">True</property>
@@ -193,7 +200,7 @@
                                             </packing>
                                         </child>
                                         <child>
-                                            <widget class="ProxyLabel" id="kiwilabel2">
+                                            <widget class="ProxyLabel" id="kiwilabel5">
                                                 <property name="label" context="yes" translatable="yes">Descrição:</property>
                                                 <property name="model_attribute">kiwilabel2</property>
                                                 <property name="visible">True</property>
@@ -206,7 +213,7 @@
                                             </packing>
                                         </child>
                                         <child>
-                                            <widget class="GtkHButtonBox" id="hbuttonbox1">
+                                            <widget class="GtkHButtonBox" id="hbuttonbox5">
                                                 <property name="layout_style">end</property>
                                                 <property name="visible">True</property>
                                                 <child>
@@ -258,21 +265,12 @@
                                             </packing>
                                         </child>
                                         <child>
-                                            <widget class="GtkScrolledWindow" id="scrolledwindow2">
-                                                <property name="hscrollbar_policy">never</property>
+                                            <widget class="ProxyTextView" id="req_desc_entry">
+                                                <property name="data_type">str</property>
                                                 <property name="is_focus">True</property>
-                                                <property name="shadow_type">in</property>
+                                                <property name="model_attribute">req_desc</property>
                                                 <property name="visible">True</property>
-                                                <property name="vscrollbar_policy">automatic</property>
-                                                <child>
-                                                    <widget class="ProxyTextView" id="req_desc_entry">
-                                                        <property name="data_type">str</property>
-                                                        <property name="is_focus">True</property>
-                                                        <property name="model_attribute">req_desc</property>
-                                                        <property name="visible">True</property>
-                                                        <property name="wrap_mode">word</property>
-                                                    </widget>
-                                                </child>
+                                                <property name="wrap_mode">word</property>
                                             </widget>
                                             <packing>
                                                 <property name="bottom_attach">2</property>

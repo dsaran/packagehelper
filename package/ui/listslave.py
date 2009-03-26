@@ -41,7 +41,7 @@ class FileListSlave(GladeSlaveDelegate):
 
     gladefile="filelistslave"
 
-    def __init__(self, model=None):
+    def __init__(self, model=None, statusbar=None):
         GladeSlaveDelegate.__init__(self, gladefile=self.gladefile)
 
         self.model = model or self
@@ -98,7 +98,8 @@ class MainDataStep(BaseWizardStep):
 
     gladefile = "maindataslave"
 
-    def __init__(self, model=None, previous=None, header=None, logger=None):
+    def __init__(self, model=None, previous=None, header=None, logger=None,
+                 statusbar=None):
         BaseWizardStep.__init__(self, previous=previous, header=header)
 
         if logger:
@@ -115,7 +116,7 @@ class MainDataStep(BaseWizardStep):
         # Creates a list of repositories
         self.repository_list.set_columns(
                 [Column('root', data_type=str, title="Repositório", editable=True, expand=True),
-                 Column('module', data_type=str, title="Módulo", width=300, editable=True),
+                 Column('module', data_type=str, title="Módulo", width=150, editable=True),
                  Column('active', data_type=bool, title="Ativo", editable=True)])
 
         self.add_proxy(self.model, ["path_entry", "package_entry", "checkout_chk", "process_chk"])
@@ -127,7 +128,7 @@ class MainDataStep(BaseWizardStep):
 
 
     def validate_step(self):
-        is_ok = self.model.path.strip()
+        is_ok = self.model.path and self.model.path.strip()
         #XXX: Display feedback to user.
         return is_ok
 
@@ -166,7 +167,7 @@ class MainDataStep(BaseWizardStep):
             for repo in repos:
                 self.model.repositories.append(repo)
                 self.repository_list.append(repo)
-        
+        log.info("Dados carregados com sucesso.")
 
     def _save_repos(self):
         log.info("Salvando repositorios...")
@@ -177,7 +178,8 @@ class ManageFilesStep(BaseWizardStep):
 
     gladefile = "managefilesslave"
 
-    def __init__(self, model=None, previous=None, header=None, logger=None):
+    def __init__(self, model=None, previous=None, header=None,
+                 statusbar=None, logger=None):
         BaseWizardStep.__init__(self, previous=previous, header=header)
 
         if logger:
@@ -186,7 +188,7 @@ class ManageFilesStep(BaseWizardStep):
 
         self.model = model or self
 
-        self.filetree = FileTree(model=self)
+        self.filetree = FileTree(model=self, statusbar=statusbar)
         self.filelist = FileListSlave(model=self.model)
         self.attach_slave('filelist_holder', self.filelist)
         self.attach_slave('scriptlist_holder', self.filetree)
@@ -197,6 +199,10 @@ class ManageFilesStep(BaseWizardStep):
         self.processor = PackageProcessor(self.model)
 
     def post_init(self):
+        self.processor.clean()
+        for item in self.filetree.fileTree[:]:
+            self.filetree.fileTree.remove(item)
+
         if self.model.checkout:
             self._run_checkout()
 
@@ -274,7 +280,7 @@ class ReleaseNotesStep(BaseWizardStep):
                "req_id_entry",
                "req_desc_entry"]
 
-    def __init__(self, model=None, previous=None, header=None):
+    def __init__(self, model=None, previous=None, header=None, statusbar=None):
         self.model = model or self
         BaseWizardStep.__init__(self, previous=previous, header=header)
 
@@ -338,8 +344,22 @@ class ReleaseNotesStep(BaseWizardStep):
             self.requirementlist.remove(selected)
 
 
-class ShowPackage(BaseWizardStep):
+class ShowPackageStep(BaseWizardStep):
 
-    def __init__(self, model=None, previous=None, header=None):
+    def __init__(self, model=None, previous=None, header=None, statusbar=None):
+        self.statusbar = statusbar
+        self.model = model or self
+        self.filelist = FileListSlave(model=model, statusbar=statusbar)
+        self.gladefile = self.filelist.gladefile
+
         BaseWizardStep.__init__(self, previous=previous, header=header)
+ 
+        self._initialized = False
+
+    def post_init(self):
+        print "Post init called"
+        for script in self.model.scripts:
+            script.created()
+        self._initialized = True
+
 
