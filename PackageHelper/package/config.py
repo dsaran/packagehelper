@@ -1,4 +1,4 @@
-# Version: $Id: config.py,v 1.4 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id: config.py,v 1.5 2009-03-26 02:31:43 daniel Exp $
 
 import os
 import logging
@@ -22,7 +22,6 @@ class Config:
             log.debug("Creating data directory...")
             self.DATA_DIR.mkdir()
         self.CONFIG_FILE = self.DATA_DIR.joinpath("config.xml").abspath()
-        self.REPOSITORY_FILE = self.DATA_DIR.joinpath("repositories.xml").abspath()
 
         if load:
             self.load()
@@ -103,37 +102,43 @@ class Config:
 
     def _load_config(self):
         config_data = None
-        if Path(self.CONFIG_FILE).exists():
+        config_file = Path(self.CONFIG_FILE)
+        if config_file.exists():
             try:
-                log.info("Loading file " + self.CONFIG_FILE)
-                file = open(self.CONFIG_FILE, 'r')
-                from xml.marshal import generic
-                config_data = generic.load(file)
+                log.info("Loading file " + config_file)
+                config_content = config_file.text()
+                from yaml import yaml
+                config_data = yaml.load(config_content)
             except Exception:
                 log.error("Error loading configuration.", exc_info=1)
-            finally:
-                file.close()
         else:
             config_data = Config()
         return config_data
-
+    
     def _save_config(self, config):
         log.info("Saving configuration...")
-        from xml.marshal import generic
-        file = None
+        from yaml import yaml
+        config_file = Path(self.CONFIG_FILE)
         try:
-            file = open(self.CONFIG_FILE, "w")
-            generic.dump(config, file)
-        finally:
-            file.close()
+            config_content = yaml.dump(config)
+            config_file.write_text(config_content)
+        except Exception:
+            log.error("Error saving configuration.", exc_info=1)
 
 
 class Repositories:
+    def __init__(self):
+        self.WORKING_DIR     = Path(os.environ['PKG_BASEDIR'])
+        self.DATA_DIR        = self.WORKING_DIR.joinpath("data").abspath()
+        if not self.DATA_DIR.exists():
+            log.debug("Creating data directory...")
+            self.DATA_DIR.mkdir()
+        self.REPOSITORY_FILE = self.DATA_DIR.joinpath("repositories.xml").abspath()
 
     def load(self):
         repos = []
         config = Config()
-        file = Path(config.REPOSITORY_FILE)
+        file = Path(self.REPOSITORY_FILE)
 
         if file.exists():
             try:
@@ -151,19 +156,8 @@ class Repositories:
         file = None
         log.info("Saving repository information")
         config = Config()
-        file = Path(config.REPOSITORY_FILE)
+        file = Path(self.REPOSITORY_FILE)
         from yaml import yaml
         dump = yaml.dump(repos)
         file.write_text(dump)
 
-
-    #def save(self, repos):
-    #    file = None
-    #    try:
-    #        log.info("Saving repository information")
-    #        config = Config()
-    #        file = open(config.REPOSITORY_FILE, "w")
-    #        from yaml import yaml
-    #        generic.dump(repos, file)
-    #    finally:
-    #        file.close()

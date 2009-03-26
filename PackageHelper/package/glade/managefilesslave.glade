@@ -8,42 +8,40 @@
             <widget class="GtkVBox" id="tab3">
                 <property name="visible">True</property>
                 <child>
-                    <widget class="GtkEventBox" id="filelist_holder">
+                    <widget class="GtkVPaned" id="vpaned1">
+                        <property name="position">74</property>
+                        <property name="position_set">True</property>
                         <property name="visible">True</property>
                         <child>
-                            <placeholder/>
-                        </child>
-                    </widget>
-                </child>
-                <child>
-                    <widget class="GtkEventBox" id="scriptlist_holder">
-                        <property name="visible">True</property>
-                        <child>
-                            <placeholder/>
-                        </child>
-                    </widget>
-                    <packing>
-                        <property name="position">1</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="GtkHButtonBox" id="hbuttonbox5">
-                        <property name="layout_style">end</property>
-                        <property name="visible">True</property>
-                        <child>
-                            <widget class="GtkButton" id="execute_button">
-                                <property name="can_default">True</property>
-                                <property name="label" context="yes" translatable="yes">Executar scripts</property>
-                                <property name="sensitive">False</property>
+                            <widget class="GtkExpander" id="expander1">
+                                <property name="is_focus">True</property>
+                                <property name="label" context="yes" translatable="yes">Arquivos encontrados</property>
                                 <property name="visible">True</property>
+                                <child>
+                                    <widget class="GtkEventBox" id="filelist_holder">
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <placeholder/>
+                                        </child>
+                                    </widget>
+                                </child>
                             </widget>
+                            <packing>
+                                <property name="resize">True</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="GtkEventBox" id="scriptlist_holder">
+                                <property name="visible">True</property>
+                                <child>
+                                    <placeholder/>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="resize">True</property>
+                            </packing>
                         </child>
                     </widget>
-                    <packing>
-                        <property name="expand">False</property>
-                        <property name="padding">2</property>
-                        <property name="position">2</property>
-                    </packing>
                 </child>
             </widget>
         </child>

@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: gui.py,v 1.3 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id: gui.py,v 1.4 2009-03-26 02:31:43 daniel Exp $
 
 import logging
 import gtk
@@ -9,7 +9,8 @@ from pickle import dump, loads
 
 from kiwi.ui.delegates import Delegate
 from kiwi.ui.objectlist import Column
-from kiwi.ui.wizard import PluggableWizard
+#from kiwi.ui.wizard import PluggableWizard
+from package.ui.wizard import Wizard
 
 from package.domain.tag import Tag
 from package.domain.repository import Repository
@@ -18,7 +19,7 @@ from package.domain.defect import Defect
 from package.ui.editor import Editor
 from package.ui.filechooser import FileChooser
 from package.ui.config import ConfigEditor
-from package.ui.listslave import FileListSlave, MainDataStep, ManageFilesStep, ReleaseNotesStep
+from package.ui.listslave import FileListSlave, MainDataStep, ManageFilesStep, ReleaseNotesStep, ShowPackageStep
 from package.ui.filetree import FileTree
 from package.config import Config 
 from package.releasenotes import RNGenerator
@@ -83,15 +84,21 @@ class PackageProcessorGUI(Delegate):
         Delegate.__init__(self, delete_handler=self.quit)
 
         # Wizard definition
-        self.first_step = MainDataStep(model=self.model, header="Dados do pacote", logger=log)
+        self.first_step = MainDataStep(model=self.model, header="Dados do pacote", logger=log,
+                                       statusbar=self.main_statusbar)
         self.manage_files_step = ManageFilesStep(model=self.model, previous=self.first_step,
-                                                 header="Gerenciamento de arquivos")
-        self.releasenotes_step = ReleaseNotesStep(model=self.model, previous=self.manage_files_step,
-                                                  header="Release Notes")
+                                                 header="Gerenciamento de arquivos",
+                                                 statusbar=self.main_statusbar)
+        self.displayscripts_step = ShowPackageStep(model=self.model, header="Pacote gerado",
+                                                   previous=self.manage_files_step,
+                                                   statusbar=self.main_statusbar)
+        self.releasenotes_step = ReleaseNotesStep(model=self.model, previous=self.displayscripts_step,
+                                                  header="Release Notes",
+                                                  statusbar=self.main_statusbar)
         self.first_step.next = self.manage_files_step
-        self.manage_files_step.next = self.releasenotes_step
-
-        self.wizard = PluggableWizard("Package Generation Wizard", self.first_step)
+        self.manage_files_step.next = self.displayscripts_step
+        self.displayscripts_step.next = self.releasenotes_step
+        self.wizard = Wizard("Package Generation Wizard", self.first_step)
         self.wizard.finish = self.finish
         self.wizard.cancel = self.quit
 

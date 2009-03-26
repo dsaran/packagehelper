@@ -74,7 +74,6 @@
                     </widget>
                     <packing>
                         <property name="expand">False</property>
-                        <property name="fill">False</property>
                         <property name="pack_type">end</property>
                     </packing>
                 </child>
@@ -88,58 +87,14 @@
             <widget class="GtkVBox" id="vbox1">
                 <property name="visible">True</property>
                 <child>
-                    <widget class="ProxyLabel" id="base_path">
-                        <property name="label" context="yes" translatable="yes">No base path</property>
-                        <property name="model_attribute">base_path</property>
-                        <property name="visible">True</property>
-                        <property name="xalign">0.0</property>
-                    </widget>
-                    <packing>
-                        <property name="expand">False</property>
-                    </packing>
-                </child>
-                <child>
                     <widget class="ObjectTree" id="fileTree">
                         <property name="extension_events">all</property>
                         <property name="selection_mode">single</property>
                         <property name="visible">True</property>
                         <property name="vscrollbar_policy">automatic</property>
                     </widget>
-                    <packing>
-                        <property name="position">1</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="ProxyLabel" id="error_msg">
-                        <property name="can_focus">True</property>
-                        <property name="mnemonic_widget">fileTree</property>
-                        <property name="model_attribute">error_msg</property>
-                        <property name="selectable">True</property>
-                        <property name="visible">True</property>
-                        <property name="xalign">0.0</property>
-                    </widget>
-                    <packing>
-                        <property name="expand">False</property>
-                        <property name="position">2</property>
-                    </packing>
-                </child>
-                <child>
-                    <widget class="GtkStatusbar" id="statusbar1">
-                        <property name="visible">True</property>
-                    </widget>
-                    <packing>
-                        <property name="expand">False</property>
-                        <property name="position">3</property>
-                    </packing>
                 </child>
             </widget>
-        </child>
-    </widget>
-    <widget class="GtkWindow" id="window1">
-        <property name="default_height">250</property>
-        <property name="default_width">440</property>
-        <child>
-            <placeholder/>
         </child>
     </widget>
 </glade-interface>
