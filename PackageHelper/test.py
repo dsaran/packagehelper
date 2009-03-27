@@ -42,6 +42,7 @@ tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_app
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_app.ReleaseNotesStepTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.gui.tc_app.ManageFilesStepTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_domain.PackageTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_domain.InstallScriptTests))
 
 # Broken until plsql parser (yapps) is finished.
 #tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.rollback.tc_parser.SqlParserTests))

@@ -4,6 +4,7 @@ from test.package.gui.util import refresh_gui, display, Position
 from test.framework import TestCase
 from package.ui.filetree import FileTree
 from package.domain.file import File, InstallScript
+from package.domain.pack import Package
 
 class FileTreeTests(TestCase):
     def setUp(self):
@@ -18,8 +19,10 @@ class FileTreeTests(TestCase):
         self.inst1.content.append(self.f2)
         self.inst1.content.append(self.f3)
 
+        self.model = Package()
+
         self.data = [self.inst1, self.inst2, self.inst3]
-        self.ft = FileTree(scripts=[self.inst1, self.inst2, self.inst3])
+        self.ft = FileTree(model=self.model, scripts=[self.inst1, self.inst2, self.inst3])
         display(self.ft)
 
     def tearDown(self):
@@ -54,9 +57,8 @@ class FileTreeTests(TestCase):
 
 
     def testDragDataBefore(self):
-        """ Given I dragged a file before another script result should match expected"""
-        expected = [InstallScript(self.inst1.name, content=[self.f2, self.f3]),
-                    InstallScript('new script', content=[self.f1]),
+        """ Given I dragged a file before another script it should not be moved"""
+        expected = [InstallScript(self.inst1.name, content=[self.f1, self.f2, self.f3]),
                     InstallScript(self.inst2.name),
                     InstallScript(self.inst3.name)]
 
@@ -66,6 +68,14 @@ class FileTreeTests(TestCase):
 
         self.should_match_expected_data(expected)
 
+    def _testDataModel(self):
+        """ When I add data to filetree it should be added to model"""
+        #XXX: This logic should be on filetree ?
+        self.given_i_have_empty_filetree()
+
+        self.when_i_add_a_script()
+
+        self.then_it_should_add_script_to_model()
     #
     # Given clauses
     #
@@ -74,8 +84,6 @@ class FileTreeTests(TestCase):
         tree = self.ft.fileTree
         treeview = tree.get_treeview()
 
-        # Need to expand parent row in order to select.
-        #treeview.expand_row(0, True)
         tree.expand(source)
 
         display(self.ft)
@@ -98,13 +106,13 @@ class FileTreeTests(TestCase):
         treeview.get_dest_row_at_pos = mock.Mock()
         treeview.get_dest_row_at_pos.return_value = ((1,), position)
 
-        # Remove dragged row manually since drag handler will not call drag_data_delete
-        tree.remove(item)
-
         x, y = 0, 0
-        self.ft._on_fileTree__drag_data_received(treeview, context, x, y, selection, None, 0L)
+        moved = self.ft._on_fileTree__drag_data_received(treeview, context, x, y, selection, None, 0L)
 
-        #treeview.expand_row(1, True)
+        if moved:
+            # Remove dragged row manually since drag handler will not call drag_data_delete
+            tree.remove(item)
+
         tree.expand(destination)
         display(self.ft)
 
@@ -124,27 +132,6 @@ class FileTreeTests(TestCase):
         self.assertEquals(expected[0].content, self.loaded_data[0].content)
         self.assertEquals(expected[1].content, self.loaded_data[1].content)
         self.assertEquals(expected[2].content, self.loaded_data[2].content)
-
-#
-# Helper classes and methods
-#
-
-#class Position(enum):
-#    BEFORE = gtk.TREE_VIEW_DROP_BEFORE
-#    INTO = gtk.TREE_VIEW_DROP_INTO_OR_BEFORE
-#    AFTER = gtk.TREE_VIEW_DROP_AFTER
-#
-#
-#def display(widget):
-#        widget.show_all()
-#        refresh_gui()
-#        widget.hide()
-#        refresh_gui(0)
-#
-#def refresh_gui(delay=SLEEP_TIME):
-#    while gtk.events_pending():
-#        gtk.main_iteration_do(block=False)
-#    time.sleep(delay)
 
 if __name__ == '__main__':
     from sys import path as pythonpath

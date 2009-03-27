@@ -1,3 +1,32 @@
+2009-03-26  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test.py:
+	* test/package/tc_domain.py:
+		Added test cases for InstallScripts.
+	* lib/yaml:
+	* package/config.py:
+		Added YAML library to work with config files.
+	* package/domain/file.py:
+		Implemented logic for writing scripts.
+	* package/domain/pack.py:
+		Added property to access package path.
+	* package/glade/app2.glade:
+		Included ProgressBar to display current progress of
+		package creation.
+	* package/ui/listslave.py
+	* package/glade/simpleslave.glade:
+		Simple wizard step to use with slaves.
+	* package/ui/editor.py:
+		Changed to accept InstallScript and File objects.
+	* test/package/gui/tc_filetree.py:
+	* package/ui/filetree.py:
+		Now user is only allowed to move files between existing
+		InstallScripts.
+	* package/ui/wizard.py:
+	* package/ui/gui.py:
+		Wizard changed to receive a list of steps to calculate wizard
+		progress.
+
 2009-03-25  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* package/config.py:

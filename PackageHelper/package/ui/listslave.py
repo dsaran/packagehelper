@@ -4,7 +4,6 @@ import logging
 
 from kiwi.ui.delegates import GladeSlaveDelegate
 from kiwi.ui.objectlist import Column
-from kiwi.ui.wizard import WizardStep
 
 from package.processor import PackageProcessor
 from package.domain.tag import Tag
@@ -12,6 +11,7 @@ from package.domain.repository import Repository
 from package.domain.defect import Defect, Requirement
 from package.util.format import list2str
 
+from package.ui.wizard import WizardStep
 from package.ui.filetree import FileTree
 from package.ui.filechooser import FileChooser
 from package.ui.editor import Editor
@@ -35,6 +35,15 @@ class BaseWizardStep(WizardStep, GladeSlaveDelegate):
     def has_next_step(self):
         return self.next != None
 
+
+class SimpleStepHolder(BaseWizardStep):
+
+    gladefile = "simpleslave"
+
+    def __init__(self, previous=None, next=None, header=None):
+        BaseWizardStep.__init__(self, previous=previous, next=next, header=header)
+
+
 class FileListSlave(GladeSlaveDelegate):
 
     widgets=["filelist"]
@@ -44,20 +53,19 @@ class FileListSlave(GladeSlaveDelegate):
     def __init__(self, model=None, statusbar=None):
         GladeSlaveDelegate.__init__(self, gladefile=self.gladefile)
 
-        self.model = model or self
-        #self.model.filelist = self.filelist
+        self.model = model
 
         filecolumns = [Column('path', data_type=str, title="Arquivo", expand=True, searchable=True)]
         self.filelist.set_columns(filecolumns)
  
-        self.filelist.add_list(self.model.get_files())
+        #self.filelist.add_list(self.model.get_files())
 
     def on_filelist__row_activated(self, treeview, path):
         Editor(path)
 
     def add_list(self, list):
+        log.debug("Adding list %s" % str(list))
         self.filelist.add_list(list)
-        #self.model.files = list
 
     def get_data(self):
         return self.filelist[:]
@@ -188,13 +196,10 @@ class ManageFilesStep(BaseWizardStep):
 
         self.model = model or self
 
-        self.filetree = FileTree(model=self, statusbar=statusbar)
+        self.filetree = FileTree(model=self.model, statusbar=statusbar)
         self.filelist = FileListSlave(model=self.model)
         self.attach_slave('filelist_holder', self.filelist)
         self.attach_slave('scriptlist_holder', self.filetree)
-        ## Creates a list of checked out files
-        #filecolumns = [Column('path', data_type=str, title="Arquivo", expand=True)]
-        #self.filelist.set_columns(filecolumns)
 
         self.processor = PackageProcessor(self.model)
 
@@ -208,6 +213,9 @@ class ManageFilesStep(BaseWizardStep):
 
         if self.model.process:
             self._run_process()
+
+    def post_end(self):
+        self.filetree._update_model()
 
     def _run_checkout(self):
         #XXX: Make it asynchronous
@@ -344,22 +352,30 @@ class ReleaseNotesStep(BaseWizardStep):
             self.requirementlist.remove(selected)
 
 
-class ShowPackageStep(BaseWizardStep):
+class ShowPackageStep(SimpleStepHolder):
 
     def __init__(self, model=None, previous=None, header=None, statusbar=None):
-        self.statusbar = statusbar
-        self.model = model or self
-        self.filelist = FileListSlave(model=model, statusbar=statusbar)
-        self.gladefile = self.filelist.gladefile
+        SimpleStepHolder.__init__(self, previous=previous, header=header)
 
-        BaseWizardStep.__init__(self, previous=previous, header=header)
+        self.filelist_slave = FileListSlave(model=model)
+
+        self.attach_slave("main_holder", self.filelist_slave)
+
+        self.statusbar = statusbar
+        self.model = model
+        #self.filelist_slave = FileListSlave(model=model, statusbar=statusbar)
+        #self.gladefile = self.filelist_slave.gladefile
+        #self.filelist = self.filelist_slave.filelist
+        #FileListSlave.__init__(self, model=self.model, statusbar=statusbar)
+        #BaseWizardStep.__init__(self, previous=previous, header=header)
  
         self._initialized = False
 
     def post_init(self):
-        print "Post init called"
         for script in self.model.scripts:
-            script.created()
+            log.debug("Adding script '%s'" % script)
+            script.create(self.model.full_path)
+        self.filelist_slave.add_list(self.model.scripts)
         self._initialized = True
 
 

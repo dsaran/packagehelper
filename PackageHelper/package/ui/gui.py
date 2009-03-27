@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: gui.py,v 1.4 2009-03-26 02:31:43 daniel Exp $
+# Version: $Id: gui.py,v 1.5 2009-03-27 02:31:33 daniel Exp $
 
 import logging
 import gtk
@@ -20,7 +20,6 @@ from package.ui.editor import Editor
 from package.ui.filechooser import FileChooser
 from package.ui.config import ConfigEditor
 from package.ui.listslave import FileListSlave, MainDataStep, ManageFilesStep, ReleaseNotesStep, ShowPackageStep
-from package.ui.filetree import FileTree
 from package.config import Config 
 from package.releasenotes import RNGenerator
 from package.sqlrunner import run_scripts
@@ -98,7 +97,14 @@ class PackageProcessorGUI(Delegate):
         self.first_step.next = self.manage_files_step
         self.manage_files_step.next = self.displayscripts_step
         self.displayscripts_step.next = self.releasenotes_step
-        self.wizard = Wizard("Package Generation Wizard", self.first_step)
+
+        self.steps = []
+        self.steps.append(self.first_step)
+        self.steps.append(self.manage_files_step)
+        self.steps.append(self.displayscripts_step)
+        self.steps.append(self.releasenotes_step)
+
+        self.wizard = Wizard("Package Generation Wizard", steps=self.steps, progressbar=self.progressbar)
         self.wizard.finish = self.finish
         self.wizard.cancel = self.quit
 
