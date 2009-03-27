@@ -26,13 +26,15 @@ class FileTree(GladeSlaveDelegate):
     def __init__(self, model=None, scripts=None, statusbar=None):
         GladeSlaveDelegate.__init__(self, gladefile=self.gladefile)
 
-        self.model = model or self
-        self.model.scripts = self.fileTree
+        assert model, "Model should not be None"
+        self.model = model
 
         self.statusbar = statusbar
 
         self.fileTree.set_columns([Column('name', data_type=str, searchable=True, 
                                    expand=True)])
+
+        #XXX: This argument is not necessary anymore since we should use model data to fill list
         if scripts:
             self._set_message("")
             self._fill(scripts)
@@ -101,18 +103,33 @@ class FileTree(GladeSlaveDelegate):
             can_be_root = self._is_script(data_object)
 
             if (position == gtk.TREE_VIEW_DROP_BEFORE):
+
+                depth = self.fileTree.get_model().iter_depth(iter)
+                if depth == 0:
+                    self._set_message("O arquivo deve ser movido para um script de instalacao")
+                    return False
                 model.insert_before(None, iter, [data])
+
             elif (position == gtk.TREE_VIEW_DROP_INTO_OR_BEFORE
                  or position == gtk.TREE_VIEW_DROP_INTO_OR_AFTER) \
                  and can_be_root:
                 self.fileTree.append(parent, data)
             else:
+
+                depth = self.fileTree.get_model().iter_depth(iter)
+                if depth == 0:
+                    self._set_message("O arquivo deve ser movido para um script de instalacao")
+                    return False
+
                 model.insert_after(None, iter, [data])
         else:
-            model.append([data])
+            self._set_message("O arquivo deve ser movido para um script de instalacao")
+            return False
         if context.action == gtk.gdk.ACTION_MOVE:
             context.finish(True, True, etime)
         log.debug('Drag data received event finished')        
+        self._update_model()
+        return True
 
     def _setup_context_menu(self):
         menu = ContextMenu()        
@@ -132,6 +149,7 @@ class FileTree(GladeSlaveDelegate):
     def _fill(self, scripts):
         for script in scripts:
             self.append(script)
+        self._update_model()
 
     def append(self, data, parent=None):
         if self._is_script(data):
@@ -140,7 +158,6 @@ class FileTree(GladeSlaveDelegate):
                 self.append(c, data)
             # Don't know if it is necessary yet
             # Maybe if we need to reconstruct the files after moving
-            #del data.content[:]
         else:
             self.fileTree.append(parent, data)
 
@@ -156,9 +173,7 @@ class FileTree(GladeSlaveDelegate):
             self.statusbar.push(0, message)
 
     def get_data(self):
-        """ Returns tree data into a list of scripts.
-            If a root element is not L{InstallScript} a new_name
-            script will be created and the element added to it.
+        """ Returns tree data into a list of L{InstallScript}.
             @return list of L{InstallScript}
         """
         # Cannot use kiwi get_descendants because it does not respect
@@ -168,14 +183,19 @@ class FileTree(GladeSlaveDelegate):
         scripts = []
         for root in root_nodes:
             script = model.get_value(root, 0)
-            if self._is_script(script):
-                script.content = [model.get_value(model.iter_nth_child(root, i), 0) for i in range(model.iter_n_children(root))]
-            else:
-                file = script
-                script = InstallScript('new script', content=[file])
+            assert self._is_script(script), "Only InstallScript instances should be root nodes"
+            script.content = [model.get_value(model.iter_nth_child(root, i), 0) for i in range(model.iter_n_children(root))]
+
             scripts.append(script)
 
         return scripts
+
+    def _update_model(self):
+        # This is not optimized but since the list is often small
+        # it is ok for now
+        for item in self.model.scripts[:]:
+            self.model.scripts.remove(item)
+        self.model.scripts = self.get_data()
 
     #
     # Callbacks

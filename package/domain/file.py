@@ -1,9 +1,10 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.7 2009-03-26 02:31:43 daniel Exp $
+# Version: $Id: file.py,v 1.8 2009-03-27 02:31:33 daniel Exp $
 
 from os import sep
 from path import path as Path
+from package.util.format import ENCODING
 from package.domain.database import Database
 import logging
 
@@ -148,7 +149,8 @@ class File(object):
         return value
 
     def remove(self):
-        self.path.remove()
+        if self.path and self.path.exists():
+            self.path.remove()
 
 class InstallScript(object):
     """ Represents a install script used to invoke package's sql files."""
@@ -159,6 +161,8 @@ class InstallScript(object):
     description = None
     """Content of script ([File, ..])"""
     content = None
+    """Full path of script"""
+    path = None
 
     def __init__(self, name=None, content=None, desc=None):
         """ Initialize the install script
@@ -185,14 +189,54 @@ class InstallScript(object):
 
     __repr__ = __str__
 
-    def create(self):
-        """ Write Install Script to filesystem.
-        """
-        raise NotImplementedError("Create method not implemented.") 
-
     def remove(self):
         """ Remove script from filesystem if it was already written.
         """
         if self.path:
             self.path.remove()
  
+    def create(self, base_path):
+        """ Generate script data and write Install Script to filesystem.
+            @param base_path Directory where the file will be created.
+        """
+        assert self.name, "InstallScript must have a name"
+
+        init_script_data = []
+        script_data = []
+        script_content = []
+        final_script_data = []
+
+        logfile_name = self.name.replace('.sql', '.log')
+
+        for file in self.content:
+            init_script_data += file.getInitScript()
+            script_data += file.getScript()
+            final_script_data += file.getFinalScript()
+
+        script_content.append('SPOOL %s' % logfile_name)
+        script_content += init_script_data
+        script_content += script_data
+        script_content += final_script_data
+        script_content.append('SPOOL OFF')
+
+        self._write_script(base_path, script_content)
+
+    def _write_script(self, base_path, data):
+        """ Writes script data to filesystem.
+        """
+        log.debug("Writing file '%s'" % self.name)
+        self.base_path = base_path.abspath()
+        script_file = self.base_path/self.name
+
+        try:
+            if script_file.exists():
+                log.debug("File with same name exists, moving it")
+                script_file.move(script_file + '.bak')
+
+            script_file.touch()
+            self.path = script_file
+            self.path.write_lines(data, encoding=ENCODING)
+        except Exception:
+            log.error("Error writing script (%s)" % script_file, exc_info=1)
+            raise
+

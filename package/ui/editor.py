@@ -1,4 +1,4 @@
-# Version: $Id: editor.py,v 1.2 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id: editor.py,v 1.3 2009-03-27 02:31:33 daniel Exp $
 
 import logging
 from kiwi.ui.delegates import Delegate
@@ -16,7 +16,6 @@ class Editor(Delegate):
     _changed = None
     _file = None
 
-    @takes("Editor", "File")
     def __init__(self, file):
         Delegate.__init__(self, delete_handler=self.quit_if_last)
 

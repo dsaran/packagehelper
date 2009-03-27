@@ -1,4 +1,4 @@
-# Version: $Id: config.py,v 1.5 2009-03-26 02:31:43 daniel Exp $
+# Version: $Id: config.py,v 1.6 2009-03-27 02:31:33 daniel Exp $
 
 import os
 import logging
@@ -107,7 +107,7 @@ class Config:
             try:
                 log.info("Loading file " + config_file)
                 config_content = config_file.text()
-                from yaml import yaml
+                import yaml
                 config_data = yaml.load(config_content)
             except Exception:
                 log.error("Error loading configuration.", exc_info=1)
@@ -117,7 +117,7 @@ class Config:
     
     def _save_config(self, config):
         log.info("Saving configuration...")
-        from yaml import yaml
+        import yaml
         config_file = Path(self.CONFIG_FILE)
         try:
             config_content = yaml.dump(config)
@@ -144,7 +144,7 @@ class Repositories:
             try:
                 data = file.text()
                 if len(data) > 0:
-                    from yaml import yaml
+                    import yaml
                     repos = yaml.load(data)
             except Exception:
                 log.error("Error loading saved repository data.")
@@ -157,7 +157,7 @@ class Repositories:
         log.info("Saving repository information")
         config = Config()
         file = Path(self.REPOSITORY_FILE)
-        from yaml import yaml
+        import yaml
         dump = yaml.dump(repos)
         file.write_text(dump)
 

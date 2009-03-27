@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: pack.py,v 1.2 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id: pack.py,v 1.3 2009-03-27 02:31:33 daniel Exp $
 
 from os import sep
 from typecheck import *
@@ -144,7 +144,8 @@ class Package(object):
 
     scripts = property(getscripts, setscripts, doc="Generated scripts")
     name = property(get_name, set_name, doc="Package name")
-    path = property(getpath, setpath, doc="Package path")
+    path = property(getpath, setpath, doc="Package parent path")
+    full_path = property(get_full_path, doc="Package path")
     repositories = property(get_repositories, set_repositories, doc="Repository list")
     tags = property(get_tags, set_tags, doc="Tag list")
     defects = property(get_defects, setdefects, doc="Package Defects")
