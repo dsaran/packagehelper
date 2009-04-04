@@ -1,3 +1,48 @@
+2009-04-01  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* lib/gazpacho/app/bugreportdialog.py:
+	* lib/gazpacho/app/uimstate.py:
+	* lib/gazpacho/app/debugwindow.py:
+	* lib/gazpacho/app/preferences.py:
+	* lib/gazpacho/gadget.py:
+	* lib/gazpacho/propertyeditor.py:
+	* lib/gazpacho/__init__.py:
+	* lib/gazpacho/model.py:
+	* lib/gazpacho/referencecontainer.py:
+	* lib/gazpacho/commandview.py:
+	* lib/gazpacho/uimanager.py:
+	* lib/gazpacho/loader/gazpacholoader.py:
+	* lib/gazpacho/i18n.py:
+	* lib/gazpacho/gapi.py:
+	* lib/gazpacho/plugins.py:
+		Added missing library to version control.
+	* resources/RN_TEMPLATE.rtf:
+	* package/releasenotes.py:
+	* package/glade/releasenotesstep.glade:
+		RN template changed to allow filling requirements.
+		Changed code to fill release notes requirements.
+		Changed data type to unicode.
+	* package/__init__.py:
+		Added version information to module.
+	* package/processor.py:
+		Removed unused imports.
+		prepare package method now clean package and create directory if it
+		doesn't exist.
+	* package/domain/defect.py:
+		Removed getters/setters not needed.
+	* package/glade/app2.glade:
+	* package/ui/gui.py:
+		Added about information.
+		Cleanup.
+	* package/util/runtime.py:
+	* package/config.py:
+		Runtime information moved to module runtime.
+	* package/ui/listslave.py:
+		Added some feedback messages using main statusbar.
+	* test/parser/tc_plsql.py:
+	* parser/plsql.g:
+		Added grammar for views (broken)
+
 2009-03-26  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* test.py:

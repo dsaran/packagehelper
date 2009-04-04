@@ -1,9 +1,8 @@
-# Version: $Id: config.py,v 1.6 2009-03-27 02:31:33 daniel Exp $
+# Version: $Id: config.py,v 1.7 2009-04-04 00:16:18 daniel Exp $
 
-import os
 import logging
-from sys import argv
 from path import path as Path
+from package.util.runtime import WORKING_DIR
 
 log = logging.getLogger('Config')
 
@@ -16,8 +15,7 @@ class Config:
 
     def __init__(self, load=False):
         log.debug("Initializing config...")
-        self.WORKING_DIR     = Path(os.environ['PKG_BASEDIR'])
-        self.DATA_DIR        = self.WORKING_DIR.joinpath("data").abspath()
+        self.DATA_DIR        = WORKING_DIR.joinpath("data").abspath()
         if not self.DATA_DIR.exists():
             log.debug("Creating data directory...")
             self.DATA_DIR.mkdir()
@@ -128,8 +126,7 @@ class Config:
 
 class Repositories:
     def __init__(self):
-        self.WORKING_DIR     = Path(os.environ['PKG_BASEDIR'])
-        self.DATA_DIR        = self.WORKING_DIR.joinpath("data").abspath()
+        self.DATA_DIR        = WORKING_DIR.joinpath("data").abspath()
         if not self.DATA_DIR.exists():
             log.debug("Creating data directory...")
             self.DATA_DIR.mkdir()
