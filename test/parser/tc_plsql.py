@@ -315,6 +315,36 @@ class PlSqlParserTests(TestCase):
 
         self.should_be_parsed_correctly(expected)
 
+    def testView(self):
+        view = """ CREATE MATERIALIZED VIEW PAY_RECHARGE_VALUE_VIEW
+        TABLESPACE MSCARE_MAIN_DATA
+        BUILD IMMEDIATE
+        REFRESH FORCE ON COMMIT
+        AS 
+        SELECT P1.mix_code, P1.channel_code, P1.subchannel_code, P1.media_code,
+               P3.description, P3.full_value, G2.telco, P1.start_date, P1.end_date, P1.FL_ENABLE
+                 FROM PAY_RECHARGE_VALUE P1,
+                      PAY_SUBCHANNEL_CODE P2,
+                      PAY_RECHARGE_MIX P3,
+                      ACC_PROFILE P4,
+                      GER_CONFIG_AREA_LIST G1,
+                      GER_AREA_CODE G2
+                  WHERE P1.channel_code = P2.channel_code
+                    AND P1.subchannel_code = P2.subchannel_code
+                    AND P1.media_code = P2.media_code
+                    AND P1.mix_code = P3.mix_code
+                    AND P1.profile = P4.code
+                    AND P4.config_area = G1.config_area
+                    AND G1.area = G2.area_code
+                    AND P2.code = 2
+                  GROUP BY P1.mix_code, P1.channel_code, P1.subchannel_code, P1.media_code,
+                    P3.description, P3.full_value, G2.telco, P1.start_date, P1.end_date, P1.FL_ENABLE;
+                    """
+        result = plsql.parse('source_declaration', view)
+
+        self.assertTrue(result, "View not parsed")
+
+
     #############
     ## Behavior #
     #############

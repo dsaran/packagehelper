@@ -2,6 +2,7 @@
 
 import logging
 
+import kiwi
 from kiwi.ui.delegates import GladeSlaveDelegate
 from kiwi.ui.objectlist import Column
 
@@ -16,6 +17,8 @@ from package.ui.filetree import FileTree
 from package.ui.filechooser import FileChooser
 from package.ui.editor import Editor
 
+from package.releasenotes import RNGenerator
+
 from package.config import Config, Repositories
 
 log = logging.Logger("Application")
@@ -24,10 +27,11 @@ class BaseWizardStep(WizardStep, GladeSlaveDelegate):
     """A wizard step base class definition"""
     gladefile = None
 
-    def __init__(self, previous=None, next=None, header=None):
+    def __init__(self, previous=None, next=None, header=None, statusbar=None):
         WizardStep.__init__(self, previous, header)
         GladeSlaveDelegate.__init__(self, gladefile=self.gladefile)
         self.next = next
+        self.statusbar = statusbar
 
     def next_step(self):
         return self.next
@@ -35,6 +39,12 @@ class BaseWizardStep(WizardStep, GladeSlaveDelegate):
     def has_next_step(self):
         return self.next != None
 
+    def reset_message(self):
+        self.set_message("")
+
+    def set_message(self, message):
+        if self.statusbar:
+            self.statusbar.push(0, message)
 
 class SimpleStepHolder(BaseWizardStep):
 
@@ -108,7 +118,8 @@ class MainDataStep(BaseWizardStep):
 
     def __init__(self, model=None, previous=None, header=None, logger=None,
                  statusbar=None):
-        BaseWizardStep.__init__(self, previous=previous, header=header)
+        BaseWizardStep.__init__(self, previous=previous, header=header,
+                                statusbar=statusbar)
 
         if logger:
             global log
@@ -136,9 +147,14 @@ class MainDataStep(BaseWizardStep):
 
 
     def validate_step(self):
-        is_ok = self.model.path and self.model.path.strip()
-        #XXX: Display feedback to user.
-        return is_ok
+        if not self.model.name:
+            self.set_message("Campo 'Pacote' deve ser preenchido")
+            return False
+        if not self.model.path or not self.model.path.strip():
+            self.set_message("Campo 'Caminho' deve ser preenchido")
+            return False
+
+        return True
 
     def on_add_tag_button__clicked(self, *args):
         newTag = Tag("TAG_NAME")
@@ -188,7 +204,8 @@ class ManageFilesStep(BaseWizardStep):
 
     def __init__(self, model=None, previous=None, header=None,
                  statusbar=None, logger=None):
-        BaseWizardStep.__init__(self, previous=previous, header=header)
+        BaseWizardStep.__init__(self, previous=previous, header=header,
+                                statusbar=statusbar)
 
         if logger:
             global log
@@ -204,7 +221,9 @@ class ManageFilesStep(BaseWizardStep):
         self.processor = PackageProcessor(self.model)
 
     def post_init(self):
-        self.processor.clean()
+        self.reset_message()
+
+        self.processor.prepare_package()
         for item in self.filetree.fileTree[:]:
             self.filetree.fileTree.remove(item)
 
@@ -290,7 +309,8 @@ class ReleaseNotesStep(BaseWizardStep):
 
     def __init__(self, model=None, previous=None, header=None, statusbar=None):
         self.model = model or self
-        BaseWizardStep.__init__(self, previous=previous, header=header)
+        BaseWizardStep.__init__(self, previous=previous, header=header,
+                                statusbar=statusbar)
 
         # Creates a list of defects
         defectcolumns = [Column('id_ptin', data_type=str, title= "ID PTIn", editable=True),
@@ -312,7 +332,11 @@ class ReleaseNotesStep(BaseWizardStep):
         description = self.defect_desc_entry.read()
 
         if not id_ptin and not id_vivo:
-            #XXX: Display message to user
+            self.set_message("Campos ID PTIN ou ID VIVO devem ser preenchidos")
+            return
+
+        if not description or description == kiwi.ValueUnset or not description.strip():
+            self.set_message("Campo 'Descrição' deve ser preenchido")
             return
 
         defect = Defect()
@@ -335,7 +359,11 @@ class ReleaseNotesStep(BaseWizardStep):
         req_id = self.req_id_entry.get_text()
         req_desc = self.req_desc_entry.read()
         if not req_id:
-            #XXX: Display message to user
+            self.set_message("Campo 'ID Pedido' deve ser preenchido")
+            return
+
+        if not req_desc or req_desc == kiwi.ValueUnset or not req_desc.strip():
+            self.set_message("Campo 'Descrição' deve ser preenchido")
             return
 
         req = Requirement(req_id, req_desc)
@@ -351,6 +379,16 @@ class ReleaseNotesStep(BaseWizardStep):
             self.model.requirements.remove(selected)
             self.requirementlist.remove(selected)
 
+    def finish(self):
+        try:
+            log.info("\nGerando RN...")
+            rngen = RNGenerator(self.model)
+            rngen.writeRN()
+            log.info("RN gerada com sucesso.")
+        except:
+            log.error("Erro gerando RN.", exc_info=1)
+            raise
+
 
 class ShowPackageStep(SimpleStepHolder):
 
@@ -358,20 +396,13 @@ class ShowPackageStep(SimpleStepHolder):
         SimpleStepHolder.__init__(self, previous=previous, header=header)
 
         self.filelist_slave = FileListSlave(model=model)
-
         self.attach_slave("main_holder", self.filelist_slave)
 
-        self.statusbar = statusbar
         self.model = model
-        #self.filelist_slave = FileListSlave(model=model, statusbar=statusbar)
-        #self.gladefile = self.filelist_slave.gladefile
-        #self.filelist = self.filelist_slave.filelist
-        #FileListSlave.__init__(self, model=self.model, statusbar=statusbar)
-        #BaseWizardStep.__init__(self, previous=previous, header=header)
- 
         self._initialized = False
 
     def post_init(self):
+        self.reset_message()
         for script in self.model.scripts:
             log.debug("Adding script '%s'" % script)
             script.create(self.model.full_path)

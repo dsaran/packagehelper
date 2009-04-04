@@ -1,5 +1,5 @@
 #!/usr/bin/python2.5
-# Version: $Id: run.py,v 1.3 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id: run.py,v 1.4 2009-04-04 00:16:18 daniel Exp $
 
 from os import path
 from sys import argv, path as pythonpath
@@ -13,7 +13,7 @@ guidir = path.abspath(path.join(basedir, 'package'))
 resdir = path.abspath(path.join(basedir, 'resources'))
 
 pythonpath.insert(0, libdir)
-pythonpath.insert(1, guidir)
+pythonpath.append(guidir)
 pythonpath.insert(2, resdir)
 
 # Initializing logger

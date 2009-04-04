@@ -1,14 +1,11 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.9 2009-03-26 02:31:43 daniel Exp $
+# Version: $Id: processor.py,v 1.10 2009-04-04 00:16:18 daniel Exp $
 
 import logging
-from os import environ, popen, chdir
+import os
 from path import path as Path
 from typecheck import takes
-from package.domain.repository import Repository
-from package.domain.tag import Tag
 from package.domain.pack import Package
-from package.domain.database import Database
 from package.domain.file import File, InstallScript
 from package.util.format import ENCODING
 from package.cvs import CvsError, CVS
@@ -109,8 +106,13 @@ class PackageProcessor:
 
     def prepare_package(self):
         """ Prepare environment for package.
-            Creates directory for files"""
-        os.mkdir(self.package.path)
+            Creates directory for files if it does not exist
+            or clean processed files if it exists."""
+        pkg_path = self.package.full_path
+        if not pkg_path.exists():
+            os.mkdir(pkg_path)
+        else:
+            self.clean()
 
     def process_files(self):
         """ Process previous checked out files generating the SQL scripts.
@@ -192,7 +194,7 @@ class PackageProcessor:
         xmls = self._get_files("*.xml")
         shellscripts = self._get_files("*.sh")
         basedir = self.package.get_full_path()
-        chdir(basedir)
+        os.chdir(basedir)
         otherfiles = []
 
         if len(xmls) > 0:

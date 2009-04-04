@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $Id: plsql.g,v 1.9 2009-03-21 20:57:45 daniel Exp $ 
+# Version: $Id: plsql.g,v 1.10 2009-04-04 00:16:18 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):
@@ -274,6 +274,7 @@ parser plsql:
         | 'PROCEDURE' {{ result = 'PROCEDURE' }}
         | 'PACKAGE'   {{ result = 'PACKAGE' }}
           ('BODY'     {{ result = 'PACKAGE BODY' }} )?
+        | ('MATERIALIZED' 'VIEW'   {{ result = 'VIEW' }})
         ) {{ return result }}
 
     rule source_declaration: (

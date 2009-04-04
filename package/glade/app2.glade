@@ -5,6 +5,13 @@
         <child>
             <widget class="GtkActionGroup" id="DefaultActions">
                 <child>
+                    <widget class="GtkAction" id="about_action">
+                        <property name="name">about_action</property>
+                        <property name="label" translatable="yes">_Sobre</property>
+                        <property name="stock_id">gtk-about</property>
+                    </widget>
+                </child>
+                <child>
                     <widget class="GtkAction" id="checkout">
                         <property name="name">checkout</property>
                         <property name="label" translatable="yes">Checkout</property>
@@ -14,6 +21,12 @@
                     <widget class="GtkAction" id="ferramentas">
                         <property name="name">ferramentas</property>
                         <property name="label" translatable="yes">Ferramentas</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="help">
+                        <property name="name">help</property>
+                        <property name="label" translatable="yes">Ajuda</property>
                     </widget>
                 </child>
                 <child>
@@ -59,8 +72,83 @@
             </widget>
         </child>
         <ui id="initial-state"><![CDATA[<ui>
-<menubar action="menubar1" name="menubar1"><menu action="ferramentas" name="ferramentas"><menuitem action="preferences_action" name="preferences_action"/></menu></menubar>
+<menubar action="menubar1" name="menubar1"><menu action="ferramentas" name="ferramentas"><menuitem action="preferences_action" name="preferences_action"/></menu>
+<menu action="help" name="help"><menuitem action="about_action" name="about_action"/></menu></menubar>
 </ui>]]></ui>
+    </widget>
+    <widget class="GtkDialog" id="about_dialog">
+        <property name="default_height">260</property>
+        <property name="default_width">320</property>
+        <property name="type_hint">normal</property>
+        <child internal-child="vbox">
+            <widget class="GtkVBox" id="dialog1-vbox">
+                <property name="border_width">2</property>
+                <property name="visible">True</property>
+                <child>
+                    <widget class="GtkVBox" id="vbox1">
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkImage" id="image1">
+                                <property name="icon_size">6</property>
+                                <property name="stock">gtk-execute</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="fill">False</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="ProxyLabel" id="about_label">
+                                <property name="can_focus">True</property>
+                                <property name="label" context="yes" translatable="yes">&lt;b&gt;Package Helper&lt;/b&gt;</property>
+                                <property name="model_attribute">about_label</property>
+                                <property name="selectable">True</property>
+                                <property name="visible">True</property>
+                            </widget>
+                            <packing>
+                                <property name="position">1</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="HyperLink" id="about_url">
+                                <property name="border_width">2</property>
+                                <property name="text" context="yes" translatable="yes">http://pegasus.ptinovacao.com.br/devwiki/PackageHelper</property>
+                                <property name="visible">True</property>
+                                <property name="visible_window">True</property>
+                            </widget>
+                            <packing>
+                                <property name="expand">False</property>
+                                <property name="position">2</property>
+                            </packing>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="position">2</property>
+                    </packing>
+                </child>
+                <child internal-child="action_area">
+                    <widget class="GtkHButtonBox" id="dialog1-action_area">
+                        <property name="border_width">5</property>
+                        <property name="layout_style">end</property>
+                        <property name="spacing">6</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="ProxyButton" id="close_about_button">
+                                <property name="data_type">str</property>
+                                <property name="is_focus">True</property>
+                                <property name="label" context="yes" translatable="yes">Fechar</property>
+                                <property name="model_attribute">close_about_button</property>
+                                <property name="visible">True</property>
+                            </widget>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="pack_type">end</property>
+                    </packing>
+                </child>
+            </widget>
+        </child>
     </widget>
     <widget class="GtkWindow" id="app2">
         <property name="border_width">2</property>

@@ -1,31 +1,34 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: gui.py,v 1.5 2009-03-27 02:31:33 daniel Exp $
+# Version: $Id: gui.py,v 1.6 2009-04-04 00:16:18 daniel Exp $
+
+#
+#  ______________
+# | Package Data |
+# |--------------|
+# |Name          |
+# |Path          |
+# |Tags          |
+# |Repositories  |
+# |______________|
+#
+# |Package Data| -> mkdir, clean, checkout, process sql
+#
+
 
 import logging
 import gtk
 
-from pickle import dump, loads
-
 from kiwi.ui.delegates import Delegate
-from kiwi.ui.objectlist import Column
-#from kiwi.ui.wizard import PluggableWizard
 from package.ui.wizard import Wizard
 
-from package.domain.tag import Tag
-from package.domain.repository import Repository
 from package.domain.pack import Package
-from package.domain.defect import Defect
-from package.ui.editor import Editor
 from package.ui.filechooser import FileChooser
 from package.ui.config import ConfigEditor
-from package.ui.listslave import FileListSlave, MainDataStep, ManageFilesStep, ReleaseNotesStep, ShowPackageStep
-from package.config import Config 
-from package.releasenotes import RNGenerator
-from package.sqlrunner import run_scripts
+from package.ui.listslave import MainDataStep, ManageFilesStep, ReleaseNotesStep, ShowPackageStep
+
 from package.processor import PackageProcessor
 
-from path import path as Path
 
 _log = logging.getLogger('PackageProcessorGUI')
 
@@ -105,7 +108,7 @@ class PackageProcessorGUI(Delegate):
         self.steps.append(self.releasenotes_step)
 
         self.wizard = Wizard("Package Generation Wizard", steps=self.steps, progressbar=self.progressbar)
-        self.wizard.finish = self.finish
+        self.wizard.finish = self.releasenotes_step.finish
         self.wizard.cancel = self.quit
 
         self.attach_slave('wizard_holder', self.wizard)
@@ -136,71 +139,27 @@ class PackageProcessorGUI(Delegate):
             self.checkout_action.set_sensitive(valid)
             self.generate_rn_button.set_sensitive(valid)
 
-
     def _on_quit_button__clicked(self, *args):
         self.quit()
-    
-    def finish(self):
-        checkout = True
-        repos = [r for r in self.repositories[:] if r.active]
-        if not repos:
-            log.warn("Nenhum repositório selecionado.")
-            checkout = False
-
-        if checkout and not self.tags[:]:
-            log.warn("Nenhuma tag selecionada.")
-            checkout = False
-
-        if checkout:
-            self._run_checkout()
-
-        log.info("\nGerando scripts...")
-
-        self._run_process()
-
-        log.info("Fim da geração dos scripts.")
 
     def on_preferences_action__activate(self, *args):
         ConfigEditor()
 
-    def _on_process_action__activate(self, *args):
-        self._run_process()
+    def on_about_action__activate(self, action):
+        from package import __version__
+        name = "Package Helper %s" % __version__
+        markup = "<span weight='bold' size='xx-large'>%s</span>" % name
+        self.about_label.set_markup(markup)
+        self.about_dialog.show_all()
 
-    def _on_checkout_action__activate(self, *args):
-        self._run_checkout()
+    def on_close_about_button__clicked(self, button):
+        self.about_dialog.hide()
 
     def _on_buildfile_button__clicked(self, *args):
         FileChooser(self.buildfile_entry)
 
     def _on_distfolder_button__clicked(self, *args):
         FileChooser(self.distfolder_entry, folder_mode=True)
-
-    def _on_execute_button__clicked(self, *args):
-        if len(self.scriptlist) == 0:
-            log.info("Não há scripts para executar.")
-            return
-        try:
-            self._set_running(True)
-            run_scripts(self.scriptlist[:])
-            self._write_logger("Scripts executados. Para mais informações veja os logs gerados.")
-        except Exception, msg:
-            log.error("\nErro executando scripts:\n>>" + str(msg), exc_info=1)
-            raise
-        finally:
-            self._set_running(False)
-
-
-    def _on_generate_rn_button__clicked(self, *args):
-        try:
-            log.info("\nGerando RN...")
-            rngen = RNGenerator(self.package)
-            rngen.writeRN()
-            log.info("RN gerada com sucesso.")
-        except:
-            log.error("Erro gerando RN.", exc_info=1)
-            raise
-
-    
 
     def quit(self, *args):
         log.info("\nSaindo...")

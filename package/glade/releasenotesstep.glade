@@ -107,7 +107,7 @@
                                         </child>
                                         <child>
                                             <widget class="ProxyEntry" id="defect_ptin_entry">
-                                                <property name="data_type">str</property>
+                                                <property name="data_type">unicode</property>
                                                 <property name="model_attribute">defect_ptin_entry</property>
                                                 <property name="visible">True</property>
                                             </widget>
@@ -119,7 +119,7 @@
                                         </child>
                                         <child>
                                             <widget class="ProxyEntry" id="defect_vivo_entry">
-                                                <property name="data_type">str</property>
+                                                <property name="data_type">unicode</property>
                                                 <property name="model_attribute">defect_vivo_entry</property>
                                                 <property name="visible">True</property>
                                             </widget>
@@ -254,6 +254,7 @@
                                         </child>
                                         <child>
                                             <widget class="ProxyEntry" id="req_id_entry">
+                                                <property name="data_type">unicode</property>
                                                 <property name="is_focus">True</property>
                                                 <property name="model_attribute">req_id_entry</property>
                                                 <property name="visible">True</property>
@@ -266,7 +267,7 @@
                                         </child>
                                         <child>
                                             <widget class="ProxyTextView" id="req_desc_entry">
-                                                <property name="data_type">str</property>
+                                                <property name="data_type">unicode</property>
                                                 <property name="is_focus">True</property>
                                                 <property name="model_attribute">req_desc</property>
                                                 <property name="visible">True</property>

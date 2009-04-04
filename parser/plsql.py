@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $Id: plsql.py,v 1.11 2009-03-27 02:31:33 daniel Exp $ 
+# Version: $Id: plsql.py,v 1.12 2009-04-04 00:16:18 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):
@@ -142,6 +142,8 @@ class plsqlScanner(yappsrt.Scanner):
         ("'REPLACE'", re.compile('REPLACE')),
         ("'OR'", re.compile('OR')),
         ("'CREATE'", re.compile('CREATE')),
+        ("'VIEW'", re.compile('VIEW')),
+        ("'MATERIALIZED'", re.compile('MATERIALIZED')),
         ("'BODY'", re.compile('BODY')),
         ("'PACKAGE'", re.compile('PACKAGE')),
         ("'PROCEDURE'", re.compile('PROCEDURE')),
@@ -440,25 +442,29 @@ class plsql(yappsrt.Parser):
 
     def object_type(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'object_type', [])
-        _token = self._peek("'FUNCTION'", "'PROCEDURE'", "'PACKAGE'")
+        _token = self._peek("'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'")
         if _token == "'FUNCTION'":
             self._scan("'FUNCTION'")
             result = 'FUNCTION'
         elif _token == "'PROCEDURE'":
             self._scan("'PROCEDURE'")
             result = 'PROCEDURE'
-        else: # == "'PACKAGE'"
+        elif _token == "'PACKAGE'":
             self._scan("'PACKAGE'")
             result = 'PACKAGE'
             if self._peek("'BODY'", 'ID') == "'BODY'":
                 self._scan("'BODY'")
                 result = 'PACKAGE BODY'
+        else: # == "'MATERIALIZED'"
+            self._scan("'MATERIALIZED'")
+            self._scan("'VIEW'")
+            result = 'VIEW'
         return result
 
     def source_declaration(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'source_declaration', [])
         self._scan("'CREATE'")
-        if self._peek("'OR'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") == "'OR'":
+        if self._peek("'OR'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'") == "'OR'":
             self._scan("'OR'")
             self._scan("'REPLACE'")
         object_type = self.object_type(_context)
@@ -479,9 +485,9 @@ class plsql(yappsrt.Parser):
         _context = self.Context(_parent, self._scanner, self._pos, 'full_source_declaration', [])
         source_declaration = self.source_declaration(_context)
         result = source_declaration
-        if self._peek("'BEGIN'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'END'") == "'BEGIN'":
+        if self._peek("'BEGIN'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'", "'END'") == "'BEGIN'":
             self._scan("'BEGIN'")
-        while self._peek("'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") != "'END'":
+        while self._peek("'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'") != "'END'":
             object_type = self.object_type(_context)
             member = Source(type=object_type)
             callable = self.callable(_context)
@@ -494,8 +500,8 @@ class plsql(yappsrt.Parser):
                 block = self.block(_context)
                 member.calls += block
             result.members.append(member)
-        if self._peek() not in ["'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'"]:
-            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(["'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'END'"]))
+        if self._peek() not in ["'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'"]:
+            raise yappsrt.SyntaxError(charpos=self._scanner.get_prev_char_pos(), context=_context, msg='Need one of ' + ', '.join(["'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'", "'END'"]))
         self._scan("'END'")
         ID = self._scan('ID')
         if self._peek('END', "'/'") == 'END':
@@ -511,9 +517,9 @@ class plsql(yappsrt.Parser):
             self._scan("'BEGIN'")
             block = self.block(_context)
             self._scan("'END'")
-            if self._peek('ID', "';'", "'WHEN'", "'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") == 'ID':
+            if self._peek('ID', "';'", "'WHEN'", "'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'") == 'ID':
                 ID = self._scan('ID')
-            if self._peek("';'", "'WHEN'", "'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") == "';'":
+            if self._peek("';'", "'WHEN'", "'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'") == "';'":
                 self._scan("';'")
             calls += block
         elif _token == "'IF'":
@@ -560,7 +566,7 @@ class plsql(yappsrt.Parser):
                 self._scan("'WHEN'")
                 ID = self._scan('ID')
                 block = self.block(_context)
-                if self._peek("'WHEN'", "'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'") != "'WHEN'": break
+                if self._peek("'WHEN'", "'END'", "'FUNCTION'", "'PROCEDURE'", "'PACKAGE'", "'MATERIALIZED'") != "'WHEN'": break
 
     def select_statement(self, _parent=None):
         _context = self.Context(_parent, self._scanner, self._pos, 'select_statement', [])
