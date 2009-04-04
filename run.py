@@ -13,7 +13,7 @@ guidir = path.abspath(path.join(basedir, 'package'))
 resdir = path.abspath(path.join(basedir, 'resources'))
 
 pythonpath.insert(0, libdir)
-pythonpath.append(guidir)
+pythonpath.insert(1, guidir)
 pythonpath.insert(2, resdir)
 
 # Initializing logger
