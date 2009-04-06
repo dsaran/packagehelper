@@ -3,6 +3,7 @@
 2009-04-06  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* Released 1.0.0 beta.
+	* Added compatibility check for pygtk (problem with progressbar).
 
 2009-04-05  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 

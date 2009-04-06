@@ -1,3 +1,4 @@
+import gtk
 from kiwi.ui.wizard import PluggableWizard as KiwiPluggableWizard
 from kiwi.ui.wizard import WizardStep as KiwiWizardStep
 
@@ -22,7 +23,8 @@ class Wizard(KiwiPluggableWizard):
             self._size = len(self.steps)
             self._update_progress(0)
             step_list = [step.header for step in self.steps]
-            self.progressbar.set_tooltip_text(" >> ".join(step_list))
+            if self.check_pygtk_version():   
+                self.progressbar.set_tooltip_text(" >> ".join(step_list))
 
     def on_next_button__clicked(self, button):
         if not self._current.validate_step():
@@ -65,6 +67,10 @@ class Wizard(KiwiPluggableWizard):
             self._current_progress += step
             self.progressbar.set_fraction(float(self._current_progress)/(self._size -1))
             self.progressbar.set_text("Passo %i de %i" % (self._current_progress+1, self._size))
+ 
+    def check_pygtk_version(self):
+        supported = gtk.pygtk_version[0] >= 2 and gtk.pygtk_version[1] >= 12
+        return supported
 
 class WizardStep(KiwiWizardStep):
     def post_end(self):
