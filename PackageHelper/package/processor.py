@@ -8,7 +8,7 @@ from typecheck import takes
 from package.domain.pack import Package
 from package.domain.file import File, InstallScript
 from package.util.format import ENCODING
-from package.cvs import CvsError, CVS
+from package.scm import ScmError, CvsProcessor
 
 log = logging.getLogger('PackageProcessor')
 
@@ -154,17 +154,18 @@ class PackageProcessor:
         for repo in repositories:
             if repo.is_active():
 
-                cvs = CVS(repo.root, repo.module)
+                #cvs = CvsProcessor(repo.root, repo.module)
+                processor = repo.processor
 
                 for tag in tags:
                     try:
-                        cvs.export(dest, tag) 
-                    except CvsError, e:
+                        processor.export(dest, tag) 
+                    except ScmError, e:
                         status.append(e.message)
 
                     try:
-                        cvs.tag(self.package.get_name(), tag.name)
-                    except CvsError, e:
+                        processor.tag(self.package.get_name(), tag.name)
+                    except ScmError, e:
                         status.append(e.message)
 
         log.info("done.")

@@ -4,7 +4,8 @@ import os
 from test  import mock
 from test.framework import TestCase
 from path import path as Path
-from package.cvs import CVS
+from package.domain.tag import Tag
+from package.scm import CvsProcessor, SubversionProcessor
 
 class CvsTest(TestCase):
 
@@ -18,7 +19,7 @@ class CvsTest(TestCase):
         self.runner = mock.Mock() 
         self.runner.run.return_value = None, None
 
-        self.cvs = CVS(self.cvsroot, self.module)
+        self.cvs = CvsProcessor(self.cvsroot, self.module)
         self.cvs.runner = self.runner
 
         self.config_mock = mock.Mock()
@@ -89,4 +90,53 @@ class CvsTest(TestCase):
         except OSError, e:
             self.fail("Impossible to get current directory (%s)" % e.strerror)
         self.assertEquals(directory, current_dir, "I am on a different directory")
+
+
+class SubversionTests(TestCase):
+
+    def setUp(self):
+        self.root = "svn://svn.host.org/repos/"
+        self.module = "test"
+        self.tag = Tag("TEST_TAG")
+        self.package_name = 'PackageName'
+
+        self.destination = Path("/tmp/test_data/")
+
+        self.runner = mock.Mock() 
+        self.runner.run.return_value = None, None
+
+        self.svn = SubversionProcessor(self.root, self.module)
+        self.svn.runner = self.runner
+
+        self.config_mock = mock.Mock()
+        self.config_mock.svn = "svnmock"
+        self.svn.get_config = lambda: self.config_mock 
+
+    def testExport(self):
+        """ Export should call export with the correct command line."""
+        self.svn.export(self.destination, self.tag)
+
+        self.assertEquals(len(self.runner.method_calls), 1) 
+ 
+        path = Path(self.root)/self.module/'tags'/self.tag.name
+
+        destination = self.destination/"TEST_TAG"
+
+        expected = "svnmock export --username NGINPackageManager --password NGINPackageManager "
+        expected += path + ' ' + destination
+        self.runner.run.assert_called_with(expected)
+
+    def testTag(self):
+        """ Subversion Tag should be called with an authorized user and a message for the tag"""
+        self.svn.tag(self.package_name, self.tag)
+
+        self.assertEquals(len(self.runner.method_calls), 1)
+
+        path_from = Path(self.root)/self.module/'tags'/self.tag.name
+        path_to = Path(self.root)/self.module/'tags'/self.package_name
+
+        expected = 'svnmock copy --username NGINPackageManager --password NGINPackageManager ' \
+                    '-m "Packaged by PackageHelper" %s/ %s/' % (path_from, path_to)
+
+        self.runner.run.assert_called_with(expected)
 

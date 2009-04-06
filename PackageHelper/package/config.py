@@ -6,10 +6,26 @@ from package.util.runtime import WORKING_DIR
 
 log = logging.getLogger('Config')
 
+class ConfigLoader:
+    def __init__(self, file):
+        self.file = file
+
+    def read_config_file(self):
+        data = None
+        if self.file.exists():
+            data = self.file.text()
+        else:
+            log.warn("Config file (%s) does not exist!" %self.file)
+        return data
+
+    def write_config_file(self, data):
+        self.file.write_text(data)
+
 class Config:
     _cvs_path = 'cvs' 
     _sqlplus_path = 'sqlplus'
     _ant_path = 'ant'
+    svn = 'svn'
 
     _environments = []
 
@@ -131,30 +147,45 @@ class Repositories:
             log.debug("Creating data directory...")
             self.DATA_DIR.mkdir()
         self.REPOSITORY_FILE = self.DATA_DIR.joinpath("repositories.xml").abspath()
+        self.loader = ConfigLoader(self.REPOSITORY_FILE)
 
     def load(self):
         repos = []
         config = Config()
-        file = Path(self.REPOSITORY_FILE)
-
-        if file.exists():
-            try:
-                data = file.text()
-                if len(data) > 0:
-                    import yaml
-                    repos = yaml.load(data)
-            except Exception:
-                log.error("Error loading saved repository data.")
-        else:
-            log.warn("Repository file does not exist!")
+        try:
+            data = self.loader.read_config_file()
+            if len(data) > 0:
+                import yaml
+                repo_map = yaml.load(data)
+                repos = [self._from_map(map) for map in repo_map]
+        except Exception:
+            log.error("Error loading saved repository data.", exc_info=1)
         return repos
 
     def save(self, repos):
-        file = None
-        log.info("Saving repository information")
-        config = Config()
-        file = Path(self.REPOSITORY_FILE)
         import yaml
-        dump = yaml.dump(repos)
-        file.write_text(dump)
+        log.info("Saving repository information")
+        file = None
+        converted_list = [self._to_map(repo) for repo in repos]
+        dump = yaml.dump(converted_list)
+        self.loader.write_config_file(dump)
+
+    def _to_map(self, repository):
+        map = {}
+        map['root'] = repository.root
+        map['module'] = repository.module
+        map['active'] = repository.active
+        map['type'] = int(repository.type)
+        return map
+
+    def _from_map(self, map):
+        from package.domain.repository import Repository, ScmType
+        root = map['root']
+        module = map['module']
+        active = bool(map['active'])
+        type = ScmType.get(map['type'])
+        repository = Repository(root, module, type, active)
+        return repository
+
+
 
