@@ -1,0 +1,23 @@
+Bugs:
+* drag and drop on filetree does not update model.
+    * now it updates when moving INTO but no before and after
+    * It is necessary to create tests for other drags
+* get_data returns data out of order
+* On secont step of wizard, if user goes back and forth processed data is wrong.
+
+Interface:
+* Help messages
+* Show feedback while processing package (now the screen freezes until it is finished)
+* Display result from CVS while it is running
+* Turn UI into a wizard
+* Display Script organization before writing to files (OK)
+* Minerva integration
+* Add a new step after the manage files step to write files to filesystem and display created scripts
+
+Parser:
+* Add support to  "insert as select"
+* Complete the grammar for select statements (using, having, order, group, etc)
+* Allow parenthesis on where clause
+* Parsing full packages broken
+
+Implementing CONFIG

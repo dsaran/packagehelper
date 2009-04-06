@@ -1,0 +1,525 @@
+=== 1.0.0b ===
+
+2009-04-06  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* Released 1.0.0 beta.
+	* Added compatibility check for pygtk (problem with progressbar).
+
+2009-04-05  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test.py:
+	* test/package/tc_domain.py:
+	* test/package/tc_processor.py:
+	* package/processor.py:
+	* package/domain/repository.py:
+	* package/ui/listslave.py:
+		Changed Repository to support more types of SCM.
+		Repository list (GUI) now has a column for SCM type to allow user to
+		choose between CVS and SVN.
+		Added test cases for subversion.
+	* package/domain/file.py:
+		Fixed script creation when script name doesn't have .sql
+		extension. In that case the spool was written to the install script
+		itself.
+	* package/config.py:
+	* test/package/tc_config.py:
+		Changed the way repositories are saved and loaded.
+		Added test cases for config saving/loading.
+	* test/package/tc_scm:
+		Renamed from tc_cvs since it now supports subversion either.
+	* package/scm.py:
+		Module renamed from cvs to scm.
+		CVS class renamed to CvsProcessor
+		New class SubversionProcessor to work with subversion repositories.
+
+2009-04-01  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* lib/gazpacho/app/bugreportdialog.py:
+	* lib/gazpacho/app/uimstate.py:
+	* lib/gazpacho/app/debugwindow.py:
+	* lib/gazpacho/app/preferences.py:
+	* lib/gazpacho/gadget.py:
+	* lib/gazpacho/propertyeditor.py:
+	* lib/gazpacho/__init__.py:
+	* lib/gazpacho/model.py:
+	* lib/gazpacho/referencecontainer.py:
+	* lib/gazpacho/commandview.py:
+	* lib/gazpacho/uimanager.py:
+	* lib/gazpacho/loader/gazpacholoader.py:
+	* lib/gazpacho/i18n.py:
+	* lib/gazpacho/gapi.py:
+	* lib/gazpacho/plugins.py:
+		Added missing library to version control.
+	* resources/RN_TEMPLATE.rtf:
+	* package/releasenotes.py:
+	* package/glade/releasenotesstep.glade:
+		RN template changed to allow filling requirements.
+		Changed code to fill release notes requirements.
+		Changed data type to unicode.
+	* package/__init__.py:
+		Added version information to module.
+	* package/processor.py:
+		Removed unused imports.
+		prepare package method now clean package and create directory if it
+		doesn't exist.
+	* package/domain/defect.py:
+		Removed getters/setters not needed.
+	* package/glade/app2.glade:
+	* package/ui/gui.py:
+		Added about information.
+		Cleanup.
+	* package/util/runtime.py:
+	* package/config.py:
+		Runtime information moved to module runtime.
+	* package/ui/listslave.py:
+		Added some feedback messages using main statusbar.
+	* test/parser/tc_plsql.py:
+	* parser/plsql.g:
+		Added grammar for views (broken)
+
+2009-03-26  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test.py:
+	* test/package/tc_domain.py:
+		Added test cases for InstallScripts.
+	* lib/yaml:
+	* package/config.py:
+		Added YAML library to work with config files.
+	* package/domain/file.py:
+		Implemented logic for writing scripts.
+	* package/domain/pack.py:
+		Added property to access package path.
+	* package/glade/app2.glade:
+		Included ProgressBar to display current progress of
+		package creation.
+	* package/ui/listslave.py
+	* package/glade/simpleslave.glade:
+		Simple wizard step to use with slaves.
+	* package/ui/editor.py:
+		Changed to accept InstallScript and File objects.
+	* test/package/gui/tc_filetree.py:
+	* package/ui/filetree.py:
+		Now user is only allowed to move files between existing
+		InstallScripts.
+	* package/ui/wizard.py:
+	* package/ui/gui.py:
+		Wizard changed to receive a list of steps to calculate wizard
+		progress.
+
+2009-03-25  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/config.py:
+		Config files changed to YAML.
+	* package/processor.py:
+		Processor now has a public method to clean previously processed
+		database.
+	* package/domain/file.py:
+		Removed getters/setters since File properties are public.
+	* package/glade/app2.glade:
+	* package/glade/filetree.glade:
+	* package/glade/maindataslave.glade:
+	* package/glade/managefilesslave.glade:
+	* package/glade/releasenotesstep.glade:
+		Added Vertical Paned Window to allow user to resize GUI components.
+		Statusbar from filetree moved to main window.
+		Small improvements in layout.
+	* package/ui/filetree.py:
+	* package/ui/gui.py:
+	* package/ui/listslave.py:
+		Changes to allow slaves to use main statusbar.
+	* package/ui/wizard.py:
+		Extended PluggableWizard allow customizations on default wizard
+		behavior.
+
+2009-03-21  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test.py: Added tests for application GUI slaves and domain objects.
+	* package/config.py:
+		Functions on config module moved to Config class.
+		Storing/loading repositories is now reponsability of config module.
+	* package/processor.py:
+		Internal methods renamed to _method_name.
+		Processing of scripts and writting it to files are now 2 separated
+		methods.
+		There is now a public method for creating package structure.
+	* package/domain/database.py:
+		Constructor arguments are not mandatory anymore.
+	* package/domain/defect.py: New class for Requirement data.
+	* package/domain/pack.py:
+		Using properties instead of old-style getters/setters.
+		New properties for requirements and operations (checkout and process).
+	* package/glade/app.glade:
+		This class is for now deprecated.
+	* package/glade/app2.glade:
+		New application using wizard-like style.
+	* package/glade/filelistslave.glade:
+	* package/glade/maindataslave.glade:
+	* package/glade/managefilesslave.glade:
+	* package/glade/releasenotesstep.glade:
+	* package/glade/scriptlistslave.glade:
+		Lists were removed from this file and are now slaves.
+	* package/ui/filetree.py: Moved from package.gui module.
+	* package/ui/gui.py: Logic moved to slaves.
+	* package/ui/listslave.py: Slaves for gui components.
+	* package/ui/text.py:
+	* package/ui/editor.py:
+		Changes to use python properties.
+	* test/package/tc_domain.py:
+		Test cases for internal domain objects logic.
+	* test/package/tc_processor.py:
+		Adding mocks for methods now being tested.
+	* test/package/gui/tc_app.py:
+		Test cases for application GUI and slaves.
+	* test/package/gui/tc_filetree.py:
+		Changed to work with FileTree as a slave.
+	* test/package/gui/util.py: Utilities for GUI test cases.
+	* test/parser/tc_plsql.py:
+		Test cases changed to BDD-like style.
+		Full package body parsing changed to break tests so we can reflect
+		the reality.
+
+2009-03-13  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* parser/plsql.g:
+	* parser/plsql.py:
+		Fixed package grammar
+
+2009-03-08  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* lib/kiwi:
+	    Upgraded to version 1.9.24.
+	* test.py:
+	* test/package/gui/tc_filetree.py:
+	    Added test cases for FileTree.
+	* package/types/parsers.py:
+	* package/processor.py:
+	* package/domain/file.py:
+		Replaced getters/setters with properties.
+	* package/glade/filetree.glade:
+	* package/gui/filetree.py:
+		Added context menu to rename scripts.
+	* test/parser/tc_plsql.py:
+		Adapted for changes in plsql grammar. 
+	* package/cvs.py:
+	* test/package/tc_cvs.py:
+		Changed export method to back to original location
+		after cvs command to avoid breaking other modules 
+		that might need to use current directory (os.getcwd()).
+
+2009-03-01  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/glade/filetree.glade:
+	* package/gui/filetree.py: 
+		New controller to display files in a treeview.
+	* package/domain/file.py:
+		Added a class to represent the install generated scripts.
+	* parser/plsql.g:
+	* parser/plsql.py:
+		Changes to allow parsing a full package body.
+	* test/parser/tc_plsql.py:
+		New Tests to validate changes on package parsing.
+
+2009-02-18  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	Modified files:
+	* parser/plsql.g
+	* parser/plsql.py
+	* test/parser/tc_plsql.py
+
+	Changes:
+	* Added rule to ignore SET commands
+	* Reorganization of code
+
+2009-02-15  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+	Modified files:
+	* parser/plsql.g
+	* parser/plsql.py
+	* test/parser/tc_plsql.py
+
+	Changes:
+	* Added support for function calls with no arguments
+	* Added support for function calls in objects/packages
+	* Added grammar for source declaration (package, procedure, function)
+	* Fixed bug on block comments regex. Text between two commented blocks 
+	were ignored because the two comments were considered as one.
+	* Added grammar for select statements
+	* Improved validation on __eq__ method of SqlStatement class. 
+
+2009-02-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test/parser/tc_plsql.py: Test cases for plsql parser.
+	* parser/plsql.g: First functional version of parser for insert
+	statements.
+	Added support for Insert with function calls.
+
+2009-02-09  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* parser/__init__.py: New module for plsql parsing.
+	* parser/plsql.g: Added initial grammar for plsql.
+	* parser/plsql.py: Generated parser from plsql.g.
+	* parser/yappsrt.py: Yapps runtime to allow plsql generated parser to run.
+	* yapps: Added Yapps library to project for parser generation
+	* parser/yapps/grammar.py
+	* parser/yapps/parsetree.py
+	* parser/yapps/yapps2.py
+	* parser/yapps/yappsrt.py: Yapps engine to generate plsql parser.
+
+2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* run.py: Initialization changed to open no-gui mode when something GUI is not
+		available.
+	Removed kiwi.log dependency to avoid problems using no-gui.
+	* lib/kiwi/__init__.py: Removed code from __init__ to avoid initialization
+	problems.
+	* package/commandrunner.py: Using 'popen3' instead of 'popen' so we can
+	capture error and output separately.
+	* package/config.py: Some improvement in code.
+	* package/cvs.py: New module responsible for cvs manipulation.
+	* package/processor.py: CVS Manipulation moved to a new module.
+	* package/domain/package.py: Fixed typo in set_tags method.
+	Renamed to pack.py to avoid ambiguity.
+	* package/rollback/parsers.py: Parser for sql files to help on rollback
+	creation.
+	* package/ui/gui.py:
+	* package/releasenotes.py: Adapted to changes on config.py
+	* package/ui/text.py: Error handling improvement.
+
+=== 0.4.0 ===
+
+2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/config.py: Some code clean up.
+	* package/processor.py: Processor now tag files with package name after
+	checkout.
+
+=== 0.3.9 ===
+
+2008-03-13  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/sqlrunner.py: Adding debug information.
+	* package/domain/database.py: Implemented __str__ method.
+	* package/domain/environment.py: Fixed __eq__ method to allow comparing
+	environments with Database objects.
+	Implemented __str__ and __repr__ methods.
+	* package/domain/package.py: Avoiding white space in package name and
+	path.
+	* package/ui/gui.py: Fixed a bug in delete defect button.
+	Adding better log information.
+
+
+=== 0.3.8 ===
+
+2007-03-06  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+	* run.py: 
+	* package/config.py: Changing the way WORK_DIR is set to fix a bug generating the release
+	notes.
+	* package/processor.py: Fixed bug of duplicated values on generated scripts.
+	* package/releasenotes.py: Fixed release notes generation to remove #ERDR#
+	tag.
+	* package/domain/file.py: Order of grants set to last.
+	* resources/RN_TEMPLATE.rtf: Removed not used tags.
+
+=== 0.3.7 ===
+
+2007-12-19  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	*  package/processor.py: Using popen to run commands.
+	*  package/domain/package.py: Changing the use of paths to avoid crashing
+	under windows when the base path is root.
+	*  package/ui/gui.py: Changes displaying information.
+
+=== 0.3.6 ===
+
+2007-12-13  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/config.py:
+	* package/releasenotes.py:
+	* package/domain/defect.py:
+	* package/domain/repository.py:
+	* package/glade/app.glade:
+	* package/ui/gui.py: Now stores the configuration and repositories in a
+	xml file.
+
+
+=== 0.3.5 ===
+
+2007-11-28  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* lib/path.py: little bug fix writting to a file.
+	* package/releasenotes.py: new module to write the release notes.
+	* package/domain/defect.py: Domain object to store defect information.
+	* package/domain/package.py: Package object now stores the defects. 
+	* package/glade/app.glade:
+	* package/ui/gui.py:  New tab to fill release notes data.
+	* resources/RN_TEMPLATE.rtf: template for RN writting.
+
+
+=== 0.3.1 ===
+
+2007-11-23  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+
+	* package/sqlrunner.py: Module for running sql scripts using SQLPLUS.
+	* package/config.py: Improvements to use environments.
+	* package/processor.py: Processor now moves SH and XML files to root
+	directory.
+	* package/domain/database.py: Improvements to work with environments.
+	* package/domain/environment.py: New domain class to store envorinment
+	information.
+	* package/domain/file.py: clean up.
+	* package/domain/package.py: doc.
+	* package/ui/gui.py:
+	* package/glade/app.glade: Button to run scripts.
+	* package/glade/configuration.glade: Allow to configure environments to
+	run scripts.
+
+
+=== 0.3.0 ===
+
+	* package/config.py: Adding control for configuration.
+	* package/ui: Renamed from package/gui.
+	* package/ui/gui.py: Old package/gui/PackageProcessorGUI.py renamed.
+	* package/ui/text.py: Old package/ProcessorUI.py moved.
+	* package/ui/config.py: Controller for configuration window.
+	* package/glade/ConfigEditor.glade: Configuration window.
+	* package/glade/filechooser.glade: Default control for choosing folders
+	* package/processor.py: Bug fix: Support to file and folder names with spaces.
+	* package/domain/file.py: Bug fix: stop using lstrip, using replace
+	instead.
+	* package/util/format.py: New method to format URI.
+
+
+=== 0.2.2 ===
+
+2007-11-07  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* run.py: Adding log to capture problems before the application starts.
+	* package/glade/PackageProcessorGUI.glade:
+	* package/gui/PackageProcessorGUI.py: Better feedback on errors and info.
+
+=== 0.2.1 ===
+
+2007-10-30  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/util/format.py: Adding encoding information.
+	* package/processor.py: Using fixed encoding writing files.
+	* package/glade/PackageProcessorGUI.glade: Improving layout.
+	* package/gui/PackageProcessorGUI.py:
+	* package/glade/editor.glade:
+	* package/gui/Editor.py: New editor to view and edit files/scripts.
+
+=== 0.2.0 ===
+
+2007-10-28  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* lib/kiwi/ __init__.py:
+	* lib/kiwi/ __version__.py:
+	* lib/kiwi/ accessor.py:
+	* lib/kiwi/ argcheck.py:
+	* lib/kiwi/ component.py:
+	* lib/kiwi/ controllers.py:
+	* lib/kiwi/ datatypes.py:
+	* lib/kiwi/ decorators.py:
+	* lib/kiwi/ dist.py:
+	* lib/kiwi/ environ.py:
+	* lib/kiwi/ interfaces.py:
+	* lib/kiwi/ log.py:
+	* lib/kiwi/ model.py:
+	* lib/kiwi/ python.py:
+	* lib/kiwi/ tasklet.py:
+	* lib/kiwi/ utils.py:
+	* lib/catalogs/base.xml:
+	* lib/catalogs/kiwiwidgets.xml:
+	* lib/gazpacho/bugreportdialog.py:
+	* lib/gazpacho/app/app.py:
+	* lib/gazpacho/widgets/__init__.py:
+	* lib/gazpacho/widgets/kiwiwidgets.py: Gazpacho updated (release 0.7.2) for better
+	kiwi support and bug fixes.
+	* package/processor.py: 
+	* package/domain/file.py:
+	* package/domain/package.py:
+	* package/domain/repository.py:
+	* package/domain/tag.py:
+	* package/domain/test/run.py: Refactored to use the Package object as base for
+	the process. Added type check for methods arguments.
+	* package/glade/PackageProcessorGUI.glade:
+	* package/gui/PackageProcessorGUI.py: New tab for package details and
+	buttons for checkout and process files.
+	* package/util/format.py: list2str changed convert items to string.
+
+=== 0.1.1 ===
+
+2007-10-23  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* Fixed bugs:
+	* Problem with case sensitive search: File extensions with upper case
+	characters (SQL, Sql, etc) are not considered under linux because the
+	search is case sensitive. Under Windows everything works fine.
+	* Path selection dialog problem on Windows: When a path is selected in
+	Directory selection dialog the entry field 'Path' is not filled correctly
+	if the program is running on Windows systems. Example: if you select the
+	path C:\Package, the filled value is /C:/Package.
+	* Checkout problems: System does not login into CVS. CVS does not accept
+	absolute path with -d option.
+
+	* package/gui/PackageProcessorGUI.py: Added support for DOS paths.
+	* package/domain/file.py: Added the type 'VIEW' with high priority.
+	* package/processor.py: Using the argument 'case_sensitive' to fix
+	the search bug under linux.
+	Uses os.chdir to change the current dir to the package dir to fix the
+	problem of -d option.
+	Performing the "cvs login" that was missing.
+	* lib/path.py: Add the argument 'case_sensitive' to the method walk to
+	allow the case-insensitive search.
+
+2007-10-22  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/domain/test/run.py: Adding tests for class Database.
+	* package/domain/file.py (log): Changes on compare method.
+	* package/domain/database.py: Enhancement on methods
+	__cmp__, __eq__ and getOrder.
+	* package/processor.py: Changed the return type for method
+	_generatePackage to return the script type.
+
+
+=== 0.1.0 ===
+
+2007-10-21  Daniel Saran  <daniel-s-cunha@ptinovacao.pt>
+
+	* run.py: Support for --help option.
+	* package/glade/PackageProcessorGUI.glade:
+	* package/gui/PackageProcessorGUI.py: Added path browser to 
+	select the path where the package will be created.
+
+
+2007-10-21  Daniel Saran  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/__init__.py:
+	* package/ProcessorUI.py: New command line UI.
+	* package/processor.py: Old module PackageProcessor
+	renamed.
+	* package/gui/__init__.py:
+	* package/gui/PackageProcessorGUI.py:
+	* package/glade/PackageProcessorGUI.glade: GUI Enhancement to 
+	give feedback from execution.
+	* package/domain/__init__.py:
+	* package/domain/database.py:
+	* package/domain/deprecated_domain.py:
+	* package/domain/file.py:
+	* package/domain/package.py:
+	* package/domain/repository.py:
+	* package/domain/tag.py:
+	Files from root were moved to this new directory tree.
+	The files inside the module 'domain' where split from 
+	file domain.py to keep each class in its own file.
+	* package/util/__init__.py: New module for utilitaty classes.
+	* package/util/commandline.py: Utilities used by command line UI.
+	* package/util/format.py: Format utilities.
+
+=== 0.0.1 ===
+
+2007-10-19  Daniel Saran  <daniel-s-cunha@ptinovacao.pt>
+
+	* all files:
+	Initial stable version added to Version Control.
+

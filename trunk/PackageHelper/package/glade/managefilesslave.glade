@@ -1,0 +1,49 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
+<glade-interface>
+    <widget class="GtkWindow" id="managefilesslave">
+        <property name="default_height">250</property>
+        <property name="default_width">440</property>
+        <child>
+            <widget class="GtkVBox" id="tab3">
+                <property name="visible">True</property>
+                <child>
+                    <widget class="GtkVPaned" id="vpaned1">
+                        <property name="position">74</property>
+                        <property name="position_set">True</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkExpander" id="expander1">
+                                <property name="is_focus">True</property>
+                                <property name="label" context="yes" translatable="yes">Arquivos encontrados</property>
+                                <property name="visible">True</property>
+                                <child>
+                                    <widget class="GtkEventBox" id="filelist_holder">
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <placeholder/>
+                                        </child>
+                                    </widget>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="resize">True</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="GtkEventBox" id="scriptlist_holder">
+                                <property name="visible">True</property>
+                                <child>
+                                    <placeholder/>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="resize">True</property>
+                            </packing>
+                        </child>
+                    </widget>
+                </child>
+            </widget>
+        </child>
+    </widget>
+</glade-interface>
