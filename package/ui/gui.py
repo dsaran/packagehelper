@@ -2,20 +2,6 @@
 # encoding: utf-8
 # Version: $Id: gui.py,v 1.6 2009-04-04 00:16:18 daniel Exp $
 
-#
-#  ______________
-# | Package Data |
-# |--------------|
-# |Name          |
-# |Path          |
-# |Tags          |
-# |Repositories  |
-# |______________|
-#
-# |Package Data| -> mkdir, clean, checkout, process sql
-#
-
-
 import logging
 import gtk
 

@@ -8,7 +8,7 @@ from kiwi.ui.objectlist import Column
 
 from package.processor import PackageProcessor
 from package.domain.tag import Tag
-from package.domain.repository import Repository
+from package.domain.repository import Repository, ScmType
 from package.domain.defect import Defect, Requirement
 from package.util.format import list2str
 
@@ -136,6 +136,7 @@ class MainDataStep(BaseWizardStep):
         self.repository_list.set_columns(
                 [Column('root', data_type=str, title="Repositório", editable=True, expand=True),
                  Column('module', data_type=str, title="Módulo", width=150, editable=True),
+                 Column('type', data_type=ScmType, title="Tipo", width=80, editable=True),
                  Column('active', data_type=bool, title="Ativo", editable=True)])
 
         self.add_proxy(self.model, ["path_entry", "package_entry", "checkout_chk", "process_chk"])

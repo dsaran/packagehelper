@@ -206,7 +206,8 @@ class InstallScript(object):
         script_content = []
         final_script_data = []
 
-        logfile_name = self.name.replace('.sql', '.log')
+        logfile_name = self.name.replace('.sql', '')
+        logfile_name += '.log'
 
         for file in self.content:
             init_script_data += file.getInitScript()

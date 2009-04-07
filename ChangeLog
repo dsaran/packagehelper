@@ -1,3 +1,51 @@
+2009-04-07  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/sqlrunner.py:
+	* test/package/tc_scm.py:
+	* package/scm.py:
+	* package/config.py:
+		Removed getters and setters from Config class.
+		Added svn property to store subversion binary path.
+	* package/glade/configuration.glade:
+	* package/ui/config.py:
+		Added svn entry field to allow user to choose svn location.
+	* package/glade/maindataslave.glade:
+		New tooltip to help user how to fill data.
+
+=== 1.0.0b ===
+
+2009-04-06  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* Released 1.0.0 beta.
+	* Added compatibility check for pygtk (problem with progressbar).
+
+2009-04-05  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test.py:
+	* test/package/tc_domain.py:
+	* test/package/tc_processor.py:
+	* package/processor.py:
+	* package/domain/repository.py:
+	* package/ui/listslave.py:
+		Changed Repository to support more types of SCM.
+		Repository list (GUI) now has a column for SCM type to allow user to
+		choose between CVS and SVN.
+		Added test cases for subversion.
+	* package/domain/file.py:
+		Fixed script creation when script name doesn't have .sql
+		extension. In that case the spool was written to the install script
+		itself.
+	* package/config.py:
+	* test/package/tc_config.py:
+		Changed the way repositories are saved and loaded.
+		Added test cases for config saving/loading.
+	* test/package/tc_scm:
+		Renamed from tc_cvs since it now supports subversion either.
+	* package/scm.py:
+		Module renamed from cvs to scm.
+		CVS class renamed to CvsProcessor
+		New class SubversionProcessor to work with subversion repositories.
+
 2009-04-01  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* lib/gazpacho/app/bugreportdialog.py:

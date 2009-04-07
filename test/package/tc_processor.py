@@ -8,7 +8,7 @@ from package.domain.tag import Tag
 from package.domain.file import File, InstallScript
 from package.domain.pack import Package
 from package.domain.repository import Repository
-from package.cvs import CVS
+from package.scm import CvsProcessor
 from path import path as Path
 
 class PackageProcessorTests(TestCase):
@@ -22,7 +22,7 @@ class PackageProcessorTests(TestCase):
             tag = Tag("Tag" + str(i))
             self.package.add_tag(tag)
         for i in (1, 2, 3):
-            repository = Repository("root" + str(i), "module" + str(i), (i != 3))
+            repository = Repository("root" + str(i), "module" + str(i), active=(i != 3))
             self.package.add_repository(repository)
 
     def testCheckout(self):
@@ -33,13 +33,13 @@ class PackageProcessorTests(TestCase):
 
 
         # Workaround to use mock with objects created inside the method execution.
-        CVS.export = cvsExportMock.export
-        CVS.tag = cvsTagMock.tag
+        CvsProcessor.export = cvsExportMock.export
+        CvsProcessor.tag = cvsTagMock.tag
 
         self.processor.checkout_files()
 
-        self.assertEquals(6, len(cvsExportMock.method_calls), "Wrong number of export calls.")
-        self.assertEquals(6, len(cvsTagMock.method_calls), "Wrong number of tag calls.")
+        self.assertEquals(6, cvsExportMock.export.call_count, "Wrong number of export calls.")
+        self.assertEquals(6, cvsTagMock.tag.call_count, "Wrong number of tag calls.")
 
     def testCheckoutDestination(self):
         """ Checkout should call export command with the correct destination path."""
@@ -47,8 +47,8 @@ class PackageProcessorTests(TestCase):
         cvsTagMock = mock.Mock()
 
         # Workaround to use mock with objects created inside the method execution.
-        CVS.export = cvsExportMock.export
-        CVS.tag = cvsTagMock.tag
+        CvsProcessor.export = cvsExportMock.export
+        CvsProcessor.tag = cvsTagMock.tag
         package_name = "Test Package"
 
         package = Package(package_name)

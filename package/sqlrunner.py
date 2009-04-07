@@ -25,7 +25,7 @@ def run_script(file):
 
         log.debug("Database => " + str(database))
 
-        sqlplus = config.get_sqlplus()
+        sqlplus = config.sqlplus
         envs = config.get_environments(database)
 
         log.debug("Environments found => " + str(envs))
