@@ -1,3 +1,17 @@
+2009-04-07  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/sqlrunner.py:
+	* test/package/tc_scm.py:
+	* package/scm.py:
+	* package/config.py:
+		Removed getters and setters from Config class.
+		Added svn property to store subversion binary path.
+	* package/glade/configuration.glade:
+	* package/ui/config.py:
+		Added svn entry field to allow user to choose svn location.
+	* package/glade/maindataslave.glade:
+		New tooltip to help user how to fill data.
+
 === 1.0.0b ===
 
 2009-04-06  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>

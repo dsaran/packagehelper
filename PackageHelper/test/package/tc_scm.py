@@ -23,7 +23,7 @@ class CvsTest(TestCase):
         self.cvs.runner = self.runner
 
         self.config_mock = mock.Mock()
-        self.config_mock.get_cvs.return_value = "cvsmock"
+        self.config_mock.cvs = "cvsmock"
         self.cvs.get_config = lambda: self.config_mock 
 
 

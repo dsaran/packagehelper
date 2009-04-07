@@ -175,9 +175,12 @@
                         <child>
                             <widget class="ProxyEntry" id="package_entry">
                                 <property name="data_type">str</property>
+                                <property name="has_tooltip">True</property>
                                 <property name="is_focus">True</property>
                                 <property name="mandatory">True</property>
-                                <property name="model_attribute">name</property>
+                                <property name="model_attribute">package_entry</property>
+                                <property name="tooltip_markup" context="yes" translatable="yes">Nome do pacote a ser gerado</property>
+                                <property name="tooltip_text" context="yes" translatable="yes">Nome do pacote a ser gerado</property>
                                 <property name="visible">True</property>
                             </widget>
                             <packing>
@@ -188,8 +191,11 @@
                         <child>
                             <widget class="ProxyEntry" id="path_entry">
                                 <property name="data_type">str</property>
+                                <property name="has_tooltip">True</property>
                                 <property name="mandatory">True</property>
                                 <property name="model_attribute">path</property>
+                                <property name="tooltip_markup" context="yes" translatable="yes">Local onde o pacote deve ser criado</property>
+                                <property name="tooltip_text" context="yes" translatable="yes">Local onde o pacote deve ser criado</property>
                                 <property name="visible">True</property>
                             </widget>
                             <packing>
@@ -201,7 +207,10 @@
                         </child>
                         <child>
                             <widget class="GtkButton" id="select_path_button">
+                                <property name="has_tooltip">True</property>
                                 <property name="is_focus">True</property>
+                                <property name="tooltip_markup" context="yes" translatable="yes">Selecionar diretório</property>
+                                <property name="tooltip_text" context="yes" translatable="yes">Selecionar diretório</property>
                                 <property name="visible">True</property>
                                 <child>
                                     <widget class="GtkImage" id="image7">
@@ -245,8 +254,10 @@
                                 <child>
                                     <widget class="ObjectList" id="tag_list">
                                         <property name="has_tooltip">True</property>
-                                        <property name="tooltip_markup" context="yes" translatable="yes">Clique sobre uma tag para alterar seu nome.</property>
-                                        <property name="tooltip_text" context="yes" translatable="yes">Clique sobre uma tag para alterar seu nome.</property>
+                                        <property name="tooltip_markup" context="yes" translatable="yes">Clique sobre uma tag para alterar seu nome.
+Pressione Enter para registrar alteração</property>
+                                        <property name="tooltip_text" context="yes" translatable="yes">Clique sobre uma tag para alterar seu nome.
+Pressione Enter para registrar alteração</property>
                                         <property name="visible">True</property>
                                         <property name="vscrollbar_policy">automatic</property>
                                     </widget>
@@ -295,6 +306,31 @@
                                 <property name="visible">True</property>
                                 <child>
                                     <widget class="ObjectList" id="repository_list">
+                                        <property name="has_tooltip">True</property>
+                                        <property name="tooltip_markup" context="yes" translatable="yes">Clique para editar e pressione Enter para registrar alterações.
+
+Exemplos de repositório
+- SVN:
+  - Repositório: svn://svn.ptinovacao.com.br/ngin
+  - Módulo: CustomerCare
+  - Type: Svn
+
+- CVS:
+  - Repositório: :pserver:user:password@cvs.intra.cet.pt:/home/cvs/vaga
+  - Módulo: ProCareV2/CustomerCare
+  - Type: Cvs</property>
+                                        <property name="tooltip_text" context="yes" translatable="yes">Clique para editar e pressione Enter para registrar alterações.
+
+Exemplos de repositório
+- SVN:
+  - Repositório: svn://svn.ptinovacao.com.br/ngin
+  - Módulo: CustomerCare
+  - Type: Svn
+
+- CVS:
+  - Repositório: :pserver:user:password@cvs.intra.cet.pt:/home/cvs/vaga
+  - Módulo: ProCareV2/CustomerCare
+  - Type: Cvs</property>
                                         <property name="visible">True</property>
                                         <property name="vscrollbar_policy">automatic</property>
                                     </widget>
@@ -305,7 +341,10 @@
                                         <property name="visible">True</property>
                                         <child>
                                             <widget class="GtkButton" id="add_repository_button">
+                                                <property name="has_tooltip">True</property>
                                                 <property name="is_focus">True</property>
+                                                <property name="tooltip_markup" context="yes" translatable="yes">Adicionar novo repositório.</property>
+                                                <property name="tooltip_text" context="yes" translatable="yes">Adicionar novo repositório.</property>
                                                 <property name="visible">True</property>
                                                 <child>
                                                     <widget class="GtkImage" id="image5">
@@ -317,7 +356,10 @@
                                         </child>
                                         <child>
                                             <widget class="GtkButton" id="del_repository_button">
+                                                <property name="has_tooltip">True</property>
                                                 <property name="is_focus">True</property>
+                                                <property name="tooltip_markup" context="yes" translatable="yes">Remover repositório selecionado</property>
+                                                <property name="tooltip_text" context="yes" translatable="yes">Remover repositório selecionado</property>
                                                 <property name="visible">True</property>
                                                 <child>
                                                     <widget class="GtkImage" id="image4">

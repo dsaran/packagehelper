@@ -22,10 +22,13 @@ class ConfigLoader:
         self.file.write_text(data)
 
 class Config:
-    _cvs_path = 'cvs' 
-    _sqlplus_path = 'sqlplus'
-    _ant_path = 'ant'
+    #_cvs_path = 'cvs' 
+    #_sqlplus_path = 'sqlplus'
+    #_ant_path = 'ant'
+    sqlplus = 'sqlplus'
+    cvs = 'cvs'
     svn = 'svn'
+    ant = 'ant'
 
     _environments = []
 
@@ -43,19 +46,11 @@ class Config:
     def set_config(self, config):
         if config:
             log.debug("Setting configuration: " + str(config))
-            self._cvs_path = config.get_cvs() or self._cvs_path
-            self._sqlplus_path = config.get_sqlplus() or self._sqlplus_path
-            self._ant_path = config.get_ant() or self._ant_path
+            self.cvs = config.cvs or self.cvs
+            self.sqlplus = config.sqlplus or self.sqlplus
+            self.ant = config.ant or self.ant
+            self.svn = config.svn or self.svn
             self._environments = config.get_environments() or self._environments
-
-    def get_cvs(self):
-        return self._cvs_path
-
-    def get_sqlplus(self):
-        return self._sqlplus_path
-
-    def get_ant(self):
-        return self._ant_path
 
     def get_environments(self):
         return self._environments
@@ -80,15 +75,6 @@ class Config:
             raise
         return env
 
-    def set_cvs(self, path):
-        self._cvs_path = path
-
-    def set_sqlplus(self, path):
-        self._sqlplus_path = path
-
-    def set_ant(self, path):
-        self._ant_path = path
-
     def set_environments(self, environments):
         self._environments = environments
 
@@ -105,14 +91,14 @@ class Config:
         self.set_config(self._load_config())
 
     def __str__(self):
-        value = "(cvs: " + self._cvs_path
-        value += ", sqlplus: " + self._sqlplus_path
-        value += ", ant: " + self._ant_path
+        value = "(cvs: " + self.cvs
+        value += ", svn: " + self.svn
+        value += ", sqlplus: " + self.sqlplus
+        value += ", ant: " + self.ant
         value += ")"
         return value
 
     __repr__ = __str__
-
 
     def _load_config(self):
         config_data = None

@@ -13,7 +13,7 @@ log = logging.getLogger('ConfigEditor')
 
 class ConfigEditor(Delegate):
     gladefile = "configuration"
-    proxy_widgets = ["cvs_entry", "sqlplus_entry", "ant_entry"] 
+    proxy_widgets = ["cvs_entry", "sqlplus_entry", "ant_entry", "svn_entry"] 
     widgets = proxy_widgets + ["environment_list"]
     _changed = None
     _file = None
@@ -40,6 +40,9 @@ class ConfigEditor(Delegate):
     def on_select_cvs_button__clicked(self, *args):
         FileChooser(self.cvs_entry)
 
+    def on_select_svn_button__clicked(self, *args):
+        FileChooser(self.svn_entry)
+
     def on_select_sql_button__clicked(self, *args):
         FileChooser(self.sqlplus_entry)
 
@@ -54,7 +57,6 @@ class ConfigEditor(Delegate):
         self._config.add_environment(env)
         self.environment_list.append(env)
         self.environment_list._select_and_focus_row(len(self.environment_list)-1)
-
 
     def on_del_env_button__clicked(self, *args):
         selected = self.environment_list.get_selected()

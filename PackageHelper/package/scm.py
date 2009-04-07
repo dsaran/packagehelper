@@ -53,7 +53,7 @@ class CvsProcessor(BaseProcessor):
     def login(self):
         if self.logged:
             return
-        output, errorfile = self.runner.run(self.get_config().get_cvs() + " -d%s login" % self.root)
+        output, errorfile = self.runner.run(self.get_config().cvs + " -d%s login" % self.root)
         if output:
             log.info(output)
         if errorfile:
@@ -92,7 +92,7 @@ class CvsProcessor(BaseProcessor):
         # who might need to get program location.
         original_cwd = os.getcwd()
         os.chdir(dest.abspath())
-        cvs_path = self.get_config().get_cvs()
+        cvs_path = self.get_config().cvs
 
         log.debug("cvs path: " + cvs_path)
 
@@ -124,7 +124,7 @@ class CvsProcessor(BaseProcessor):
             @param base_tag if given, use base_tag as base instead of Head."""
         self.login()
 
-        cvs_path = self.get_config().get_cvs()
+        cvs_path = self.get_config().cvs
         #TODO: Validate arguments.
         command = cvs_path + " -q -z 9 rtag -F -r %s %s %s" %\
                 (base_tag,\
