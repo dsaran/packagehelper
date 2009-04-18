@@ -1,5 +1,5 @@
 # encoding: utf-8
-# Version: $Id: repository.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
+# Version: $Id$
 
 from package.scm import ScmError, CvsProcessor, SubversionProcessor
 from kiwi.python import enum

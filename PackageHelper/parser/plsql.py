@@ -1,5 +1,5 @@
 # PlSql Grammar for yapps3
-# Version: $Id: plsql.py,v 1.12 2009-04-04 00:16:18 daniel Exp $ 
+# Version: $Id: plsql.g,v 1.10 2009-04-04 00:16:18 daniel Exp $ 
 
 class SqlStatement(object):
     def __init__(self, id=None, stmt_type=None):

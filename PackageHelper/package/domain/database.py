@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: database.py,v 1.3 2009-03-21 20:57:45 daniel Exp $
+# Version: $Id$
 
 import logging
 

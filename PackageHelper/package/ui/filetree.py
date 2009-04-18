@@ -203,9 +203,13 @@ class FileTree(GladeSlaveDelegate):
 
     def on_ok_button__clicked(self, *args):
         new_name = self.new_name.get_text()
+        self.new_name.set_text('')
         self.editbox.hide()
         selected_item = self.fileTree.get_selected()
         selected_item.name = new_name
+
+    def on_cancel_button__clicked(self, *args):
+        self.editbox.hide()
 
     def _on_context_edit__activate(self, *args):
         selected = self.fileTree.get_selected()

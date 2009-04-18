@@ -1,4 +1,4 @@
-# Version: $Id: config.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id$
 # encoding: utf-8
 
 

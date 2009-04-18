@@ -1,4 +1,4 @@
-# Version: $Id: config.py,v 1.7 2009-04-04 00:16:18 daniel Exp $
+# Version: $Id$
 
 import logging
 from path import path as Path

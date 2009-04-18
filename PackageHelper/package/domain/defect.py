@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: defect.py,v 1.3 2009-04-04 00:16:18 daniel Exp $
+# Version: $Id$
 
 class Defect:
 

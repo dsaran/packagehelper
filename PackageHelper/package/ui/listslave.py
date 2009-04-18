@@ -199,6 +199,72 @@ class MainDataStep(BaseWizardStep):
         repositories = Repositories()
         repositories.save(self.model.repositories)
 
+
+from threading import Thread
+
+class ProcessorThread(Thread):
+    NEW = 0
+    RUNNING = 1
+    FINISHED = 2
+    status = NEW
+    result = None
+
+    def __init__(self, processor, logger, view):
+        Thread.__init__(self)
+        self.processor = processor
+        self.logger = logger
+        self.view = view
+
+    def run(self):
+        self.status = self.RUNNING
+        if self.view.model.checkout:
+            self.result = self._run_checkout()
+
+        if self.view.model.process:
+            self._run_process()
+
+        self.status = self.FINISHED
+
+    def _run_checkout(self):
+        try:
+            log.info("Iniciando Checkout...")
+
+            #self._set_running(True)
+            self.processor.logger = self.logger
+            status = self.processor.checkout_files()
+        except:
+            log.error("Erro realizando checkout dos repositorios!", exc_info=1)
+            raise
+        #finally:
+        #    self._set_running(False)
+        log.info("Checkout finalizado.")
+
+        result = self.view._show_status(status)
+        log.info(result)
+
+        self.view.filelist.add_list(self.view.model.get_files())
+        return status
+
+    def _run_process(self):
+        try:
+            log.info("Iniciando processamento dos arquivos...")
+
+            #self._set_running(True)
+            scripts = self.processor.process_files()
+        except Exception:
+            log.error("Erro gerando scripts!", exc_info=1)
+            raise
+        #finally:
+        #    self._set_running(False)
+
+        for script in scripts:
+            self.view.filetree.append(script)
+
+        result = self.view._show_scripts(scripts)
+        log.info(result)
+
+        return scripts
+
 class ManageFilesStep(BaseWizardStep):
 
     gladefile = "managefilesslave"
@@ -211,6 +277,7 @@ class ManageFilesStep(BaseWizardStep):
         if logger:
             global log
             log = logger
+        self.logger = logger
 
         self.model = model or self
 
@@ -228,54 +295,14 @@ class ManageFilesStep(BaseWizardStep):
         for item in self.filetree.fileTree[:]:
             self.filetree.fileTree.remove(item)
 
-        if self.model.checkout:
-            self._run_checkout()
-
-        if self.model.process:
-            self._run_process()
+        thread = ProcessorThread(self.processor, self.logger, self)
+        thread.start()
+        #thread.run()
+        return thread
 
     def post_end(self):
         self.filetree._update_model()
 
-    def _run_checkout(self):
-        #XXX: Make it asynchronous
-        try:
-            log.info("Iniciando Checkout...")
-
-            #self._set_running(True)
-            status = self.processor.checkout_files()
-        except:
-            log.error("Erro realizando checkout dos repositorios!", exc_info=1)
-            raise
-        #finally:
-        #    self._set_running(False)
-        log.info("Checkout finalizado.")
-
-        result = self._show_status(status)
-        log.info(result)
-
-        self.filelist.add_list(self.model.get_files())
-        return status
-
-    def _run_process(self):
-        try:
-            log.info("Iniciando processamento dos arquivos...")
-
-            #self._set_running(True)
-            scripts = self.processor.process_files()
-        except Exception:
-            log.error("Erro gerando scripts!", exc_info=1)
-            raise
-        #finally:
-        #    self._set_running(False)
-
-        for script in scripts:
-            self.filetree.append(script)
-
-        result = self._show_scripts(scripts)
-        log.info(result)
-
-        return scripts
 
     def _show_scripts(self, scripts):
         buffer = ""

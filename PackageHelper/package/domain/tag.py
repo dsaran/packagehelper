@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: tag.py,v 1.2 2009-01-10 04:04:14 daniel Exp $
+# Version: $Id$
 
 class Tag(object):
     name = None

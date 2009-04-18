@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: sqlrunner.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id$
 
 import logging
 from os import popen3, chdir

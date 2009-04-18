@@ -7,7 +7,7 @@ from kiwi.ui.delegates import GladeSlaveDelegate
 from package.domain.pack import Package
 from package.domain.file import File, InstallScript
 from package.ui.gui import PackageProcessorGUI
-from package.ui.listslave import FileListSlave, MainDataStep, ReleaseNotesStep, ManageFilesStep
+from package.ui.listslave import FileListSlave, MainDataStep, ReleaseNotesStep, ManageFilesStep, ProcessorThread
 
 class AppGuiTests(TestCase):
 
@@ -210,6 +210,8 @@ class ManageFilesStepTests(TestCase):
         self.processor = Mock()
         self.processor.checkout_files.return_value = []
         self.processor.process_files.return_value = []
+        # Make it run synchronously
+        ProcessorThread.start = ProcessorThread.run
 
         self.model = Package()
         self.step = ManageFilesStep(self.model, logger=Mock())

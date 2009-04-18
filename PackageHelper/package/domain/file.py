@@ -1,6 +1,6 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: file.py,v 1.8 2009-03-27 02:31:33 daniel Exp $
+# Version: $Id$
 
 from os import sep
 from path import path as Path

@@ -27,6 +27,7 @@
                         <child>
                             <widget class="ProxyEntry" id="new_name">
                                 <property name="has_tooltip">True</property>
+                                <property name="is_focus">True</property>
                                 <property name="model_attribute">new_name</property>
                                 <property name="tooltip_markup" context="yes" translatable="yes">Digite o novo nome para o script selecionado</property>
                                 <property name="tooltip_text" context="yes" translatable="yes">Digite o novo nome para o script selecionado</property>

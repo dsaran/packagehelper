@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version $Id: text.py,v 1.3 2009-03-21 20:57:45 daniel Exp $
+# Version $Id$
 
 import logging
 from sys import exit

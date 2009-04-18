@@ -1,5 +1,5 @@
 #!/usr/bin/python2.5
-# Version: $Id: filechooser.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id$
 
 from os import path
 from sys import argv, path as pythonpath

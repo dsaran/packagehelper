@@ -2,8 +2,13 @@ Bugs:
 * drag and drop on filetree does not update model.
     * now it updates when moving INTO but no before and after
     * It is necessary to create tests for other drags
-* get_data returns data out of order
-* On secont step of wizard, if user goes back and forth processed data is wrong.
+* Problem with SVN URL under windows
+* It cannot reprocess repository:
+"""-->  Exported revision 10102.
+
+svn: Destination directory exists; please remove the directory or use --force to overwrite
+svn: '/tmp/TST3/VIVO52_NFO_FINAL' already exists
+"""
 
 Interface:
 * Help messages

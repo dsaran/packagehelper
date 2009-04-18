@@ -1,5 +1,5 @@
 #! /usr/bin/env python2.5
-# Version: $Id: processor.py,v 1.10 2009-04-04 00:16:18 daniel Exp $
+# Version: $Id$
 
 import logging
 import os
@@ -17,6 +17,7 @@ class PackageProcessor:
         including cvs checkout and SQL scripts creation. """
 
     package = None
+    logger = None
 
     @takes("PackageProcessor", Package)
     def __init__(self, package):
@@ -154,10 +155,12 @@ class PackageProcessor:
         for repo in repositories:
             if repo.is_active():
 
-                #cvs = CvsProcessor(repo.root, repo.module)
                 processor = repo.processor
+                if self.logger:
+                    processor.logger = self.logger
 
                 for tag in tags:
+                    log.debug("Checking out tag %s" %tag)
                     try:
                         processor.export(dest, tag) 
                     except ScmError, e:
@@ -204,7 +207,7 @@ class PackageProcessor:
                 xmlpath.mkdir()
 
             for xml in xmls:
-                file = Path(xml)
+                file = Path(xml.path)
 
                 if not file.dirname() == xmlpath:
                     file.move(xmlpath)
@@ -216,7 +219,7 @@ class PackageProcessor:
                 shpath.mkdir()
 
             for sh in shellscripts:
-                file = Path(sh)
+                file = Path(sh.path)
  
                 if not file.dirname() == shpath:
                     file.move(shpath)

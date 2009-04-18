@@ -4,7 +4,7 @@ from path import path as Path
 from package.config import Config
 from package.commandrunner import CommandRunner
 
-log = logging.getLogger('CVS')
+log = logging.getLogger('[SCM]')
 
 class ScmError(Exception):
     message = None
@@ -216,5 +216,5 @@ class SubversionProcessor(BaseProcessor):
         command = cmd_template.substitute(svn_bin=svn_bin, login=login, msg=message, repo_path=repo_path, \
                                             base_tag_path=base_tag_path, tag=tag)
 
-        self.run_command(command)
+        #self.run_command(command)
 

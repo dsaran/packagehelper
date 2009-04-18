@@ -1,4 +1,4 @@
-# Version: $Id: format.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id$
 
 from sys import platform
 
@@ -20,3 +20,6 @@ def uri2path(uri):
 
     path.replace('%20', ' ')
     return path
+
+class GlobalLogger:
+    pass

@@ -1,4 +1,4 @@
-# Version: $Id: editor.py,v 1.3 2009-03-27 02:31:33 daniel Exp $
+# Version: $Id$
 
 import logging
 from kiwi.ui.delegates import Delegate

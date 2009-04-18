@@ -19,3 +19,7 @@ def set_log_file(filename, mask=None):
 
     return file_handler.stream
 
+class GlobalLogger:
+    instance = None
+
+

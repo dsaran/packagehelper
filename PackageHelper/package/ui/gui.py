@@ -1,8 +1,9 @@
 #!/usr/bin/python2.5
 # encoding: utf-8
-# Version: $Id: gui.py,v 1.6 2009-04-04 00:16:18 daniel Exp $
+# Version: $Id$
 
 import logging
+import gobject
 import gtk
 
 from kiwi.ui.delegates import Delegate
@@ -14,7 +15,7 @@ from package.ui.config import ConfigEditor
 from package.ui.listslave import MainDataStep, ManageFilesStep, ReleaseNotesStep, ShowPackageStep
 
 from package.processor import PackageProcessor
-
+from package.log import GlobalLogger
 
 _log = logging.getLogger('PackageProcessorGUI')
 
@@ -39,12 +40,12 @@ class Logger(logging.Logger):
 
     def notify(self, msg):
         if self.callback:
-            self.callback(msg)
+            gobject.idle_add(self.callback, msg)
 
 log = Logger("PackageProcessorGUI")
 log.addHandler(_log)
 
-
+GlobalLogger.instance = log
 
 class PackageProcessorGUI(Delegate):
 
@@ -76,7 +77,7 @@ class PackageProcessorGUI(Delegate):
                                        statusbar=self.main_statusbar)
         self.manage_files_step = ManageFilesStep(model=self.model, previous=self.first_step,
                                                  header="Gerenciamento de arquivos",
-                                                 statusbar=self.main_statusbar)
+                                                 statusbar=self.main_statusbar, logger=log)
         self.displayscripts_step = ShowPackageStep(model=self.model, header="Pacote gerado",
                                                    previous=self.manage_files_step,
                                                    statusbar=self.main_statusbar)
@@ -101,6 +102,7 @@ class PackageProcessorGUI(Delegate):
 
     def main(self):
         self.show_all()
+        gtk.gdk.threads_init()
         gtk.main()
 
     def get_package(self):
@@ -167,7 +169,6 @@ class PackageProcessorGUI(Delegate):
             self.logger_view.scroll_to_mark(end_mark, 0, True, 0, 1)
         except:
             log.error("Error writing log to logger_view", exc_info=1)
-
 
     def _set_running(self, running):
         self.app.set_sensitive(not running)

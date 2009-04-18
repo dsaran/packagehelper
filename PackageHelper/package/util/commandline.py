@@ -1,4 +1,4 @@
-# Version: $Id: commandline.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# Version: $Id$
 
 def clearscreen():
     from sys import platform

@@ -1,3 +1,19 @@
+2009-04-16  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* test/package/gui/tc_app.py:
+	* package/commandrunner.py:
+		Changed runner to use subprocess.
+	* package/processor.py:
+		Fixed xml/sh processing.
+	* package/scm.py:
+		Changed log name from CVS to SCM.
+	* package/glade/maindataslave.glade:
+		Cleanup.
+	* package/util/format.py:
+	* package/ui/gui.py
+	* package/ui/listslave.py
+	* parser/plsql.py
+
 2009-04-07  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* package/sqlrunner.py:

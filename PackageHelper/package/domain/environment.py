@@ -1,4 +1,4 @@
-# $Id: environment.py,v 1.1.1.1 2009-01-07 22:58:30 daniel Exp $
+# $Id$
 # encoding: utf-8
 
 from database import Database
