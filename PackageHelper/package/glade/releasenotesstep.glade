@@ -134,16 +134,16 @@
                                         <child>
                                             <widget class="GtkScrolledWindow" id="scrolledwindow1">
                                                 <property name="border_width">1</property>
-                                                <property name="hscrollbar_policy">never</property>
+                                                <property name="hscrollbar_policy">automatic</property>
                                                 <property name="is_focus">True</property>
-                                                <property name="shadow_type">etched-in</property>
+                                                <property name="shadow_type">in</property>
                                                 <property name="visible">True</property>
                                                 <property name="vscrollbar_policy">automatic</property>
                                                 <child>
                                                     <widget class="ProxyTextView" id="defect_desc_entry">
                                                         <property name="data_type">unicode</property>
                                                         <property name="is_focus">True</property>
-                                                        <property name="model_attribute">defect_desc_entry</property>
+                                                        <property name="model_attribute">defect_desc</property>
                                                         <property name="visible">True</property>
                                                         <property name="wrap_mode">word-char</property>
                                                     </widget>
@@ -266,12 +266,21 @@
                                             </packing>
                                         </child>
                                         <child>
-                                            <widget class="ProxyTextView" id="req_desc_entry">
-                                                <property name="data_type">unicode</property>
+                                            <widget class="GtkScrolledWindow" id="scrolledwindow2">
+                                                <property name="hscrollbar_policy">automatic</property>
                                                 <property name="is_focus">True</property>
-                                                <property name="model_attribute">req_desc</property>
+                                                <property name="shadow_type">in</property>
                                                 <property name="visible">True</property>
-                                                <property name="wrap_mode">word</property>
+                                                <property name="vscrollbar_policy">automatic</property>
+                                                <child>
+                                                    <widget class="ProxyTextView" id="req_desc_entry">
+                                                        <property name="data_type">unicode</property>
+                                                        <property name="is_focus">True</property>
+                                                        <property name="model_attribute">req_desc</property>
+                                                        <property name="visible">True</property>
+                                                        <property name="wrap_mode">word-char</property>
+                                                    </widget>
+                                                </child>
                                             </widget>
                                             <packing>
                                                 <property name="bottom_attach">2</property>

@@ -1,3 +1,6 @@
+# encoding: utf-8
+# Version: $Id$
+
 import gtk
 from kiwi.ui.wizard import PluggableWizard as KiwiPluggableWizard
 from kiwi.ui.wizard import WizardStep as KiwiWizardStep
@@ -39,6 +42,9 @@ class Wizard(KiwiPluggableWizard):
         self._update_progress(1)
 
     def on_previous_button__clicked(self, button):
+        if self._current.validate_back:
+            if not self._current.validate_step():
+                return
         self._change_step(self._current.previous_step(), process=False)
         self._update_progress(-1)
 

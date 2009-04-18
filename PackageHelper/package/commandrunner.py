@@ -1,3 +1,6 @@
+# encoding: utf-8
+# Version: $Id$
+
 import logging
 import os
 import subprocess
@@ -14,18 +17,7 @@ class CommandRunner:
             @return stderr from command execution."""
         log.debug("Executing command: " + command)
         p = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
-        #for line in p.stdout:
-        #    GlobalLogger.instance.info(line)
-        #    print '--> ', line
-
-        #while True:
-        #    line = p.stdout.readline()
-        #    if not line:
-        #        #time.sleep(1)
-        #        if p.poll() != None:
-        #            break
-        #        continue
-        p.communicate()
-
+        for line in p.stdout:
+            log.debug(line)
         return "", ""
 

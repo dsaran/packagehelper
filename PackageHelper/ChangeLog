@@ -1,3 +1,18 @@
+2009-04-18  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/glade/releasenotesstep.glade:
+		Fixed description entries to not resize when text size is greater than
+		component.
+	* package/glade/maindataslave.glade:
+		Cleanup.
+	* package/ui/wizard.py:
+		Added support for validation on back button clicked.
+	* package/ui/listslave.py:
+		Added validation to avoid changing step while performing
+		checkout.
+		While performing checkout or processing files a message for user is
+		displayed on statusbar.
+
 2009-04-16  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* test/package/gui/tc_app.py:

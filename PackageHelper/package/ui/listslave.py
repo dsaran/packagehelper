@@ -1,4 +1,5 @@
 # encoding: utf-8
+# Version: $Id$
 
 import logging
 
@@ -26,6 +27,7 @@ log = logging.Logger("Application")
 class BaseWizardStep(WizardStep, GladeSlaveDelegate):
     """A wizard step base class definition"""
     gladefile = None
+    validate_back = False
 
     def __init__(self, previous=None, next=None, header=None, statusbar=None):
         WizardStep.__init__(self, previous, header)
@@ -68,8 +70,6 @@ class FileListSlave(GladeSlaveDelegate):
         filecolumns = [Column('path', data_type=str, title="Arquivo", expand=True, searchable=True)]
         self.filelist.set_columns(filecolumns)
  
-        #self.filelist.add_list(self.model.get_files())
-
     def on_filelist__row_activated(self, treeview, path):
         Editor(path)
 
@@ -217,6 +217,7 @@ class ProcessorThread(Thread):
 
     def run(self):
         self.status = self.RUNNING
+        self.view.running = True
         if self.view.model.checkout:
             self.result = self._run_checkout()
 
@@ -224,12 +225,13 @@ class ProcessorThread(Thread):
             self._run_process()
 
         self.status = self.FINISHED
+        self.view.running = False
 
     def _run_checkout(self):
         try:
             log.info("Iniciando Checkout...")
+            self.view.set_message("Realizando checkout dos arquivos... Aguarde!")
 
-            #self._set_running(True)
             self.processor.logger = self.logger
             status = self.processor.checkout_files()
         except:
@@ -243,13 +245,14 @@ class ProcessorThread(Thread):
         log.info(result)
 
         self.view.filelist.add_list(self.view.model.get_files())
+        self.view.reset_message()
         return status
 
     def _run_process(self):
         try:
             log.info("Iniciando processamento dos arquivos...")
+            self.view.set_message("Processando arquivos... Aguarde!")
 
-            #self._set_running(True)
             scripts = self.processor.process_files()
         except Exception:
             log.error("Erro gerando scripts!", exc_info=1)
@@ -263,11 +266,14 @@ class ProcessorThread(Thread):
         result = self.view._show_scripts(scripts)
         log.info(result)
 
+        self.view.reset_message()
         return scripts
 
 class ManageFilesStep(BaseWizardStep):
 
     gladefile = "managefilesslave"
+    validate_back = True
+    _running = False
 
     def __init__(self, model=None, previous=None, header=None,
                  statusbar=None, logger=None):
@@ -288,6 +294,9 @@ class ManageFilesStep(BaseWizardStep):
 
         self.processor = PackageProcessor(self.model)
 
+    def validate_step(self):
+        return not self.running
+
     def post_init(self):
         self.reset_message()
 
@@ -297,12 +306,10 @@ class ManageFilesStep(BaseWizardStep):
 
         thread = ProcessorThread(self.processor, self.logger, self)
         thread.start()
-        #thread.run()
         return thread
 
     def post_end(self):
         self.filetree._update_model()
-
 
     def _show_scripts(self, scripts):
         buffer = ""
