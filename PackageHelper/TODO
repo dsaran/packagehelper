@@ -2,17 +2,10 @@ Bugs:
 * drag and drop on filetree does not update model.
     * now it updates when moving INTO but no before and after
     * It is necessary to create tests for other drags
-* Problem with SVN URL under windows
-* It cannot reprocess repository:
-"""-->  Exported revision 10102.
+* problem tagging package data: "svn: Cannot mix repository and working copy sources"
 
-svn: Destination directory exists; please remove the directory or use --force to overwrite
-svn: '/tmp/TST3/VIVO52_NFO_FINAL' already exists
-"""
 
 Interface:
-* Help messages
-* Show feedback while processing package (now the screen freezes until it is finished)
 * Display result from CVS while it is running
 * Turn UI into a wizard
 * Display Script organization before writing to files (OK)

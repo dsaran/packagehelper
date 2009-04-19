@@ -244,7 +244,7 @@ class ProcessorThread(Thread):
         result = self.view._show_status(status)
         log.info(result)
 
-        self.view.filelist.add_list(self.view.model.get_files())
+        self.view.filelist.add_list(self.view.model.files)
         self.view.reset_message()
         return status
 

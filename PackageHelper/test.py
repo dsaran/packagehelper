@@ -25,6 +25,7 @@ import test.package.gui.tc_filetree
 import test.package.gui.tc_app
 import test.package.tc_domain
 import test.package.tc_config
+import test.package.util.tc_format
 
 
 tests = []
@@ -44,6 +45,7 @@ tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_domain.
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_domain.InstallScriptTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_domain.RepositoryTests))
 tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.tc_config.RepositoryConfigTests))
+tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.util.tc_format.UrlTests))
 
 # Broken until plsql parser (yapps) is finished.
 #tests.append(unittest.TestLoader().loadTestsFromTestCase(test.package.rollback.tc_parser.SqlParserTests))

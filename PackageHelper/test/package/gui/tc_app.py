@@ -301,7 +301,7 @@ class ManageFilesStepTests(TestCase):
         f3 = File('/tmp/file3.sql')
         self.checked_out_files = [f1, f2, f3]
 
-        self.model.set_files(self.checked_out_files)
+        self.model.files = self.checked_out_files
 
     def given_i_have_processed_files(self):
         s1 = InstallScript('Script 1', content=[File('File 1')])

@@ -1,3 +1,26 @@
+2009-04-19  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/releasenotes.py:
+	* resources/RN_TEMPLATE.rtf:
+		Installation steps are added dynamically now.
+		Fixed bug adding defect/requirements: only the first row was added
+		correctly.
+	* package/util/format.py:
+		New method for working with URL.
+		Test cases for url formatting.
+	* test/package/tc_scm.py:
+	* package/scm.py:
+		Added --force argument to svn export call allowing repeat.
+		Bug Fix HDt#109428: SVN Url manipulation under windows does not works.
+	* package/glade/releasenotesstep.glade:
+		Removed regression problem on entries.
+		Removed unused button from UI.
+	* package/domain/pack.py:
+	* package/processor.py:
+	* package/ui/text.py:
+	* package/ui/listslave.py:
+		Removed getters and setters from Package object.
+
 2009-04-18  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* package/glade/releasenotesstep.glade:

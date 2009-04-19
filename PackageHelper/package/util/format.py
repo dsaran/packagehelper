@@ -23,3 +23,24 @@ def uri2path(uri):
 
 class GlobalLogger:
     pass
+
+def urljoin(*args):
+    """ Join *args as a url using forward slashes.
+        Usage:
+        >>> urljoin('http://host/path', 'otherfolder', '/more/folders')
+        'http://host/path/otherfolder/more/folders'
+    """
+    paths = []
+    url = ''
+    for arg in args:
+        clean_arg = arg
+        if arg.startswith('/'):
+            clean_arg = clean_arg[1:]
+        if arg.endswith('/'):
+            clean_arg = clean_arg[:-1]
+        if clean_arg:
+            paths.append(clean_arg)
+
+    url = '/'.join(paths)
+    return url
+

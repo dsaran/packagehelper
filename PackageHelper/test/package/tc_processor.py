@@ -54,8 +54,8 @@ class PackageProcessorTests(TestCase):
         package = Package(package_name)
         package.path = self.current_dir
 
-        package.add_tag(self.package.get_tags()[0])
-        package.add_repository(self.package.get_repositories()[0])
+        package.add_tag(self.package.tags[0])
+        package.add_repository(self.package.repositories[0])
 
         processor = PackageProcessor(package)
         processor._load_files = mock.Mock()

@@ -122,18 +122,20 @@ class SubversionTests(TestCase):
 
         destination = self.destination/"TEST_TAG"
 
-        expected = "svnmock export --username NGINPackageManager --password NGINPackageManager "
+        expected = "svnmock export --force --username NGINPackageManager --password NGINPackageManager "
         expected += path + ' ' + destination
         self.runner.run.assert_called_with(expected)
 
     def testTag(self):
         """ Subversion Tag should be called with an authorized user and a message for the tag"""
+        from package.util.format import urljoin
+
         self.svn.tag(self.package_name, self.tag)
 
         self.assertEquals(len(self.runner.method_calls), 1)
 
-        path_from = Path(self.root)/self.module/'tags'/self.tag.name
-        path_to = Path(self.root)/self.module/'tags'/self.package_name
+        path_from = urljoin(self.root, self.module, 'tags', self.tag.name)
+        path_to = urljoin(self.root, self.module, 'tags', self.package_name)
 
         expected = 'svnmock copy --username NGINPackageManager --password NGINPackageManager ' \
                     '-m "Packaged by PackageHelper" %s/ %s/' % (path_from, path_to)

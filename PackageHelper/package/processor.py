@@ -29,9 +29,9 @@ class PackageProcessor:
             @param directory the base directory path to search for files.
             @return a list of File instances. """
         log.debug("Searching files in directory %s..."\
-                  % str(self.package.get_full_path()))
+                  % str(self.package.full_path))
         try:
-            path = self.package.get_full_path()
+            path = self.package.full_path
             generator = path.walk(filter, case_sensitive=False)
             files = []
             for item in generator:
@@ -54,7 +54,7 @@ class PackageProcessor:
         script_data.append('SPOOL ' + scriptName + '.log')
         script_data += list[0].getInitScript()
         script_data = []
-        path = self.package.get_full_path()
+        path = self.package.full_path
 
         for file in list:
             value = file.getScript()
@@ -117,7 +117,8 @@ class PackageProcessor:
 
     def process_files(self):
         """ Process previous checked out files generating the SQL scripts.
-            @return a list with the generated SQL scripts."""
+            @return a list of InstallScript.
+        """
         log.info("Processing files...")
 
         if not self.files_loaded:
@@ -144,14 +145,14 @@ class PackageProcessor:
             @return a list with errors occurred, if any."""
         log.info("Checking out files...")
         status = []
-        tags = self.package.get_tags()
-        repositories = self.package.get_repositories()
+        tags = self.package.tags
+        repositories = self.package.repositories
         if not tags or not repositories:
             status.append("No repository/tag to checkout.")
             log.info(status)
             return status
 
-        dest = self.package.get_full_path()
+        dest = self.package.full_path
         for repo in repositories:
             if repo.is_active():
 
@@ -167,7 +168,7 @@ class PackageProcessor:
                         status.append(e.message)
 
                     try:
-                        processor.tag(self.package.get_name(), tag.name)
+                        processor.tag(self.package.name, tag.name)
                     except ScmError, e:
                         status.append(e.message)
 
@@ -189,19 +190,22 @@ class PackageProcessor:
         log.info("done.")
  
     def _load_files(self):
-        self.package.set_files([])
+        self.package.files = []
         files = self._get_files("*.sql")
+        if len(files) > 0:
+            self.package.has_sql = True
         for file in files:
             self.package.add_file(file)
 
     def _process_other(self):
         xmls = self._get_files("*.xml")
         shellscripts = self._get_files("*.sh")
-        basedir = self.package.get_full_path()
+        basedir = self.package.full_path
         os.chdir(basedir)
         otherfiles = []
 
         if len(xmls) > 0:
+            self.package.has_xml = True
             xmlpath = basedir.joinpath("XML")
             if not xmlpath.exists():
                 xmlpath.mkdir()
@@ -214,6 +218,7 @@ class PackageProcessor:
                 otherfiles.append(xml)
         
         if len(shellscripts) > 0:
+            self.package.has_shellscript = True
             shpath = basedir.joinpath("SH")
             if not shpath.exists():
                 shpath.mkdir()
@@ -232,7 +237,7 @@ class PackageProcessor:
 
 
     def _clean_directory(self, dir):
-        if not dir.isdir() or self.package.get_full_path() == dir:
+        if not dir.isdir() or self.package.full_path == dir:
             return
         gen = dir.walkfiles()
         try:

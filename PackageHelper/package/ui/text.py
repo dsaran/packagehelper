@@ -111,8 +111,8 @@ class PackageProcessorUI:
 
     def _get_processor(self):
         package = Package(self.package)
-        package.set_tags(self.tags)
-        package.set_repositories(self.repositories)
+        package.tags = self.tags
+        package.repositories = self.repositories
         package.path = self.directory
         processor = PackageProcessor(package)
 

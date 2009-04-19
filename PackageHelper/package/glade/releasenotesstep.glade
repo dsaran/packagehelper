@@ -108,7 +108,7 @@
                                         <child>
                                             <widget class="ProxyEntry" id="defect_ptin_entry">
                                                 <property name="data_type">unicode</property>
-                                                <property name="model_attribute">defect_ptin_entry</property>
+                                                <property name="model_attribute">defect_ptin</property>
                                                 <property name="visible">True</property>
                                             </widget>
                                             <packing>
@@ -120,7 +120,7 @@
                                         <child>
                                             <widget class="ProxyEntry" id="defect_vivo_entry">
                                                 <property name="data_type">unicode</property>
-                                                <property name="model_attribute">defect_vivo_entry</property>
+                                                <property name="model_attribute">defect_vivo</property>
                                                 <property name="visible">True</property>
                                             </widget>
                                             <packing>
@@ -180,6 +180,7 @@
                                 <child>
                                     <widget class="ObjectList" id="requirementlist">
                                         <property name="visible">True</property>
+                                        <property name="vscrollbar_policy">automatic</property>
                                     </widget>
                                 </child>
                                 <child>
@@ -256,7 +257,7 @@
                                             <widget class="ProxyEntry" id="req_id_entry">
                                                 <property name="data_type">unicode</property>
                                                 <property name="is_focus">True</property>
-                                                <property name="model_attribute">req_id_entry</property>
+                                                <property name="model_attribute">req_id</property>
                                                 <property name="visible">True</property>
                                             </widget>
                                             <packing>
@@ -303,17 +304,7 @@
                     </packing>
                 </child>
                 <child>
-                    <widget class="GtkHButtonBox" id="hbuttonbox7">
-                        <property name="layout_style">end</property>
-                        <property name="visible">True</property>
-                        <child>
-                            <widget class="GtkButton" id="generate_rn_button">
-                                <property name="image_position">top</property>
-                                <property name="label" context="yes" translatable="yes">Gerar RN</property>
-                                <property name="visible">True</property>
-                            </widget>
-                        </child>
-                    </widget>
+                    <placeholder/>
                     <packing>
                         <property name="expand">False</property>
                         <property name="position">2</property>

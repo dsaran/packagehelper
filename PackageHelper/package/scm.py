@@ -3,6 +3,7 @@ import os
 from path import path as Path
 from package.config import Config
 from package.commandrunner import CommandRunner
+from package.util.format import urljoin
 
 log = logging.getLogger('[SCM]')
 
@@ -155,7 +156,7 @@ class SubversionProcessor(BaseProcessor):
             @param root Repository root
             @param module Module name
         """
-        self.root = Path(root)
+        self.root = root
         self.module = module
 
         BaseProcessor.__init__(self)
@@ -166,7 +167,7 @@ class SubversionProcessor(BaseProcessor):
             whose root repository is svn://svn.host.org/repos/
             to destination '/my/destination/path' the corresponding subversion
             command would be:
-                svn export svn://svn.host.org/repos/MyModule/tags/the_tag \
+                svn export --force svn://svn.host.org/repos/MyModule/tags/the_tag \
                     /my/destination/path
             @param dest Destination path
             @param tag Tag to export
@@ -178,8 +179,8 @@ class SubversionProcessor(BaseProcessor):
 
         destination = dest/tag.name
 
-        repo_path = self.root/self.module/'tags'/tag.name
-        cmd_template = Template("$svn_bin export $login $repo_path $dest")
+        repo_path = urljoin(self.root, self.module, 'tags', tag.name)
+        cmd_template = Template("$svn_bin export --force $login $repo_path $dest")
         command = cmd_template.substitute(svn_bin=svn_bin, repo_path=repo_path, login=login, dest=destination)
 
         self.run_command(command)
@@ -206,15 +207,15 @@ class SubversionProcessor(BaseProcessor):
 
         cmd_template = Template("$svn_bin copy $login $msg $repo_path/$base_tag_path $repo_path/tags/$tag/")
 
-        repo_path = self.root/self.module
+        repo_path = urljoin(self.root, self.module)
 
         if not base_tag:
-            base_tag_path = 'trunk/'
+            base_tag_path = 'trunk'
         else:
             base_tag_path = 'tags/%s/' % base_tag
 
         command = cmd_template.substitute(svn_bin=svn_bin, login=login, msg=message, repo_path=repo_path, \
                                             base_tag_path=base_tag_path, tag=tag)
 
-        #self.run_command(command)
+        self.run_command(command)
 
