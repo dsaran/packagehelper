@@ -44,3 +44,33 @@ def urljoin(*args):
     url = '/'.join(paths)
     return url
 
+def url_split(url):
+    """ Splits a URL into two strings containing the base url and parent directory.
+        Example:
+        >>>url_split('http://host/path/otherfolder/some/folder')
+        ('http://host/path/otherfolder/some', 'folder')"""
+    url = url_normalize(url)
+    if not url:
+        raise ValueError("Invalid URL: %s" %url)
+
+    protocol, rest = url.split('://')
+
+    split = rest.split('/')
+
+    host = split[0]
+    if len(split) == 1:
+        last = '/'
+        base = url
+    else:
+        last = split[-1]
+        base = url_normalize(url.rstrip(last))
+    
+    return base, last
+
+def url_normalize(url):
+    """ Removes trailing '/' from url"""
+    if not url:
+        return ""
+
+    return url.rstrip('/')
+

@@ -14,10 +14,13 @@ class CommandRunner:
 
     def run(self, command):
         """ Runs the command and returns the stderr.
-            @return stderr from command execution."""
+            @return strout, stderr from command execution."""
         log.debug("Executing command: " + command)
         p = subprocess.Popen(command.split(), stdout=subprocess.PIPE)
+        output = ""
         for line in p.stdout:
+            output += line
             log.debug(line)
-        return "", ""
+        stdout, stderr = p.communicate()
+        return output, stderr
 

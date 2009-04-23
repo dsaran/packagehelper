@@ -3,17 +3,21 @@
 
 
 import logging
+import datetime
 from kiwi.ui.delegates import Delegate
 from kiwi.ui.objectlist import Column
 from package.domain.environment import Environment
+from package.domain.repository import Repository, ScmType
+from package.domain.tag import Tag
 from package.ui.filechooser import FileChooser
 from package.config import Config
+from package.util.svnutil import ReleaseXmlParser
 
 log = logging.getLogger('ConfigEditor')
 
 class ConfigEditor(Delegate):
     gladefile = "configuration"
-    proxy_widgets = ["cvs_entry", "sqlplus_entry", "ant_entry", "svn_entry"] 
+    proxy_widgets = ["cvs_entry", "sqlplus_entry", "ant_entry", "svn_entry", "update_url_entry"]
     widgets = proxy_widgets + ["environment_list"]
     _changed = None
     _file = None
@@ -30,8 +34,17 @@ class ConfigEditor(Delegate):
                          Column('conn_string', data_type=str, title="String conexão", editable=True, width=400),
                          Column('active', data_type=bool, title="Ativo", editable=True)])
 
+        self.release_list.set_columns(
+                        [Column('version', data_type=str, title="Versão"),
+                         Column('type', data_type=str, title="Tipo"),
+                         Column('time', data_type=str, title="Data")])
+
         self.add_proxy(self._config, self.proxy_widgets)
         self.show_all()
+
+    #
+    # Hooks
+    #
 
     def on_apply_button__clicked(self, *args):
         self._save_config()
@@ -63,6 +76,36 @@ class ConfigEditor(Delegate):
         if selected:
             self._config.remove_environment(selected)
             self.environment_list.remove(selected)
+
+    def on_refresh_releases_button__clicked(self, button):
+        repository_url = self._config.update_url
+        log.info("Using repository %s" % repository_url)
+        self.repository = Repository(root=repository_url, type=ScmType.SVN)
+        xml = self.repository.processor.list('tags')
+        if not xml:
+            return
+        parser = ReleaseXmlParser(text=xml)
+        releases = parser.get_releases()
+        for release in releases:
+            self.release_list.append(release)
+
+
+    def on_update_release_button__clicked(self, button):
+        selected = self.release_list.get_selected()
+        if not selected:
+            return
+
+        from package.util.runtime import WORKING_DIR
+        from package import __version__
+        dest = WORKING_DIR
+
+        tag = Tag(selected.name)
+        self.repository.processor.export(dest, tag, create_tag_dir=False)
+
+
+    #
+    # Internal
+    #
 
     def _load_config(self):
         log.info("Loading configuration...")

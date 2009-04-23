@@ -10,7 +10,7 @@ log = logging.getLogger('[SCM]')
 class ScmError(Exception):
     message = None
 
-    def __init__(self, msg, cause=None):
+    def __init__(self, msg, cause=None, stdout=None):
         self.cause = cause
         self.message = msg
 
@@ -29,7 +29,9 @@ class BaseProcessor:
             log.info(output)
         if error:
             log.error(error)
-            raise ScmError(error)
+            raise ScmError(error, stdout=output)
+
+        return output
 
     def get_config(self):
         return Config(load=True)
@@ -161,8 +163,14 @@ class SubversionProcessor(BaseProcessor):
 
         BaseProcessor.__init__(self)
 
-    def export(self, dest, tag):
+    def export(self, dest, tag, tag_type='tag', username=None, password=None, create_tag_dir=True):
         """ Export tag content of the given module to destination.
+            @param dest path where the files should be exported to.
+            @param tag tag to export
+            @param tag_type if tag is a tag or branch, valid values are 'tag' and 'branch' (default is 'tag')
+            @param username username to use on export
+            @param password password to use on export
+            @create_tag_dir if it should files should be exported to dest/tag/ (default is True)
             For example, to export a tag new_tag of module MyModule
             whose root repository is svn://svn.host.org/repos/
             to destination '/my/destination/path' the corresponding subversion
@@ -177,11 +185,16 @@ class SubversionProcessor(BaseProcessor):
         from string import Template
         svn_bin = self.get_config().svn
 
-        destination = dest/tag.name
+        destination = dest/tag.name if create_tag_dir else dest
+
+        if not username or not password:
+            login_arg = login
+        else:
+            login_arg = "--username %s --password %s" % (username, password)
 
         repo_path = urljoin(self.root, self.module, 'tags', tag.name)
         cmd_template = Template("$svn_bin export --force $login $repo_path $dest")
-        command = cmd_template.substitute(svn_bin=svn_bin, repo_path=repo_path, login=login, dest=destination)
+        command = cmd_template.substitute(svn_bin=svn_bin, repo_path=repo_path, login=login_arg, dest=destination)
 
         self.run_command(command)
 
@@ -219,3 +232,26 @@ class SubversionProcessor(BaseProcessor):
 
         self.run_command(command)
 
+    def list(self, path='trunk'):
+        """ List content of path at repository. If no path is given the content of trunk will be listed.
+            @param path the path inside the module repository to list
+            @return a xml with content of repository path
+            Corresponds to SVN command:
+                svn list --xml svn://svn.host.org/repos/path/
+        """
+        log.info("Listing repository content for path '%s'" % path)
+
+
+        from string import Template
+        svn_bin = self.get_config().svn
+
+        cmd_template = Template("$svn_bin list --xml $path")
+
+        repo_path = urljoin(self.root, self.module, path)
+
+        command = cmd_template.substitute(svn_bin=svn_bin, path=repo_path)
+
+        result = self.run_command(command)
+
+        return result
+ 

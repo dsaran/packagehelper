@@ -127,7 +127,7 @@
                                         <child>
                                             <widget class="ProxyEntry" id="ant_entry">
                                                 <property name="data_type">str</property>
-                                                <property name="model_attribute">ant_entry</property>
+                                                <property name="model_attribute">ant</property>
                                                 <property name="sensitive">False</property>
                                                 <property name="text" context="yes" translatable="yes">  </property>
                                                 <property name="visible">True</property>
@@ -319,6 +319,87 @@
                             <packing>
                                 <property name="position">1</property>
                                 <property name="tab_label" context="yes" translatable="yes">Banco de dados</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="GtkVBox" id="tab3">
+                                <property name="visible">True</property>
+                                <child>
+                                    <placeholder/>
+                                    <packing/>
+                                </child>
+                                <child>
+                                    <widget class="GtkHBox" id="hbox1">
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <widget class="ProxyLabel" id="kiwilabel1">
+                                                <property name="label" context="yes" translatable="yes">Update URL:</property>
+                                                <property name="model_attribute">kiwilabel1</property>
+                                                <property name="visible">True</property>
+                                                <property name="xalign">0.0</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="expand">False</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="ProxyEntry" id="update_url_entry">
+                                                <property name="data_type">str</property>
+                                                <property name="model_attribute">update_url</property>
+                                                <property name="visible">True</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="position">1</property>
+                                            </packing>
+                                        </child>
+                                        <child>
+                                            <widget class="ProxyButton" id="refresh_releases_button">
+                                                <property name="data_type">str</property>
+                                                <property name="label" context="yes" translatable="yes">Buscar</property>
+                                                <property name="model_attribute">refresh_releases_button</property>
+                                                <property name="visible">True</property>
+                                            </widget>
+                                            <packing>
+                                                <property name="expand">False</property>
+                                                <property name="position">2</property>
+                                            </packing>
+                                        </child>
+                                    </widget>
+                                    <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">1</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <widget class="ObjectList" id="release_list">
+                                        <property name="visible">True</property>
+                                    </widget>
+                                    <packing>
+                                        <property name="position">2</property>
+                                    </packing>
+                                </child>
+                                <child>
+                                    <widget class="GtkHButtonBox" id="hbuttonbox3">
+                                        <property name="layout_style">end</property>
+                                        <property name="visible">True</property>
+                                        <child>
+                                            <widget class="ProxyButton" id="update_release_button">
+                                                <property name="data_type">str</property>
+                                                <property name="label" context="yes" translatable="yes">Realizar Update</property>
+                                                <property name="model_attribute">update_release_button</property>
+                                                <property name="visible">True</property>
+                                            </widget>
+                                        </child>
+                                    </widget>
+                                    <packing>
+                                        <property name="expand">False</property>
+                                        <property name="position">3</property>
+                                    </packing>
+                                </child>
+                            </widget>
+                            <packing>
+                                <property name="position">2</property>
+                                <property name="tab_label" context="yes" translatable="yes">Atualizações</property>
                             </packing>
                         </child>
                     </widget>

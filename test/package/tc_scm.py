@@ -35,14 +35,14 @@ class CvsTest(TestCase):
         """ Login should call cvs with the correct command line."""
         self.cvs.login()
 
-        self.assertEquals(self.runner.run.call_count, 1)
+        self.assertEquals(1, self.runner.run.call_count)
         self.runner.run.assert_called_with("cvsmock -d%s login" % self.cvsroot)
 
     def testExport(self):
         """ Export should call login and then call export with the correct command line."""
         self.cvs.export(self.test_data_dir, self.tag)
 
-        self.assertEquals(len(self.runner.method_calls), 2) 
+        self.assertEquals(2, len(self.runner.method_calls)) 
  
         expected = "cvsmock -q -z 9 -d%s export -d %s -r %s %s" % (self.cvsroot, self.tag, self.tag, self.module)
         self.runner.run.assert_called_with(expected)
@@ -116,7 +116,7 @@ class SubversionTests(TestCase):
         """ Export should call export with the correct command line."""
         self.svn.export(self.destination, self.tag)
 
-        self.assertEquals(len(self.runner.method_calls), 1) 
+        self.assertEquals(1, len(self.runner.method_calls)) 
  
         path = Path(self.root)/self.module/'tags'/self.tag.name
 
@@ -132,7 +132,7 @@ class SubversionTests(TestCase):
 
         self.svn.tag(self.package_name, self.tag)
 
-        self.assertEquals(len(self.runner.method_calls), 1)
+        self.assertEquals(1, len(self.runner.method_calls))
 
         path_from = urljoin(self.root, self.module, 'tags', self.tag.name)
         path_to = urljoin(self.root, self.module, 'tags', self.package_name)
@@ -141,4 +141,32 @@ class SubversionTests(TestCase):
                     '-m "Packaged by PackageHelper" %s/ %s/' % (path_from, path_to)
 
         self.runner.run.assert_called_with(expected)
+
+    def testListNoPath(self):
+        """ Subversion List should list content of 'trunk' if no path is given"""
+        self.svn.list()
+
+        self.assertEquals(1, self.runner.run.call_count)
+
+        expected = "svnmock list --xml svn://svn.host.org/repos/test/trunk"
+        self.runner.run.assert_called_with(expected)
+
+    def testListPath(self):
+        """ Subversion List should list content of given path"""
+        self.svn.list('tags/BASE')
+
+        self.assertEquals(1, self.runner.run.call_count)
+
+        expected = "svnmock list --xml svn://svn.host.org/repos/test/tags/BASE"
+        self.runner.run.assert_called_with(expected)
+ 
+    def testListReturnValue(self):
+        """ Subversion List should return xml correctly"""
+        self.runner.run.return_value = "<lists></lists>", ""
+
+        result = self.svn.list()
+
+        self.assertEquals(1, self.runner.run.call_count)
+
+        self.assertEquals("<lists></lists>", result)
 

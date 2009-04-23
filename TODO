@@ -1,16 +1,11 @@
 Bugs:
-* drag and drop on filetree does not update model.
-    * now it updates when moving INTO but no before and after
-    * It is necessary to create tests for other drags
 * problem tagging package data: "svn: Cannot mix repository and working copy sources"
 
 
 Interface:
-* Display result from CVS while it is running
-* Turn UI into a wizard
-* Display Script organization before writing to files (OK)
+* Display result from CVS while it is running:
+ * Performance problem writing directly to textview, need another way to display progress of checkout.
 * Minerva integration
-* Add a new step after the manage files step to write files to filesystem and display created scripts
 
 Parser:
 * Add support to  "insert as select"
@@ -18,4 +13,4 @@ Parser:
 * Allow parenthesis on where clause
 * Parsing full packages broken
 
-Implementing CONFIG
+* change date property of Release object to datetime (how to convert from string ?)

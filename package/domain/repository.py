@@ -3,6 +3,7 @@
 
 from package.scm import ScmError, CvsProcessor, SubversionProcessor
 from kiwi.python import enum
+from package.util.format import url_split
 
 class ScmType(enum):
     CVS = 1
@@ -19,12 +20,18 @@ class Repository:
     active = None
     _type = None
 
-    def __init__(self, root, module, type=ScmType.CVS, active=True):
+    def __init__(self, root, module=None, type=ScmType.CVS, active=True):
         """ Initializes the Repository instance.
             @param root the CVSROOT.
             @param module repository's module.
             @param type The SCM Type of repository.
             @param active if the repository is active (default True)"""
+
+        if root and type == ScmType.SVN and not module:
+            root, module = url_split(root)
+        elif not module:
+            raise ValueError("Repository should have a module")
+
         self.root = root
         self.module = module
         self.active = active

@@ -22,13 +22,11 @@ class ConfigLoader:
         self.file.write_text(data)
 
 class Config:
-    #_cvs_path = 'cvs' 
-    #_sqlplus_path = 'sqlplus'
-    #_ant_path = 'ant'
     sqlplus = 'sqlplus'
     cvs = 'cvs'
     svn = 'svn'
     ant = 'ant'
+    update_url = ''
 
     _environments = []
 
@@ -50,6 +48,7 @@ class Config:
             self.sqlplus = config.sqlplus or self.sqlplus
             self.ant = config.ant or self.ant
             self.svn = config.svn or self.svn
+            self.update_url = config.update_url or self.update_url
             self._environments = config.get_environments() or self._environments
 
     def get_environments(self):
@@ -140,7 +139,7 @@ class Repositories:
         config = Config()
         try:
             data = self.loader.read_config_file()
-            if len(data) > 0:
+            if data:
                 import yaml
                 repo_map = yaml.load(data)
                 repos = [self._from_map(map) for map in repo_map]

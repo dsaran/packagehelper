@@ -1,5 +1,5 @@
 from test.framework import TestCase
-from package.util.format import urljoin
+from package.util.format import urljoin, url_split
 
 class UrlTests(TestCase):
 
@@ -45,4 +45,38 @@ class UrlTests(TestCase):
         url = 'http://hostname.org/test/'
         joined = urljoin('http://', 'hostname.org', 'test', '/suffix1/', 'suffix2')
         self.assertEquals('http://hostname.org/test/suffix1/suffix2', joined)
+
+    def testUrlSplitTrailingSlash(self):
+        """ UrlSplit should correctly split a url with trailing slash"""
+        url = 'http://hostname.org/test/path/'
+        base, path = url_split(url)
+
+        self.assertEquals('http://hostname.org/test', base)
+        self.assertEquals('path', path)
+
+    def testUrlSplitNoTrailingSlash(self):
+        """ UrlSplit should correctly split a url with no trailing slash"""
+        url = 'http://hostname.org/test/path'
+        base, path = url_split(url)
+
+        self.assertEquals('http://hostname.org/test', base)
+        self.assertEquals('path', path)
+
+    def testUrlRoot(self):
+        """ UrlSplit should split correctly a root URL"""
+        url = 'http://hostname.org/'
+
+        base, path = url_split(url)
+
+        self.assertEquals('http://hostname.org', base)
+        self.assertEquals('/', path)
+
+    def testUrlRootNoSlash(self):
+        """ UrlSplit should split correctly a root URL with no trailing slash"""
+        url = 'http://hostname.org'
+
+        base, path = url_split(url)
+
+        self.assertEquals('http://hostname.org', base)
+        self.assertEquals('/', path)
 

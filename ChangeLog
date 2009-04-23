@@ -1,3 +1,31 @@
+2009-04-22  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/scm.py:
+	* test/package/tc_scm.py:
+		Subversion export supports more options and there is a 'list' method
+		to get contents of a repository.
+		Fixes on assertions.
+		Tests for Subversion List command.
+	* package/util/svnutil.py:
+	* test/package/util/tc_svnutil.py:
+		Usefull tools to ease working with subversion.
+		Test cases for svn utilities.
+	* package/util/format.py:
+	* test/package/util/tc_format.py:
+		New function to split urls.
+		Added test cases for url split.
+	* package/commandrunner.py:
+		It now returns the stdout content.
+	* package/domain/repository.py:
+		On subversion repositories 'module' is not mandatory anymore. If not
+		given Repository will try to get from root url.		
+	* package/glade/configuration.glade:
+	* package/ui/config.py:
+		Added logic for automatic update feature.
+	* package/config.py:
+		Added a new property 'update_url' to store svn url for automatic
+		update.
+
 2009-04-19  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* package/releasenotes.py:
