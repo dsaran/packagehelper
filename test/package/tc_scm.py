@@ -6,13 +6,14 @@ from test.framework import TestCase
 from path import path as Path
 from package.domain.tag import Tag
 from package.scm import CvsProcessor, SubversionProcessor
+from package.commandrunner import Command
 
 class CvsTest(TestCase):
 
     def setUp(self):
         self.cvsroot = ":pserver:user:pass@localhost:/var/local/cvs"
         self.module = "TestData/TestData"
-        self.tag = "TEST_TAG"
+        self.tag = Tag("TEST_TAG")
         current_dir = Path(__file__).dirname()
         self.test_data_dir = current_dir / "test_data"
 
@@ -36,7 +37,8 @@ class CvsTest(TestCase):
         self.cvs.login()
 
         self.assertEquals(1, self.runner.run.call_count)
-        self.runner.run.assert_called_with("cvsmock -d%s login" % self.cvsroot)
+        expected_login_cmd = Command("cvsmock", ["-d", self.cvsroot, "login"])
+        self.runner.run.assert_called_with(expected_login_cmd)
 
     def testExport(self):
         """ Export should call login and then call export with the correct command line."""
@@ -44,8 +46,8 @@ class CvsTest(TestCase):
 
         self.assertEquals(2, len(self.runner.method_calls)) 
  
-        expected = "cvsmock -q -z 9 -d%s export -d %s -r %s %s" % (self.cvsroot, self.tag, self.tag, self.module)
-        self.runner.run.assert_called_with(expected)
+        expected_cmd = Command("cvsmock",  ["-q", "-z", "9", "-d", self.cvsroot, "export", "-d", self.tag, "-r", self.tag, self.module])
+        self.runner.run.assert_called_with(expected_cmd)
 
         self.assertTrue(self.test_data_dir.exists(), "Destination path should have been created.")
 
@@ -122,9 +124,10 @@ class SubversionTests(TestCase):
 
         destination = self.destination/"TEST_TAG"
 
-        expected = "svnmock export --force --username NGINPackageManager --password NGINPackageManager "
-        expected += path + ' ' + destination
-        self.runner.run.assert_called_with(expected)
+        expected_cmd = Command("svnmock")
+        expected_cmd.args = ["export", "--force", "--username", "NGINPackageManager", "--password", "NGINPackageManager",
+                        path, destination]
+        self.runner.run.assert_called_with(expected_cmd)
 
     def testTag(self):
         """ Subversion Tag should be called with an authorized user and a message for the tag"""
@@ -134,13 +137,15 @@ class SubversionTests(TestCase):
 
         self.assertEquals(1, len(self.runner.method_calls))
 
-        path_from = urljoin(self.root, self.module, 'tags', self.tag.name)
-        path_to = urljoin(self.root, self.module, 'tags', self.package_name)
+        path_from = urljoin(self.root, self.module, 'tags', self.tag.name) + '/'
+        path_to = urljoin(self.root, self.module, 'tags', self.package_name) + '/'
 
-        expected = 'svnmock copy --username NGINPackageManager --password NGINPackageManager ' \
-                    '-m "Packaged by PackageHelper" %s/ %s/' % (path_from, path_to)
+        expected_cmd = Command("svnmock")
+        args = ['copy', '--username',  'NGINPackageManager', '--password', 'NGINPackageManager',
+                    '-m', '"Packaged by PackageHelper"', path_from, path_to]
+        expected_cmd.args = args
 
-        self.runner.run.assert_called_with(expected)
+        self.runner.run.assert_called_with(expected_cmd)
 
     def testListNoPath(self):
         """ Subversion List should list content of 'trunk' if no path is given"""
@@ -148,8 +153,10 @@ class SubversionTests(TestCase):
 
         self.assertEquals(1, self.runner.run.call_count)
 
-        expected = "svnmock list --xml svn://svn.host.org/repos/test/trunk"
-        self.runner.run.assert_called_with(expected)
+        expected_cmd = Command("svnmock")
+        expected_cmd.args = "list --username NGINPackageManager --password NGINPackageManager --xml svn://svn.host.org/repos/test/trunk".split()
+
+        self.runner.run.assert_called_with(expected_cmd)
 
     def testListPath(self):
         """ Subversion List should list content of given path"""
@@ -157,8 +164,9 @@ class SubversionTests(TestCase):
 
         self.assertEquals(1, self.runner.run.call_count)
 
-        expected = "svnmock list --xml svn://svn.host.org/repos/test/tags/BASE"
-        self.runner.run.assert_called_with(expected)
+        expected_cmd = Command("svnmock")
+        expected_cmd.args = "list --username NGINPackageManager --password NGINPackageManager --xml svn://svn.host.org/repos/test/tags/BASE".split()
+        self.runner.run.assert_called_with(expected_cmd)
  
     def testListReturnValue(self):
         """ Subversion List should return xml correctly"""

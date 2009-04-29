@@ -237,8 +237,6 @@ class ProcessorThread(Thread):
         except:
             log.error("Erro realizando checkout dos repositorios!", exc_info=1)
             raise
-        #finally:
-        #    self._set_running(False)
         log.info("Checkout finalizado.")
 
         result = self.view._show_status(status)

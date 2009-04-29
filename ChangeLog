@@ -1,3 +1,22 @@
+=== 1.2.1 ===
+
+2009-04-28  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/commandrunner.py:
+		Fixed command runner to work properly under windows.
+		CommandRunner now expects a Command object as input argument.
+	* test/package/tc_scm.py:
+	* package/scm.py:
+		SubversionProcessor's list changed to use authentication.
+		Changes to work with new CommandRunner.
+	* package/ui/gui.py:
+		Fixed problem with threads under Windows systems.
+	* package/ui/listslave.py:
+		Cleanup.
+	* package/ui/config.py:
+	* package/glade/configuration.glade:
+		Added feedback messages to update.
+
 2009-04-22  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* package/scm.py:

@@ -2,7 +2,7 @@ import logging
 import os
 from path import path as Path
 from package.config import Config
-from package.commandrunner import CommandRunner
+from package.commandrunner import CommandRunner, Command
 from package.util.format import urljoin
 
 log = logging.getLogger('[SCM]')
@@ -56,12 +56,13 @@ class CvsProcessor(BaseProcessor):
     def login(self):
         if self.logged:
             return
-        output, errorfile = self.runner.run(self.get_config().cvs + " -d%s login" % self.root)
+
+        command = Command(self.get_config().cvs)
+        command.args = ["-d", self.root, "login"]
+        output = self.run_command(command)
+
         if output:
             log.info(output)
-        if errorfile:
-            log.error(errorfile)
-            raise ScmError(errorfile)
         self.logged = True
 
 
@@ -70,7 +71,7 @@ class CvsProcessor(BaseProcessor):
             Corresponding CVS command would be:
                 cvs export -r tag -d dest
             @param dest destination path where the files should be exported into.
-            @param tag the TAG of files to be exported.
+            @param tag the TAG of files to be exported. Should be a Tag object.
         """
         log.info("Exporting files...")
         if not tag:
@@ -99,21 +100,15 @@ class CvsProcessor(BaseProcessor):
 
         log.debug("cvs path: " + cvs_path)
 
-        command = cvs_path + " -q -z 9 -d%s export -d %s -r %s %s" %\
-                (self.root,\
-                tag,\
-                tag,\
-                self.module)
+        command = Command(cvs_path)
+        command.args = ["-q", "-z", "9", "-d", self.root, "export", "-d", tag.name, "-r", tag.name, self.module]
 
-        output, error = self.runner.run(command)
+        output = self.run_command(command)
 
         os.chdir(original_cwd)
 
         if output:
             log.info(output)
-        if error:
-            log.error(error)
-            raise ScmError(error)
 
         log.info("done.")
 
@@ -123,17 +118,14 @@ class CvsProcessor(BaseProcessor):
             Corresponding CVS command would be:
                 cvs -d :pserver:user:pass@cvs.host.org:/path/to/cvs \
                     rtag [-r base_tag] tag
-            @param tag the tag to put on files.
+            @param tag the tag to put on files. Tag should be a str.
             @param base_tag if given, use base_tag as base instead of Head."""
         self.login()
 
         cvs_path = self.get_config().cvs
-        #TODO: Validate arguments.
-        command = cvs_path + " -q -z 9 rtag -F -r %s %s %s" %\
-                (base_tag,\
-                tag,\
-                self.module)
-        #log.debug("Executing command: " + command)
+        command = Command(cvs_path)
+        command.args = ['-q', '-z', '9', 'rtag', '-F', '-r', base_tag, tag, self.module]
+
         output, error = self.runner.run(command)
 
         if output:
@@ -148,9 +140,12 @@ class CvsProcessor(BaseProcessor):
         return config
 
 login = "--username NGINPackageManager --password NGINPackageManager"
-message = '-m "Packaged by PackageHelper"'
+message = '"Packaged by PackageHelper"'
 
 class SubversionProcessor(BaseProcessor):
+    username = "NGINPackageManager"
+    password = "NGINPackageManager"
+
     def __init__(self, root, module=None):
         """ Initialize subversion processor.
             If the URL of trunk of a module is svn://svn.host.org/repos/MyModule/trunk
@@ -166,7 +161,7 @@ class SubversionProcessor(BaseProcessor):
     def export(self, dest, tag, tag_type='tag', username=None, password=None, create_tag_dir=True):
         """ Export tag content of the given module to destination.
             @param dest path where the files should be exported to.
-            @param tag tag to export
+            @param tag tag to export. Should be a Tag object.
             @param tag_type if tag is a tag or branch, valid values are 'tag' and 'branch' (default is 'tag')
             @param username username to use on export
             @param password password to use on export
@@ -177,24 +172,20 @@ class SubversionProcessor(BaseProcessor):
             command would be:
                 svn export --force svn://svn.host.org/repos/MyModule/tags/the_tag \
                     /my/destination/path
-            @param dest Destination path
-            @param tag Tag to export
         """
         log.info("Checking out data...")
 
-        from string import Template
         svn_bin = self.get_config().svn
 
         destination = dest/tag.name if create_tag_dir else dest
 
         if not username or not password:
-            login_arg = login
-        else:
-            login_arg = "--username %s --password %s" % (username, password)
+            username, password = self.username, self.password
 
         repo_path = urljoin(self.root, self.module, 'tags', tag.name)
-        cmd_template = Template("$svn_bin export --force $login $repo_path $dest")
-        command = cmd_template.substitute(svn_bin=svn_bin, repo_path=repo_path, login=login_arg, dest=destination)
+
+        command = Command(svn_bin)
+        command.args = ["export", "--force", "--username", username, "--password", password, repo_path, destination]
 
         self.run_command(command)
 
@@ -215,10 +206,7 @@ class SubversionProcessor(BaseProcessor):
         """
         log.info("Tagging repository...")
 
-        from string import Template
         svn_bin = self.get_config().svn
-
-        cmd_template = Template("$svn_bin copy $login $msg $repo_path/$base_tag_path $repo_path/tags/$tag/")
 
         repo_path = urljoin(self.root, self.module)
 
@@ -227,8 +215,10 @@ class SubversionProcessor(BaseProcessor):
         else:
             base_tag_path = 'tags/%s/' % base_tag
 
-        command = cmd_template.substitute(svn_bin=svn_bin, login=login, msg=message, repo_path=repo_path, \
-                                            base_tag_path=base_tag_path, tag=tag)
+        from_path = '%s/%s' % (repo_path, base_tag_path)
+        to_path = '%s/tags/%s/' % (repo_path, tag)
+        command = Command(svn_bin)
+        command.args = ['copy', "--username", self.username, "--password", self.password, "-m", message,  from_path, to_path]
 
         self.run_command(command)
 
@@ -241,15 +231,12 @@ class SubversionProcessor(BaseProcessor):
         """
         log.info("Listing repository content for path '%s'" % path)
 
-
-        from string import Template
         svn_bin = self.get_config().svn
-
-        cmd_template = Template("$svn_bin list --xml $path")
 
         repo_path = urljoin(self.root, self.module, path)
 
-        command = cmd_template.substitute(svn_bin=svn_bin, path=repo_path)
+        command = Command(svn_bin)
+        command.args = ["list", "--username", self.username, "--password", self.password, "--xml", repo_path]
 
         result = self.run_command(command)
 

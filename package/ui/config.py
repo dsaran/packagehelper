@@ -78,8 +78,12 @@ class ConfigEditor(Delegate):
             self.environment_list.remove(selected)
 
     def on_refresh_releases_button__clicked(self, button):
+        self.update_status_lbl.set_text("")
         repository_url = self._config.update_url
         log.info("Using repository %s" % repository_url)
+        if not repository_url:
+            self.update_status_lbl.set_text("Favor preencher a URL para update")
+            return
         self.repository = Repository(root=repository_url, type=ScmType.SVN)
         xml = self.repository.processor.list('tags')
         if not xml:
@@ -89,19 +93,24 @@ class ConfigEditor(Delegate):
         for release in releases:
             self.release_list.append(release)
 
-
     def on_update_release_button__clicked(self, button):
+        self.update_status_lbl.set_text("")
         selected = self.release_list.get_selected()
         if not selected:
             return
 
         from package.util.runtime import WORKING_DIR
-        from package import __version__
         dest = WORKING_DIR
 
         tag = Tag(selected.name)
-        self.repository.processor.export(dest, tag, create_tag_dir=False)
+        try:
+            self.repository.processor.export(dest, tag, create_tag_dir=False)
+        except:
+            self.update_status_lbl.set_text("Erro efetuando update, verifique o log para maiores informações.")
+            raise
 
+        self.update_status_lbl.set_text("Update realizado com sucesso, reinicie a aplicação.")
+        
 
     #
     # Internal

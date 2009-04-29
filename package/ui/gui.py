@@ -103,7 +103,9 @@ class PackageProcessorGUI(Delegate):
     def main(self):
         self.show_all()
         gtk.gdk.threads_init()
+        gtk.gdk.threads_enter()
         gtk.main()
+        gtk.gdk.threads_leave()
 
     def get_package(self):
         return self.package_entry.get_text()
