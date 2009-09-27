@@ -3,7 +3,7 @@
 # Version: $Id$
 
 class Tag(object):
-    name = None
+    _name = None
 
     def __init__(self, name=None):
         """ Initializes the Tag instance.
@@ -20,4 +20,13 @@ class Tag(object):
         return self.name
 
     __repr__ = __str__
+
+    def get_name(self):
+        return self._name
+
+    def set_name(self, name):
+        if (name):
+            self._name = name.strip()
+
+    name = property(get_name, set_name, doc="Tag name")
 

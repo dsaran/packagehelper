@@ -1,3 +1,11 @@
+=== 1.2.2 ===
+
+2009-09-27  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/domain/tag.py:
+		Tag names are now stripped to avoid trailing and leading white spaces,
+		a common mistake on copy-and-paste.
+
 === 1.2.1 ===
 
 2009-04-28  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
