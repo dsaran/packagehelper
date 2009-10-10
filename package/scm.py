@@ -185,7 +185,7 @@ class SubversionProcessor(BaseProcessor):
         repo_path = urljoin(self.root, self.module, 'tags', tag.name)
 
         command = Command(svn_bin)
-        command.args = ["export", "--force", "--username", username, "--password", password, repo_path, destination]
+        command.args = ["export", "--force", "--no-auth-cache", "--username", username, "--password", password, repo_path, destination]
 
         self.run_command(command)
 
@@ -218,7 +218,7 @@ class SubversionProcessor(BaseProcessor):
         from_path = '%s/%s' % (repo_path, base_tag_path)
         to_path = '%s/tags/%s/' % (repo_path, tag)
         command = Command(svn_bin)
-        command.args = ['copy', "--username", self.username, "--password", self.password, "-m", message,  from_path, to_path]
+        command.args = ['copy', "--no-auth-cache", "--username", self.username, "--password", self.password, "-m", message,  from_path, to_path]
 
         self.run_command(command)
 
@@ -236,7 +236,7 @@ class SubversionProcessor(BaseProcessor):
         repo_path = urljoin(self.root, self.module, path)
 
         command = Command(svn_bin)
-        command.args = ["list", "--username", self.username, "--password", self.password, "--xml", repo_path]
+        command.args = ["list", "--no-auth-cache", "--username", self.username, "--password", self.password, "--xml", repo_path]
 
         result = self.run_command(command)
 

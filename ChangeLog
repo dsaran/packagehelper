@@ -1,5 +1,11 @@
 === 1.2.2 ===
 
+2009-10-10  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+
+	* package/scm.py:
+		Added --no-auth-cache to subversion commands to avoid storing
+		package helper username into local cache.
+
 2009-09-27  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
 
 	* package/domain/tag.py:
