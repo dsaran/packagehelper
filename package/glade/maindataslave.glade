@@ -317,25 +317,25 @@ Pressione Enter para registrar alteração</property>
 
 Exemplos de repositório
 - SVN:
-  - Repositório: svn://svn.ptinovacao.com.br/ngin
-  - Módulo: CustomerCare
+  - Repositório: svn://hostname/repo
+  - Módulo: ApplicationTest
   - Type: Svn
 
 - CVS:
-  - Repositório: :pserver:user:password@cvs.intra.cet.pt:/home/cvs/vaga
-  - Módulo: ProCareV2/CustomerCare
+  - Repositório: :pserver:user:password@hostname:/path/to/repo
+  - Módulo: PathTo/ApplicationTest
   - Type: Cvs</property>
                                         <property name="tooltip_text" context="yes" translatable="yes">Clique para editar e pressione Enter para registrar alterações.
 
 Exemplos de repositório
 - SVN:
-  - Repositório: svn://svn.ptinovacao.com.br/ngin
-  - Módulo: CustomerCare
+  - Repositório: svn://hostname/repo
+  - Módulo: ApplicationTest
   - Type: Svn
 
 - CVS:
-  - Repositório: :pserver:user:password@cvs.intra.cet.pt:/home/cvs/vaga
-  - Módulo: ProCareV2/CustomerCare
+  - Repositório: :pserver:user:password@hostname:/path/to/repo
+  - Módulo: PathTo/ApplicationTest
   - Type: Cvs</property>
                                         <property name="visible">True</property>
                                         <property name="vscrollbar_policy">automatic</property>

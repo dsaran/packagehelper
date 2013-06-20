@@ -112,7 +112,7 @@
                         <child>
                             <widget class="HyperLink" id="about_url">
                                 <property name="border_width">2</property>
-                                <property name="text" context="yes" translatable="yes">http://pegasus.ptinovacao.com.br/devwiki/PackageHelper</property>
+                                <property name="text" context="yes" translatable="yes">URL</property>
                                 <property name="visible">True</property>
                                 <property name="visible_window">True</property>
                             </widget>

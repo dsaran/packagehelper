@@ -1,4 +1,4 @@
-#!/usr/bin/python2.5
+#!/usr/bin/python
 # Version: $Id: run.py,v 1.4 2009-04-04 00:16:18 daniel Exp $
 
 from os import path

@@ -8,8 +8,8 @@ from package.config import Config
 from package.util.runtime import WORKING_DIR
 
 
-DEFECT_ROW= """\\pard\\intbl\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\sb60\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #IDPTIN#}
-\\cell\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\sb60\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #IDVIVO#}                                                                                                                        \\cell\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #DESCRIPTION#}                                                                                                                       \\cell\\row\\pard"""
+DEFECT_ROW= """\\pard\\intbl\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\sb60\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #IDLOCAL#}
+\\cell\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\sb60\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #IDCLIENT#}                                                                                                                        \\cell\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #DESCRIPTION#}                                                                                                                       \\cell\\row\\pard"""
 CELL = """\\pard\\intbl\\pard\\plain \\intbl\\ltrpar\\s1\\cf0{\\*\\hyphen2\\hyphlead2\\hyphtrail2\\hyphmax0}\\aspalpha\\sb60\\ql\\rtlch\\af4\\afs17\\lang255\\ltrch\\dbch\\af4\\langfe1033\\hich\\f4\\fs17\\lang1046\\loch\\f4\\fs17\\lang1046 {\\rtlch \\ltrch\\loch\\f4\\fs17\\lang1046\\i0\\b0 #CELL_CONTENT#}\\cell"""
 
 FILE_SUFFIX = "_RN.rtf"
@@ -40,7 +40,7 @@ class Document:
     def add_defect(self, defect_data):
         """ Add a defect to document.
             @param defect_data a tuple with defect data
-            such as '(id ptin, id vivo, description)'
+            such as '(id local, id client, description)'
         """
         self.defects.append(defect_data)
 
@@ -171,7 +171,7 @@ class RNGenerator:
     def _fill_defects(self):
         log.debug("Filling defects: %s" % str(self.package.defects))
         for defect in self.package.defects:
-            row = (Cell(defect.id_ptin), Cell(defect.id_vivo),
+            row = (Cell(defect.id_local), Cell(defect.id_client),
                    Cell(defect.description))
             self.document.add_defect(row)
 
@@ -183,7 +183,7 @@ class RNGenerator:
 
     def _fill_steps(self):
         log.debug("Filling steps")
-        pre_install_steps = [(Cell("10"), Cell(u"Baixar o Weblogic que serve o NGIN Customer Care, o NGIN Business Engine, e o NGIN UnifiedInterface.")),
+        pre_install_steps = [(Cell("10"), Cell(u"Baixar o Weblogic que serve as apps.")),
             (Cell("5"), Cell(u"Fazer backup dos EARs antigos das aplicacoes.")),
             (Cell("10"), Cell(u"Realizar deploy dos EARs existentes no diretorio DIST do pacote"))]
         package_steps = [] 
@@ -199,7 +199,7 @@ class RNGenerator:
             package_steps.append(step)
 
         post_install_steps = [
-            (Cell("10"), Cell(u"Arrancar o Weblogic que serve o NGIN Customer Care, o NGIN Business Engine, e o NGIN UnifiedInterface.")),
+            (Cell("10"), Cell(u"Arrancar o Weblogic que serve as apps.")),
             (Cell("10"), Cell(u"Verificar correto funcionamento do sistema"))]
         steps = pre_install_steps + package_steps + post_install_steps
         for step in steps:

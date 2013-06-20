@@ -401,8 +401,8 @@ class ReleaseNotesStepTests(TestCase):
                           "Problem selecting requirement.")
 
     def when_i_add_a_defect(self):
-        self.rn_step.defect_ptin_entry.set_text('ptin id')
-        self.rn_step.defect_vivo_entry.set_text('vivo id')
+        self.rn_step.defect_local_entry.set_text('local id')
+        self.rn_step.defect_client_entry.set_text('client id')
         self.rn_step.defect_desc_entry.update('desc')
 
         self.rn_step.on_add_defect_button__clicked()

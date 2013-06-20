@@ -334,8 +334,8 @@ class ReleaseNotesStep(BaseWizardStep):
                "del_defect_button",
                "add_req_button",
                "del_req_button"
-               "defect_ptin_entry",
-               "defect_vivo_entry",
+               "defect_local_entry",
+               "defect_client_entry",
                "defect_desc_entry",
                "req_id_entry",
                "req_desc_entry"]
@@ -346,8 +346,8 @@ class ReleaseNotesStep(BaseWizardStep):
                                 statusbar=statusbar)
 
         # Creates a list of defects
-        defectcolumns = [Column('id_ptin', data_type=str, title= "ID PTIn", editable=True),
-                         Column('id_vivo', data_type=str, title= "ID Vivo", editable=True),
+        defectcolumns = [Column('id_local', data_type=str, title= "ID Local", editable=True),
+                         Column('id_client', data_type=str, title= "ID Client", editable=True),
                          Column('description', data_type=unicode, title= "Descrição",
                                 editable=True, expand=True)]
         self.defectlist.set_columns(defectcolumns)
@@ -360,12 +360,12 @@ class ReleaseNotesStep(BaseWizardStep):
         self.add_proxy(self, ["req_desc_entry"])
 
     def on_add_defect_button__clicked(self, *args):
-        id_ptin = self.defect_ptin_entry.get_text()
-        id_vivo = self.defect_vivo_entry.get_text()
+        id_local = self.defect_local_entry.get_text()
+        id_client = self.defect_client_entry.get_text()
         description = self.defect_desc_entry.read()
 
-        if not id_ptin and not id_vivo:
-            self.set_message("Campos ID PTIN ou ID VIVO devem ser preenchidos")
+        if not id_local and not id_client:
+            self.set_message("Campos ID LOCAL ou ID CLIENT devem ser preenchidos")
             return
 
         if not description or description == kiwi.ValueUnset or not description.strip():
@@ -373,11 +373,11 @@ class ReleaseNotesStep(BaseWizardStep):
             return
 
         defect = Defect()
-        defect.id_ptin = id_ptin 
-        defect.id_vivo = id_vivo
+        defect.id_local = id_local 
+        defect.id_client = id_client
         defect.description = description
-        self.defect_ptin_entry.set_text('')
-        self.defect_vivo_entry.set_text('')
+        self.defect_local_entry.set_text('')
+        self.defect_client_entry.set_text('')
         self.defect_desc_entry.update('')
         self.model.add_defect(defect)
         self.defectlist.append(defect)

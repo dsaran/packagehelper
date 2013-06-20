@@ -1,6 +1,6 @@
 === 1.2.3 ===
 
-2009-10-10  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-10-10  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/scm.py:
 		Added --no-auth-cache to subversion commands to avoid storing
@@ -8,7 +8,7 @@
 
 === 1.2.2 ===
 
-2009-09-27  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-09-27  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/domain/tag.py:
 		Tag names are now stripped to avoid trailing and leading white spaces,
@@ -16,7 +16,7 @@
 
 === 1.2.1 ===
 
-2009-04-28  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-28  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/commandrunner.py:
 		Fixed command runner to work properly under windows.
@@ -33,7 +33,7 @@
 	* package/glade/configuration.glade:
 		Added feedback messages to update.
 
-2009-04-22  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-22  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/scm.py:
 	* test/package/tc_scm.py:
@@ -61,7 +61,7 @@
 		Added a new property 'update_url' to store svn url for automatic
 		update.
 
-2009-04-19  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-19  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/releasenotes.py:
 	* resources/RN_TEMPLATE.rtf:
@@ -84,7 +84,7 @@
 	* package/ui/listslave.py:
 		Removed getters and setters from Package object.
 
-2009-04-18  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-18  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/glade/releasenotesstep.glade:
 		Fixed description entries to not resize when text size is greater than
@@ -99,7 +99,7 @@
 		While performing checkout or processing files a message for user is
 		displayed on statusbar.
 
-2009-04-16  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-16  Daniel Saran  <danielsaran@gmail.com>
 
 	* test/package/gui/tc_app.py:
 	* package/commandrunner.py:
@@ -115,7 +115,7 @@
 	* package/ui/listslave.py
 	* parser/plsql.py
 
-2009-04-07  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-07  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/sqlrunner.py:
 	* test/package/tc_scm.py:
@@ -131,12 +131,12 @@
 
 === 1.0.0b ===
 
-2009-04-06  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-06  Daniel Saran  <danielsaran@gmail.com>
 
 	* Released 1.0.0 beta.
 	* Added compatibility check for pygtk (problem with progressbar).
 
-2009-04-05  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-05  Daniel Saran  <danielsaran@gmail.com>
 
 	* test.py:
 	* test/package/tc_domain.py:
@@ -163,7 +163,7 @@
 		CVS class renamed to CvsProcessor
 		New class SubversionProcessor to work with subversion repositories.
 
-2009-04-01  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-04-01  Daniel Saran  <danielsaran@gmail.com>
 
 	* lib/gazpacho/app/bugreportdialog.py:
 	* lib/gazpacho/app/uimstate.py:
@@ -208,7 +208,7 @@
 	* parser/plsql.g:
 		Added grammar for views (broken)
 
-2009-03-26  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-03-26  Daniel Saran  <danielsaran@gmail.com>
 
 	* test.py:
 	* test/package/tc_domain.py:
@@ -237,7 +237,7 @@
 		Wizard changed to receive a list of steps to calculate wizard
 		progress.
 
-2009-03-25  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-03-25  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/config.py:
 		Config files changed to YAML.
@@ -262,7 +262,7 @@
 		Extended PluggableWizard allow customizations on default wizard
 		behavior.
 
-2009-03-21  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-03-21  Daniel Saran  <danielsaran@gmail.com>
 
 	* test.py: Added tests for application GUI slaves and domain objects.
 	* package/config.py:
@@ -309,13 +309,13 @@
 		Full package body parsing changed to break tests so we can reflect
 		the reality.
 
-2009-03-13  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-03-13  Daniel Saran  <danielsaran@gmail.com>
 
 	* parser/plsql.g:
 	* parser/plsql.py:
 		Fixed package grammar
 
-2009-03-08  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-03-08  Daniel Saran  <danielsaran@gmail.com>
 
 	* lib/kiwi:
 	    Upgraded to version 1.9.24.
@@ -337,7 +337,7 @@
 		after cvs command to avoid breaking other modules 
 		that might need to use current directory (os.getcwd()).
 
-2009-03-01  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-03-01  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/glade/filetree.glade:
 	* package/gui/filetree.py: 
@@ -350,7 +350,7 @@
 	* test/parser/tc_plsql.py:
 		New Tests to validate changes on package parsing.
 
-2009-02-18  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-02-18  Daniel Saran  <danielsaran@gmail.com>
 
 	Modified files:
 	* parser/plsql.g
@@ -361,7 +361,7 @@
 	* Added rule to ignore SET commands
 	* Reorganization of code
 
-2009-02-15  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-02-15  Daniel Saran  <danielsaran@gmail.com>
 	Modified files:
 	* parser/plsql.g
 	* parser/plsql.py
@@ -376,14 +376,14 @@
 	* Added grammar for select statements
 	* Improved validation on __eq__ method of SqlStatement class. 
 
-2009-02-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-02-14  Daniel Saran  <danielsaran@gmail.com>
 
 	* test/parser/tc_plsql.py: Test cases for plsql parser.
 	* parser/plsql.g: First functional version of parser for insert
 	statements.
 	Added support for Insert with function calls.
 
-2009-02-09  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2009-02-09  Daniel Saran  <danielsaran@gmail.com>
 
 	* parser/__init__.py: New module for plsql parsing.
 	* parser/plsql.g: Added initial grammar for plsql.
@@ -395,7 +395,7 @@
 	* parser/yapps/yapps2.py
 	* parser/yapps/yappsrt.py: Yapps engine to generate plsql parser.
 
-2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2008-04-14  Daniel Saran  <danielsaran@gmail.com>
 
 	* run.py: Initialization changed to open no-gui mode when something GUI is not
 		available.
@@ -417,7 +417,7 @@
 
 === 0.4.0 ===
 
-2008-04-14  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2008-04-14  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/config.py: Some code clean up.
 	* package/processor.py: Processor now tag files with package name after
@@ -425,7 +425,7 @@
 
 === 0.3.9 ===
 
-2008-03-13  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2008-03-13  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/sqlrunner.py: Adding debug information.
 	* package/domain/database.py: Implemented __str__ method.
@@ -440,7 +440,7 @@
 
 === 0.3.8 ===
 
-2007-03-06  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-03-06  Daniel Saran  <danielsaran@gmail.com>
 	* run.py: 
 	* package/config.py: Changing the way WORK_DIR is set to fix a bug generating the release
 	notes.
@@ -452,7 +452,7 @@
 
 === 0.3.7 ===
 
-2007-12-19  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-12-19  Daniel Saran  <danielsaran@gmail.com>
 
 	*  package/processor.py: Using popen to run commands.
 	*  package/domain/package.py: Changing the use of paths to avoid crashing
@@ -461,7 +461,7 @@
 
 === 0.3.6 ===
 
-2007-12-13  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-12-13  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/config.py:
 	* package/releasenotes.py:
@@ -474,7 +474,7 @@
 
 === 0.3.5 ===
 
-2007-11-28  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-11-28  Daniel Saran  <danielsaran@gmail.com>
 
 	* lib/path.py: little bug fix writting to a file.
 	* package/releasenotes.py: new module to write the release notes.
@@ -487,7 +487,7 @@
 
 === 0.3.1 ===
 
-2007-11-23  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-11-23  Daniel Saran  <danielsaran@gmail.com>
 
 
 	* package/sqlrunner.py: Module for running sql scripts using SQLPLUS.
@@ -522,7 +522,7 @@
 
 === 0.2.2 ===
 
-2007-11-07  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-11-07  Daniel Saran  <danielsaran@gmail.com>
 
 	* run.py: Adding log to capture problems before the application starts.
 	* package/glade/PackageProcessorGUI.glade:
@@ -530,7 +530,7 @@
 
 === 0.2.1 ===
 
-2007-10-30  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-10-30  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/util/format.py: Adding encoding information.
 	* package/processor.py: Using fixed encoding writing files.
@@ -541,7 +541,7 @@
 
 === 0.2.0 ===
 
-2007-10-28  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-10-28  Daniel Saran  <danielsaran@gmail.com>
 
 	* lib/kiwi/ __init__.py:
 	* lib/kiwi/ __version__.py:
@@ -580,7 +580,7 @@
 
 === 0.1.1 ===
 
-2007-10-23  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-10-23  Daniel Saran  <danielsaran@gmail.com>
 
 	* Fixed bugs:
 	* Problem with case sensitive search: File extensions with upper case
@@ -603,7 +603,7 @@
 	* lib/path.py: Add the argument 'case_sensitive' to the method walk to
 	allow the case-insensitive search.
 
-2007-10-22  Daniel Cunha  <daniel-s-cunha@ptinovacao.pt>
+2007-10-22  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/domain/test/run.py: Adding tests for class Database.
 	* package/domain/file.py (log): Changes on compare method.
@@ -615,7 +615,7 @@
 
 === 0.1.0 ===
 
-2007-10-21  Daniel Saran  <daniel-s-cunha@ptinovacao.pt>
+2007-10-21  Daniel Saran  <danielsaran@gmail.com>
 
 	* run.py: Support for --help option.
 	* package/glade/PackageProcessorGUI.glade:
@@ -623,7 +623,7 @@
 	select the path where the package will be created.
 
 
-2007-10-21  Daniel Saran  <daniel-s-cunha@ptinovacao.pt>
+2007-10-21  Daniel Saran  <danielsaran@gmail.com>
 
 	* package/__init__.py:
 	* package/ProcessorUI.py: New command line UI.
@@ -649,7 +649,7 @@
 
 === 0.0.1 ===
 
-2007-10-19  Daniel Saran  <daniel-s-cunha@ptinovacao.pt>
+2007-10-19  Daniel Saran  <danielsaran@gmail.com>
 
 	* all files:
 	Initial stable version added to Version Control.
